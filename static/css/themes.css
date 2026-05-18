@@ -1,0 +1,141 @@
+/* ============================================================
+   NoirPad — Design Tokens & Themes
+   ------------------------------------------------------------
+   :root          → the whole design system (surfaces, type,
+                     spacing, radii, shadows, motion) + the
+                     NEON identity derived from one accent hue.
+   [data-theme=…]  → ONLY sets the accent hue. Text colour,
+                     borders, glow and selection are derived
+                     from it, so the terminal/hacker character
+                     is preserved across all 12 themes.
+
+   Identity kept on purpose: themed text stays the accent
+   colour, the glow stays — only softened. The modern part is
+   warm-dark surfaces with real depth, visible borders, and a
+   consistent token scale used by later phases.
+   ============================================================ */
+
+:root {
+    /* ---- Fonts ---------------------------------------------------- */
+    /* --font-mono is the live UI/editor font (JS already references
+       it). --font-ui is staged for Fáze B; nothing uses it yet.      */
+    --font-mono: "Cascadia Code", "Fira Code", "JetBrains Mono",
+                 "Consolas", ui-monospace, monospace;
+    --font-ui:   "Inter", "Inter var", -apple-system, BlinkMacSystemFont,
+                 "Segoe UI", system-ui, sans-serif;
+
+    /* ---- Warm-dark surface ramp (shared by every theme) ----------- */
+    --bg:        #0e0e10;   /* app background                        */
+    --bg-entry:  #0c0c0d;   /* editor canvas — slightly deeper focal */
+    --bg-light:  #161618;   /* sidebar, bars, headers, controls      */
+    --surface-2: #1d1d20;   /* raised controls (staged for later)    */
+    --surface-3: #26262a;   /* elevated / strong hover (staged)      */
+    --surface-4: #303036;   /* kbd / active raised (staged)          */
+
+    /* ---- Accent hue (set per theme below; default = matrix) ------- */
+    --accent: #00ff41;
+
+    /* ---- NEON identity, derived from --accent --------------------- */
+    /* Recomputes automatically when a theme overrides --accent.      */
+    --fg:        var(--accent);                                  /* themed text */
+    --fg-bright: color-mix(in srgb, var(--accent) 64%, #ffffff); /* emphasis    */
+    --fg-dim:    color-mix(in srgb, var(--accent) 74%, #000000); /* secondary   */
+    --fg-muted:  color-mix(in srgb, var(--accent) 42%, #5a5a60); /* tertiary    */
+
+    --border:        color-mix(in srgb, var(--accent) 15%, #2c2c33);
+    --border-strong: color-mix(in srgb, var(--accent) 28%, #3a3a44);
+
+    --hover-bg:  color-mix(in srgb, var(--accent)  9%, var(--bg-light));
+    --select-bg: color-mix(in srgb, var(--accent) 20%, var(--bg));
+
+    --cursor-color: var(--accent);
+
+    /* Glow KEPT but softened — half-strength, neon-tinted.           */
+    --glow: color-mix(in srgb, var(--accent) 55%, transparent);
+
+    /* ---- Spacing scale (4px base) --------------------------------- */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+
+    /* ---- Type scale ----------------------------------------------- */
+    --text-xs:   11px;
+    --text-sm:   12px;
+    --text-base: 13px;
+    --text-md:   14px;
+    --text-lg:   16px;
+    --text-xl:   20px;
+    --text-2xl:  28px;
+
+    --leading-tight:   1.25;
+    --leading-normal:  1.5;
+    --leading-relaxed: 1.7;
+
+    --tracking-tight: -0.01em;
+    --tracking-wide:  0.04em;
+
+    /* ---- Radius scale --------------------------------------------- */
+    --radius-xs:   4px;
+    --radius-sm:   6px;
+    --radius-md:   10px;
+    --radius-lg:   14px;
+    --radius-pill: 999px;
+
+    /* ---- Elevation (soft, layered — not pure-black slabs) ---------- */
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40);
+    --shadow-2: 0 4px 16px rgba(0, 0, 0, 0.45),
+                0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-3: 0 16px 48px rgba(0, 0, 0, 0.55),
+                0 2px 8px rgba(0, 0, 0, 0.40);
+
+    --ring: 0 0 0 2px var(--bg),
+            0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent);
+
+    /* ---- Motion --------------------------------------------------- */
+    --ease-out:    cubic-bezier(0.22, 0.7, 0.2, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --dur-1: 110ms;
+    --dur-2: 180ms;
+    --dur-3: 260ms;
+
+    color-scheme: dark;
+}
+
+/* ============================================================
+   Themes — accent hue only (original neon values kept).
+   Order follows :root so these win the cascade.
+   ============================================================ */
+
+[data-theme="matrix"] { --accent: #00ff41; }
+[data-theme="amber"]  { --accent: #ffb000; }
+[data-theme="cyan"]   { --accent: #00e5ff; }
+[data-theme="red"]    { --accent: #ff3333; }
+[data-theme="purple"] { --accent: #bf40ff; }
+[data-theme="blue"]   { --accent: #4488ff; }
+[data-theme="pink"]   { --accent: #ff69b4; }
+[data-theme="white"]  { --accent: #cccccc; }
+[data-theme="gold"]   { --accent: #ffd700; }
+[data-theme="lime"]   { --accent: #bfff00; }
+[data-theme="orange"] { --accent: #ff6600; }
+[data-theme="ice"]    { --accent: #88ddff; }
+
+/* Smooth theme cross-fade (kept — part of the identity feel). */
+*, *::before, *::after {
+    transition: color 0.3s ease-out,
+                background-color 0.3s ease-out,
+                border-color 0.3s ease-out;
+}
+
+/* Respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}

@@ -1,0 +1,36 @@
+/* themes.js - NoirPad theme switching */
+window.NP = window.NP || {};
+
+(function (NP) {
+    "use strict";
+
+    NP.themes = {
+        apply: function (themeName) {
+            var name = themeName || "matrix";
+            if (!NP.THEMES[name]) {
+                name = "matrix";
+            }
+            document.documentElement.setAttribute("data-theme", name);
+
+            /* Update state if loaded */
+            if (NP.state && NP.state.data) {
+                NP.state.data.theme = name;
+            }
+
+            /* Persist to server */
+            if (NP.api && NP.api.saveSettings) {
+                NP.api.saveSettings({ theme: name }).catch(function () {
+                    /* silently ignore save errors */
+                });
+            }
+        },
+
+        getCurrent: function () {
+            if (NP.state && NP.state.data && NP.state.data.theme) {
+                return NP.state.data.theme;
+            }
+            return "matrix";
+        }
+    };
+
+})(window.NP);

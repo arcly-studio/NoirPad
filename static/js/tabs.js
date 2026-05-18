@@ -1,0 +1,310 @@
+/* tabs.js - NoirPad tab bar management */
+window.NP = window.NP || {};
+
+(function (NP) {
+    "use strict";
+
+    var MAX_TABS = 10;
+    var NAME_MAX_LEN = 20;
+
+    function findTab(noteId) {
+        var tabs = NP.state.openTabs;
+        for (var i = 0; i < tabs.length; i++) {
+            if (tabs[i].id === noteId) return i;
+        }
+        return -1;
+    }
+
+    function truncate(name) {
+        if (name.length > NAME_MAX_LEN) {
+            return name.substring(0, NAME_MAX_LEN - 1) + "\u2026";
+        }
+        return name;
+    }
+
+    NP.tabs = {
+        add: function (noteId, name) {
+            var idx = findTab(noteId);
+            if (idx !== -1) {
+                /* Tab already exists, just activate */
+                NP.tabs.activate(noteId);
+                return;
+            }
+
+            /* Enforce max tabs */
+            if (NP.state.openTabs.length >= MAX_TABS) {
+                /* Close the oldest inactive tab */
+                for (var i = 0; i < NP.state.openTabs.length; i++) {
+                    if (NP.state.openTabs[i].id !== NP.state.activeTabId) {
+                        NP.state.openTabs.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+
+            NP.state.openTabs.push({
+                id: noteId,
+                name: name,
+                scrollTop: 0,
+                selectionStart: null,
+                selectionEnd: null
+            });
+
+            NP.tabs.activate(noteId);
+        },
+
+        close: function (noteId) {
+            var idx = findTab(noteId);
+            if (idx === -1) return;
+
+            var wasActive = NP.state.activeTabId === noteId;
+            NP.state.openTabs.splice(idx, 1);
+
+            if (wasActive) {
+                if (NP.state.openTabs.length > 0) {
+                    /* Switch to nearest neighbor */
+                    var newIdx = idx >= NP.state.openTabs.length ? NP.state.openTabs.length - 1 : idx;
+                    NP.tabs.activate(NP.state.openTabs[newIdx].id);
+                } else {
+                    NP.state.activeTabId = null;
+                    NP.state.currentNoteId = null;
+                    if (NP.editor) NP.editor.showWelcome();
+                    NP.tabs.render();
+                }
+            } else {
+                NP.tabs.render();
+            }
+        },
+
+        activate: function (noteId) {
+            /* Save state of current tab */
+            NP.tabs._saveTabState();
+
+            /* Save current note if needed */
+            if (NP.state.activeTabId && NP.state.activeTabId !== noteId && NP.editor) {
+                NP.editor.save(true);
+            }
+
+            NP.state.activeTabId = noteId;
+            NP.state.currentNoteId = noteId;
+
+            /* Load the note */
+            if (NP.editor) {
+                NP.editor.loadNote(noteId).then(function () {
+                    /* Restore saved scroll and selection */
+                    var idx = findTab(noteId);
+                    if (idx !== -1) {
+                        var tab = NP.state.openTabs[idx];
+                        if (NP.editor.el && tab.scrollTop) {
+                            NP.editor.el.scrollTop = tab.scrollTop;
+                        }
+                        /* Restore selection if available */
+                        if (tab.selectionStart !== null && tab.selectionEnd !== null) {
+                            try {
+                                var sel = window.getSelection();
+                                if (sel && NP.editor.el.childNodes.length > 0) {
+                                    var range = document.createRange();
+                                    NP.tabs._restoreSelection(range, tab.selectionStart, tab.selectionEnd);
+                                    sel.removeAllRanges();
+                                    sel.addRange(range);
+                                }
+                            } catch (e) {
+                                /* Selection restore can fail if DOM changed */
+                            }
+                        }
+                    }
+                });
+            }
+
+            NP.tabs.render();
+
+            /* Also update tree selection */
+            if (NP.tree) NP.tree.render();
+        },
+
+        render: function () {
+            var bar = NP.$("#tab-bar");
+            if (!bar) return;
+
+            bar.innerHTML = "";
+
+            var tabs = NP.state.openTabs;
+            for (var i = 0; i < tabs.length; i++) {
+                (function (tab) {
+                    var pill = document.createElement("div");
+                    pill.className = "tab-pill";
+                    var isActive = NP.state.activeTabId === tab.id;
+
+                    pill.style.cssText =
+                        "display:inline-flex;align-items:center;gap:6px;" +
+                        "padding:4px 10px;margin:0 2px;border-radius:12px;" +
+                        "cursor:pointer;font-size:12px;white-space:nowrap;" +
+                        "user-select:none;transition:background 0.15s;";
+
+                    if (isActive) {
+                        pill.style.background = "var(--select-bg)";
+                        pill.style.color = "var(--fg-bright)";
+                        pill.style.outline = "1px solid var(--border)";
+                    } else {
+                        pill.style.background = "var(--bg-light)";
+                        pill.style.color = "var(--fg-dim)";
+                        pill.style.outline = "none";
+                    }
+
+                    /* Tab name */
+                    var nameSpan = document.createElement("span");
+                    nameSpan.textContent = truncate(tab.name);
+                    pill.appendChild(nameSpan);
+
+                    /* Close button */
+                    var closeBtn = document.createElement("span");
+                    closeBtn.className = "tab-close";
+                    closeBtn.textContent = "\u00d7";
+                    closeBtn.style.cssText =
+                        "font-size:14px;line-height:1;opacity:0.5;padding:0 2px;" +
+                        "cursor:pointer;border-radius:2px;";
+                    closeBtn.addEventListener("mouseenter", function () {
+                        closeBtn.style.opacity = "1";
+                    });
+                    closeBtn.addEventListener("mouseleave", function () {
+                        closeBtn.style.opacity = "0.5";
+                    });
+                    closeBtn.addEventListener("click", function (e) {
+                        e.stopPropagation();
+                        NP.tabs.close(tab.id);
+                    });
+                    pill.appendChild(closeBtn);
+
+                    /* Hover effect */
+                    pill.addEventListener("mouseenter", function () {
+                        if (NP.state.activeTabId !== tab.id) {
+                            pill.style.background = "var(--hover-bg)";
+                        }
+                    });
+                    pill.addEventListener("mouseleave", function () {
+                        if (NP.state.activeTabId === tab.id) {
+                            pill.style.background = "var(--select-bg)";
+                        } else {
+                            pill.style.background = "var(--bg-light)";
+                        }
+                    });
+
+                    /* Click to activate */
+                    pill.addEventListener("click", function () {
+                        NP.tabs.activate(tab.id);
+                    });
+
+                    /* Middle-click to close */
+                    pill.addEventListener("mousedown", function (e) {
+                        if (e.button === 1) {
+                            e.preventDefault();
+                            NP.tabs.close(tab.id);
+                        }
+                    });
+
+                    bar.appendChild(pill);
+                })(tabs[i]);
+            }
+        },
+
+        next: function () {
+            var tabs = NP.state.openTabs;
+            if (tabs.length < 2) return;
+            var idx = findTab(NP.state.activeTabId);
+            var next = (idx + 1) % tabs.length;
+            NP.tabs.activate(tabs[next].id);
+        },
+
+        prev: function () {
+            var tabs = NP.state.openTabs;
+            if (tabs.length < 2) return;
+            var idx = findTab(NP.state.activeTabId);
+            var prev = (idx - 1 + tabs.length) % tabs.length;
+            NP.tabs.activate(tabs[prev].id);
+        },
+
+        closeCurrent: function () {
+            if (NP.state.activeTabId) {
+                NP.tabs.close(NP.state.activeTabId);
+            }
+        },
+
+        _saveTabState: function () {
+            if (!NP.state.activeTabId) return;
+            var idx = findTab(NP.state.activeTabId);
+            if (idx === -1) return;
+
+            var tab = NP.state.openTabs[idx];
+
+            /* Save scroll position */
+            if (NP.editor && NP.editor.el) {
+                tab.scrollTop = NP.editor.el.scrollTop;
+            }
+
+            /* Save selection range as node offsets */
+            try {
+                var sel = window.getSelection();
+                if (sel && sel.rangeCount > 0) {
+                    var range = sel.getRangeAt(0);
+                    tab.selectionStart = NP.tabs._serializePosition(range.startContainer, range.startOffset);
+                    tab.selectionEnd = NP.tabs._serializePosition(range.endContainer, range.endOffset);
+                } else {
+                    tab.selectionStart = null;
+                    tab.selectionEnd = null;
+                }
+            } catch (e) {
+                tab.selectionStart = null;
+                tab.selectionEnd = null;
+            }
+        },
+
+        _serializePosition: function (node, offset) {
+            /*
+             * Serialize a DOM position as an array of child indices
+             * from the editor root to the target node, plus the offset.
+             */
+            if (!NP.editor || !NP.editor.el) return null;
+            var path = [];
+            var current = node;
+            while (current && current !== NP.editor.el) {
+                var parent = current.parentNode;
+                if (!parent) return null;
+                var children = parent.childNodes;
+                for (var i = 0; i < children.length; i++) {
+                    if (children[i] === current) {
+                        path.unshift(i);
+                        break;
+                    }
+                }
+                current = parent;
+            }
+            if (current !== NP.editor.el) return null;
+            return { path: path, offset: offset };
+        },
+
+        _restoreSelection: function (range, startPos, endPos) {
+            if (!NP.editor || !NP.editor.el) return;
+
+            function resolvePosition(pos) {
+                if (!pos || !pos.path) return null;
+                var node = NP.editor.el;
+                for (var i = 0; i < pos.path.length; i++) {
+                    if (!node.childNodes || pos.path[i] >= node.childNodes.length) return null;
+                    node = node.childNodes[pos.path[i]];
+                }
+                return { node: node, offset: Math.min(pos.offset, node.length || node.childNodes.length || 0) };
+            }
+
+            var start = resolvePosition(startPos);
+            var end = resolvePosition(endPos);
+
+            if (start) {
+                range.setStart(start.node, start.offset);
+            }
+            if (end) {
+                range.setEnd(end.node, end.offset);
+            }
+        }
+    };
+
+})(window.NP);

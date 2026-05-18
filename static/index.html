@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="matrix">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoirPad</title>
+    <link rel="stylesheet" href="/static/css/themes.css">
+    <link rel="stylesheet" href="/static/css/noirpad.css">
+</head>
+<body>
+
+<!-- ============ Splash Overlay ============ -->
+<div id="splash-overlay">
+    <pre id="splash-ascii">
+ _   _       _      ____           _
+| \ | | ___ (_)_ __|  _ \ __ _  __| |
+|  \| |/ _ \| | '__| |_) / _` |/ _` |
+| |\  | (_) | | |  |  __/ (_| | (_| |
+|_| \_|\___/|_|_|  |_|   \__,_|\__,_|
+    </pre>
+    <div id="splash-subtitle">Loading...</div>
+</div>
+
+<!-- ============ Matrix Rain Canvas ============ -->
+<canvas id="matrix-canvas"></canvas>
+
+<!-- ============ CRT Overlay (toggle via :crt) ============ -->
+<div id="crt-overlay"></div>
+
+<!-- ============ App Shell ============ -->
+<div id="app">
+
+    <!-- ---- Top Bar ---- -->
+    <div id="top-bar">
+        <div id="top-bar-title">NoirPad</div>
+        <button id="btn-focus" title="Focus mode (Ctrl+B)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                <rect x="1" y="1" width="12" height="12" rx="2"/>
+                <line x1="5" y1="1" x2="5" y2="13"/>
+            </svg>
+        </button>
+        <div id="status-label">Ready</div>
+    </div>
+
+    <!-- ---- Main Area ---- -->
+    <div id="main">
+
+        <!-- ---- Left Sidebar ---- -->
+        <div id="sidebar">
+            <!-- Button bar -->
+            <div id="button-bar">
+                <button id="btn-new-folder" title="New Folder">+Folder</button>
+                <button id="btn-new-note" title="New Note">+Note</button>
+                <button id="btn-delete" title="Delete">Delete</button>
+                <button id="btn-rename" title="Rename">Rename</button>
+            </div>
+
+            <!-- Tree -->
+            <div id="tree-container"></div>
+
+            <!-- Trash section -->
+            <div id="trash-section">
+                <div id="trash-header">
+                    <span>Trash</span>
+                    <span id="trash-count">0</span>
+                </div>
+                <div id="trash-list"></div>
+            </div>
+        </div>
+
+        <!-- ---- Right Panel (Editor) ---- -->
+        <div id="editor-panel">
+
+            <!-- Note header -->
+            <div id="note-header">
+                <span id="note-prefix">&gt;&nbsp;</span>
+                <input id="note-title-input" type="text" placeholder="Untitled" spellcheck="false" autocomplete="off">
+                <button class="header-btn" id="btn-help" title="Help">Help</button>
+                <button class="header-btn" id="btn-font" title="Font settings">Font</button>
+                <button class="header-btn" id="btn-favorite" title="Toggle favorite">&#9733;</button>
+                <button class="header-btn" id="btn-lock" title="Lock / Unlock note">Lock</button>
+                <button class="header-btn" id="btn-insert-image" title="Insert image">+Img</button>
+            </div>
+
+            <!-- Tab bar -->
+            <div id="tab-bar"></div>
+
+            <!-- Tag bar -->
+            <div id="tag-bar">
+                <input id="tag-input" type="text" placeholder="Add tag..." spellcheck="false" autocomplete="off">
+            </div>
+
+            <!-- Editor wrapper -->
+            <div id="editor-wrapper">
+                <!-- Command bar overlay (inside editor area) -->
+                <div id="command-bar">
+                    <input id="command-input" type="text" placeholder="> Type a command..." spellcheck="false" autocomplete="off">
+                    <div id="command-results"></div>
+                </div>
+
+                <!-- Lock overlay -->
+                <div id="lock-overlay">
+                    <div class="lock-icon">&#128274;</div>
+                    <div class="lock-text">This note is encrypted. Enter password to unlock.</div>
+                    <input class="lock-input" id="lock-password-input" type="password" placeholder="Password...">
+                </div>
+
+                <!-- Contenteditable editor -->
+                <div id="editor" contenteditable="true" spellcheck="true" data-placeholder="Start typing..."></div>
+            </div>
+
+            <!-- Search bar (hidden by default) -->
+            <div id="search-bar">
+                <input id="search-input" type="text" placeholder="Find..." spellcheck="false" autocomplete="off">
+                <span id="search-count">0/0</span>
+                <button class="search-btn" id="search-prev" title="Previous">&#9650;</button>
+                <button class="search-btn" id="search-next" title="Next">&#9660;</button>
+                <input id="replace-input" type="text" placeholder="Replace..." spellcheck="false" autocomplete="off">
+                <button class="search-btn" id="replace-btn" title="Replace">Replace</button>
+                <button class="search-btn" id="replace-all-btn" title="Replace All">All</button>
+                <button class="search-btn" id="search-close" title="Close">&times;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ---- Bottom Bar ---- -->
+    <div id="bottom-bar">
+        <div id="bottom-left">
+            <span id="autosave-toggle" class="bottom-item" title="Toggle autosave">
+                <span id="autosave-indicator">Autosave</span>
+            </span>
+        </div>
+        <div id="bottom-center">
+            <span class="shortcut-hint bottom-item"><kbd>Ctrl+S</kbd> Save</span>
+            <span class="shortcut-hint bottom-item"><kbd>Ctrl+Shift+P</kbd> Commands</span>
+            <span class="shortcut-hint bottom-item"><kbd>Ctrl+F</kbd> Find</span>
+            <span class="shortcut-hint bottom-item"><kbd>Ctrl+B</kbd> Sidebar</span>
+        </div>
+        <div id="bottom-right">
+            <span id="char-count" class="bottom-item">0 chars</span>
+            <span id="word-count" class="bottom-item">0 words</span>
+            <span id="line-count" class="bottom-item">0 lines</span>
+        </div>
+    </div>
+
+</div>
+
+<!-- ============ Help Overlay ============ -->
+<div id="help-overlay">
+    <div id="help-window">
+        <div id="help-header">
+            <h2>Keyboard Shortcuts</h2>
+            <button id="help-close">&times;</button>
+        </div>
+        <div id="help-body"></div>
+    </div>
+</div>
+
+<!-- ============ Font Picker Overlay ============ -->
+<div id="font-overlay">
+    <div id="font-picker">
+        <div id="font-picker-header">
+            <h2>Font Settings</h2>
+            <button id="font-picker-close">&times;</button>
+        </div>
+        <input id="font-search" type="text" placeholder="Search fonts..." spellcheck="false" autocomplete="off">
+        <div id="font-list"></div>
+        <div id="font-size-row">
+            <label for="font-size-input">Size:</label>
+            <input id="font-size-input" type="number" min="8" max="32" value="14">
+            <span>px</span>
+        </div>
+    </div>
+</div>
+
+<!-- ============ Context Menu ============ -->
+<div id="context-menu"></div>
+
+<!-- ============ Dialog (reusable) ============ -->
+<div class="dialog-overlay" id="dialog-overlay">
+    <div class="dialog-box">
+        <div class="dialog-title" id="dialog-title">Dialog</div>
+        <div class="dialog-message" id="dialog-message"></div>
+        <input class="dialog-input" id="dialog-input" type="text" style="display:none;" spellcheck="false" autocomplete="off">
+        <div class="dialog-buttons" id="dialog-buttons"></div>
+    </div>
+</div>
+
+<!-- ============ Scripts (no modules, no build) ============ -->
+<script src="/static/js/utils.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/state.js"></script>
+<script src="/static/js/themes.js"></script>
+<script src="/static/js/tree.js"></script>
+<script src="/static/js/editor.js"></script>
+<script src="/static/js/tabs.js"></script>
+<script src="/static/js/tags.js"></script>
+<script src="/static/js/search.js"></script>
+<script src="/static/js/command-bar.js"></script>
+<script src="/static/js/trash.js"></script>
+<script src="/static/js/favorites.js"></script>
+<script src="/static/js/images.js"></script>
+<script src="/static/js/encryption.js"></script>
+<script src="/static/js/export.js"></script>
+<script src="/static/js/focus-mode.js"></script>
+<script src="/static/js/matrix-rain.js"></script>
+<script src="/static/js/splash.js"></script>
+<script src="/static/js/cursor.js"></script>
+<script src="/static/js/font-picker.js"></script>
+<script src="/static/js/help.js"></script>
+<script src="/static/js/backup.js"></script>
+<script src="/static/js/effects.js"></script>
+<script src="/static/js/find-all.js"></script>
+<script src="/static/js/app.js"></script>
+
+</body>
+</html>
