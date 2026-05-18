@@ -64,7 +64,8 @@ window.NP = window.NP || {};
             var logoPre = document.createElement("pre");
             logoPre.style.cssText =
                 "font-family:'Cascadia Code','Fira Code','JetBrains Mono','Consolas',monospace;" +
-                "font-size:12px;line-height:1.3;color:var(--fg-bright, #4cff7a);" +
+                "font-size:12px;line-height:1.3;color:#00e5ff;" +
+                "text-shadow:none;filter:none;" +
                 "text-align:center;" +
                 "white-space:pre;margin-bottom:32px;";
             logoPre.textContent = LOGO;
@@ -103,7 +104,7 @@ window.NP = window.NP || {};
                 var ok = document.createElement("span");
                 ok.textContent = entry.ok + " ";
                 ok.style.color = "var(--accent, #00ff41)";
-                ok.style.textShadow = "0 0 4px var(--glow, #00ff41)";
+                ok.style.textShadow = "none";
                 ok.style.fontWeight = "bold";
                 line.appendChild(ok);
 
@@ -111,10 +112,10 @@ window.NP = window.NP || {};
                 msg.textContent = entry.msg;
                 if (msgIndex === messages.length - 1) {
                     msg.style.color = "var(--fg-bright, #4cff7a)";
-                    msg.style.textShadow = "0 0 4px var(--glow, #00ff41)";
                 } else {
                     msg.style.color = "var(--fg, #00ff41)";
                 }
+                msg.style.textShadow = "none";
                 line.appendChild(msg);
 
                 msgBox.appendChild(line);

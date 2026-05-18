@@ -799,6 +799,8 @@ body.focus-mode #sidebar {
     color: var(--fg);
     white-space: pre;
     text-align: center;
+    text-shadow: none;
+    filter: none;
 }
 
 #splash-subtitle {
@@ -807,11 +809,6 @@ body.focus-mode #sidebar {
     color: var(--fg-dim);
     letter-spacing: 3px;
     text-transform: uppercase;
-}
-
-@keyframes splash-glow {
-    from { text-shadow: 0 0 6px var(--glow); opacity: 0.8; }
-    to   { text-shadow: 0 0 16px var(--glow), 0 0 30px var(--glow); opacity: 1; }
 }
 
 /* ---- Matrix Rain Canvas ---- */

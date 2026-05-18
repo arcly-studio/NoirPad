@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 *.bak
+*.tmp
 notes_data.json
 images/
 .claude/settings.local.json

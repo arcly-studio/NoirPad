@@ -1,4 +1,4 @@
-# NoirPad Web — `server.py`
+# NoirPad Web — `NoirPad-web.py`
 
 FastAPI backend pro NoirPad. Samostatný projekt — `notes_data.json` a složka `images/` leží v kořeni projektu (vedle `server.py`). Datový formát zůstává kompatibilní s desktopovou aplikací (lze ručně přenést soubory).
 
@@ -165,7 +165,12 @@ Formát: `version(1B) + salt(16B) + fernet_payload`, base64-zakódováno do `{"e
 ## Spuštění
 
 ```bash
-python server.py
-# nebo
-uvicorn server:app --host 0.0.0.0 --port 8000
+python "NoirPad-web.py"
 ```
+
+Server běží na `http://0.0.0.0:8000`.
+
+> Pozn.: `uvicorn NoirPad-web:app` **nefunguje** — pomlčka není platná v názvu
+> Python modulu. Spouštěj přímo přes `python "NoirPad-web.py"` (soubor končí
+> `uvicorn.run(app, ...)`). Pro CLI formu `uvicorn <modul>:app` by bylo nutné
+> soubor přejmenovat na název bez pomlčky (např. `server.py`).
