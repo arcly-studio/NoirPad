@@ -17,12 +17,11 @@
 
 :root {
     /* ---- Fonts ---------------------------------------------------- */
-    /* --font-mono is the live UI/editor font (JS already references
-       it). --font-ui is staged for Fáze B; nothing uses it yet.      */
-    --font-mono: "Cascadia Code", "Fira Code", "JetBrains Mono",
-                 "Consolas", ui-monospace, monospace;
-    --font-ui:   "Inter", "Inter var", -apple-system, BlinkMacSystemFont,
-                 "Segoe UI", system-ui, sans-serif;
+    /* Hybrid typography: --font-ui drives the whole UI (set on body),
+       --font-mono stays on the editor, code-like inputs and ASCII art. */
+    --font-ui:      'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono:    'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    --font-display: 'Orbitron', 'Inter', sans-serif;
 
     /* ---- Warm-dark surface ramp (shared by every theme) ----------- */
     --bg:        #0e0e10;   /* app background                        */
