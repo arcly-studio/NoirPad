@@ -84,6 +84,7 @@ DEFAULT_DATA: dict[str, Any] = {
     "show_shortcut_hints": True,
     "idle_lock_minutes": "off",
     "default_encrypted": False,
+    "glow_intensity": 100,  # 0-150 percent
 }
 
 
@@ -439,6 +440,7 @@ class SettingsBody(BaseModel):
     show_shortcut_hints: Optional[bool] = None
     idle_lock_minutes: Optional[str] = None
     default_encrypted: Optional[bool] = None
+    glow_intensity: Optional[int] = None
 
 
 class CryptoReq(BaseModel):
@@ -528,6 +530,27 @@ async def get_data():
 @app.get("/api/data/version")
 async def get_data_version():
     return {"version": _data_mtime()}
+
+
+@app.get("/api/storage")
+async def get_storage():
+    """Read-only: on-disk size of notes_data.json + images/."""
+    notes_size = DATA_FILE.stat().st_size if DATA_FILE.exists() else 0
+
+    images_size = 0
+    if IMAGES_DIR.exists():
+        for f in IMAGES_DIR.rglob("*"):
+            if f.is_file():
+                try:
+                    images_size += f.stat().st_size
+                except OSError:
+                    pass
+
+    return {
+        "notes_size": notes_size,
+        "images_size": images_size,
+        "total_size": notes_size + images_size,
+    }
 
 
 # ---- Tree ----
@@ -818,6 +841,7 @@ async def update_settings(body: SettingsBody):
             "show_shortcut_hints",
             "idle_lock_minutes",
             "default_encrypted",
+            "glow_intensity",
         ):
             value = getattr(body, field)
             if value is not None:

@@ -4,6 +4,17 @@
    All colors via CSS custom properties from themes.css.
    ============================================================ */
 
+/* Glow strength control (Settings → Appearance slider). Every glow
+   blur radius is var(--glow-blur*) — JS sets these to a concrete px
+   value from the slider (no calc/multiplication in CSS = bulletproof). */
+:root {
+    --glow-multiplier: 1;
+    --glow-core:    4px;
+    --glow-blur-sm: 12px;
+    --glow-blur:    22px;
+    --glow-blur-lg: 40px;
+}
+
 /* ---- Reset & Base ---- */
 *, *::before, *::after {
     box-sizing: border-box;
@@ -91,7 +102,7 @@ input, textarea {
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--fg);
-    text-shadow: 0 0 6px var(--glow);
+    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur, 22px) var(--glow), 0 0 var(--glow-blur-lg, 40px) var(--glow);
 }
 
 #btn-focus,
@@ -191,7 +202,7 @@ input, textarea {
     color: var(--fg);
     background: var(--hover-bg);
     border-color: var(--fg-dim);
-    text-shadow: 0 0 4px var(--glow);
+    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur-sm, 12px) var(--glow);
 }
 
 /* 5 buttons in a 3-col grid: Backup spans the 2nd+3rd cell of row 2 so
@@ -403,13 +414,13 @@ input, textarea {
 .header-btn:hover {
     color: var(--fg);
     border-color: var(--fg-dim);
-    text-shadow: 0 0 4px var(--glow);
+    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur-sm, 12px) var(--glow);
 }
 
 .header-btn.active {
     color: var(--fg-bright);
     border-color: var(--accent);
-    text-shadow: 0 0 6px var(--glow);
+    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur, 22px) var(--glow), 0 0 var(--glow-blur-lg, 40px) var(--glow);
 }
 
 /* Tab bar */
@@ -455,7 +466,7 @@ input, textarea {
     color: var(--fg-bright);
     background: var(--select-bg);
     border-color: var(--accent);
-    text-shadow: 0 0 4px var(--glow);
+    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur-sm, 12px) var(--glow);
 }
 
 .tab .tab-close {
@@ -945,7 +956,7 @@ body.focus-mode #sidebar {
     font-size: 14px;
     font-weight: 700;
     color: var(--fg);
-    text-shadow: 0 0 6px var(--glow);
+    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur, 22px) var(--glow), 0 0 var(--glow-blur-lg, 40px) var(--glow);
 }
 
 #help-close {
@@ -1149,7 +1160,7 @@ body.focus-mode #sidebar {
     font-size: 14px;
     font-weight: 700;
     color: var(--fg);
-    text-shadow: 0 0 6px var(--glow);
+    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur, 22px) var(--glow), 0 0 var(--glow-blur-lg, 40px) var(--glow);
 }
 
 #settings-close {
@@ -1606,7 +1617,7 @@ body.focus-mode #sidebar {
     font-weight: 700;
     color: var(--fg);
     margin-bottom: 12px;
-    text-shadow: 0 0 6px var(--glow);
+    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur, 22px) var(--glow), 0 0 var(--glow-blur-lg, 40px) var(--glow);
 }
 
 .dialog-message {
@@ -1779,7 +1790,7 @@ body.focus-mode #sidebar {
     0% {
         box-shadow:
             inset 0 0 0 1px var(--accent),
-            inset 0 0 24px color-mix(in srgb, var(--accent) 30%, transparent);
+            inset 0 0 var(--glow-blur-lg, 24px) color-mix(in srgb, var(--accent) 30%, transparent);
     }
     100% {
         box-shadow: inset 0 0 0 0 transparent;
@@ -1829,7 +1840,7 @@ body.crt-on #crt-overlay {
 @keyframes np-glitch-rgb {
     0%   { text-shadow: -1px 0 #ff003c, 1px 0 #00fff9; }
     50%  { text-shadow:  1px 0 #ff003c, -1px 0 #00fff9; }
-    100% { text-shadow: 0 0 6px var(--glow); }
+    100% { text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur, 22px) var(--glow), 0 0 var(--glow-blur-lg, 40px) var(--glow); }
 }
 
 #editor.glitching {
@@ -1866,7 +1877,7 @@ body.crt-on #crt-overlay {
     border-bottom: 1px solid var(--border);
     color: var(--fg-bright);
     font-size: 13px;
-    text-shadow: 0 0 4px var(--glow);
+    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur-sm, 12px) var(--glow);
 }
 
 .np-findall-list {

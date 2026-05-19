@@ -7,8 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;700;900&family=Space+Grotesk:wght@400;500;700&family=Outfit:wght@400;500;700;800&family=Unbounded:wght@400;500;700;900&display=swap">
-    <link rel="stylesheet" href="/static/css/themes.css?v=2.1.13">
-    <link rel="stylesheet" href="/static/css/noirpad.css?v=2.1.13">
+    <link rel="stylesheet" href="/static/css/themes.css?v=2.1.21">
+    <link rel="stylesheet" href="/static/css/noirpad.css?v=2.1.21">
 </head>
 <body>
 
@@ -205,6 +205,11 @@
                         <div class="np-dropdown-option" data-value="lime"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Lime</span></div>
                         <div class="np-dropdown-option" data-value="orange"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Orange</span></div>
                         <div class="np-dropdown-option" data-value="ice"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Ice</span></div>
+                        <div class="np-dropdown-option" data-value="dracula"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Dracula</span></div>
+                        <div class="np-dropdown-option" data-value="synthwave"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Synthwave</span></div>
+                        <div class="np-dropdown-option" data-value="nord"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Nord</span></div>
+                        <div class="np-dropdown-option" data-value="gruvbox"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Gruvbox</span></div>
+                        <div class="np-dropdown-option" data-value="tokyo-night"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Tokyo Night</span></div>
                     </div>
                 </div>
             </div>
@@ -255,8 +260,8 @@
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Glow intensity</span>
-                <input type="range" id="setting-glow-intensity" class="settings-slider" min="0" max="100" value="60" disabled title="Coming soon">
+                <span class="settings-label">Glow intensity <span id="setting-glow-intensity-val" style="color:var(--accent);font-weight:700;">100%</span></span>
+                <input type="range" id="setting-glow-intensity" class="settings-slider" min="0" max="150" value="100" step="10">
             </div>
 
             <div class="settings-row">
@@ -402,32 +407,32 @@
 </div>
 
 <!-- ============ Scripts (no modules, no build) ============ -->
-<script src="/static/js/utils.js?v=2.1.13"></script>
-<script src="/static/js/api.js?v=2.1.13"></script>
-<script src="/static/js/state.js?v=2.1.13"></script>
-<script src="/static/js/themes.js?v=2.1.13"></script>
-<script src="/static/js/tree.js?v=2.1.13"></script>
-<script src="/static/js/editor.js?v=2.1.13"></script>
-<script src="/static/js/tabs.js?v=2.1.13"></script>
-<script src="/static/js/tags.js?v=2.1.13"></script>
-<script src="/static/js/search.js?v=2.1.13"></script>
-<script src="/static/js/command-bar.js?v=2.1.13"></script>
-<script src="/static/js/trash.js?v=2.1.13"></script>
-<script src="/static/js/favorites.js?v=2.1.13"></script>
-<script src="/static/js/images.js?v=2.1.13"></script>
-<script src="/static/js/encryption.js?v=2.1.13"></script>
-<script src="/static/js/export.js?v=2.1.13"></script>
-<script src="/static/js/focus-mode.js?v=2.1.13"></script>
-<script src="/static/js/matrix-rain.js?v=2.1.13"></script>
-<script src="/static/js/splash.js?v=2.1.13"></script>
-<script src="/static/js/cursor.js?v=2.1.13"></script>
-<script src="/static/js/font-picker.js?v=2.1.13"></script>
-<script src="/static/js/help.js?v=2.1.13"></script>
-<script src="/static/js/backup.js?v=2.1.13"></script>
-<script src="/static/js/effects.js?v=2.1.13"></script>
-<script src="/static/js/find-all.js?v=2.1.13"></script>
-<script src="/static/js/settings.js?v=2.1.13"></script>
-<script src="/static/js/app.js?v=2.1.13"></script>
+<script src="/static/js/utils.js?v=2.1.21"></script>
+<script src="/static/js/api.js?v=2.1.21"></script>
+<script src="/static/js/state.js?v=2.1.21"></script>
+<script src="/static/js/themes.js?v=2.1.21"></script>
+<script src="/static/js/tree.js?v=2.1.21"></script>
+<script src="/static/js/editor.js?v=2.1.21"></script>
+<script src="/static/js/tabs.js?v=2.1.21"></script>
+<script src="/static/js/tags.js?v=2.1.21"></script>
+<script src="/static/js/search.js?v=2.1.21"></script>
+<script src="/static/js/command-bar.js?v=2.1.21"></script>
+<script src="/static/js/trash.js?v=2.1.21"></script>
+<script src="/static/js/favorites.js?v=2.1.21"></script>
+<script src="/static/js/images.js?v=2.1.21"></script>
+<script src="/static/js/encryption.js?v=2.1.21"></script>
+<script src="/static/js/export.js?v=2.1.21"></script>
+<script src="/static/js/focus-mode.js?v=2.1.21"></script>
+<script src="/static/js/matrix-rain.js?v=2.1.21"></script>
+<script src="/static/js/splash.js?v=2.1.21"></script>
+<script src="/static/js/cursor.js?v=2.1.21"></script>
+<script src="/static/js/font-picker.js?v=2.1.21"></script>
+<script src="/static/js/help.js?v=2.1.21"></script>
+<script src="/static/js/backup.js?v=2.1.21"></script>
+<script src="/static/js/effects.js?v=2.1.21"></script>
+<script src="/static/js/find-all.js?v=2.1.21"></script>
+<script src="/static/js/settings.js?v=2.1.21"></script>
+<script src="/static/js/app.js?v=2.1.21"></script>
 
 </body>
 </html>

@@ -125,7 +125,12 @@ window.NP = window.NP || {};
         gold: "#ffd700",
         lime: "#bfff00",
         orange: "#ff6600",
-        ice: "#88ddff"
+        ice: "#88ddff",
+        dracula: "#bd93f9",
+        synthwave: "#ff7edb",
+        nord: "#88c0d0",
+        gruvbox: "#fabd2f",
+        "tokyo-night": "#7aa2f7"
     };
 
     /* ---- Tkinter-style line.col <-> offset conversion ---- */

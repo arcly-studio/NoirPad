@@ -215,6 +215,49 @@ window.NP = window.NP || {};
         document.body.classList.toggle("orientation-landscape", !portrait);
     }
 
+    function formatBytes(bytes) {
+        if (!bytes || bytes < 0) return "0 B";
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+        if (bytes < 1024 * 1024 * 1024) {
+            return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+        }
+        return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+    }
+
+    /* About → Storage used. Refreshed each time Settings opens (no
+       polling). Read-only /api/storage endpoint. */
+    function refreshStorageUsed() {
+        var el = document.getElementById("setting-storage-used");
+        if (!el) return;
+        el.textContent = "Loading...";
+        fetch("/api/storage")
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                el.textContent = formatBytes(data.total_size) + " / ∞";
+            })
+            .catch(function () {
+                el.textContent = "— (error)";
+            });
+    }
+
+    /* Single source of truth for glow strength. Sets concrete px values
+       (JS does the math; CSS just substitutes var(--glow-blur*)) plus the
+       multiplier (kept for compat) and updates the live % readout. */
+    function applyGlow(pct) {
+        pct = parseInt(pct, 10);
+        if (isNaN(pct)) pct = 100;
+        var m = pct / 100;
+        var root = document.documentElement;
+        root.style.setProperty("--glow-multiplier", String(m));
+        root.style.setProperty("--glow-core", (4 * m) + "px");
+        root.style.setProperty("--glow-blur-sm", (12 * m) + "px");
+        root.style.setProperty("--glow-blur", (22 * m) + "px");
+        root.style.setProperty("--glow-blur-lg", (40 * m) + "px");
+        var vEl = document.getElementById("setting-glow-intensity-val");
+        if (vEl) vEl.textContent = pct + "%";
+    }
+
     function syncRadioGroup(name, value) {
         var btns = document.querySelectorAll(
             '[id^="setting-' + name + '-"]'
@@ -242,10 +285,28 @@ window.NP = window.NP || {};
             });
         }
 
-        /* setting-glow-intensity: disabled slider, intentionally no handler.
-           TODO: glow intensity needs CSS refactor of all text-shadow rules
-           (every theme/component sets its own text-shadow), so there is no
-           single variable to drive yet. */
+        /* setting-glow-intensity: drives --glow-multiplier (every glow
+           blur in noirpad.css is calc(Npx * var(--glow-multiplier,1))).
+           input = real-time live preview; persistence is debounced. */
+        var glowSlider = document.getElementById("setting-glow-intensity");
+        if (glowSlider) {
+            glowSlider.addEventListener("input", function () {
+                var pct = parseInt(this.value, 10);
+                if (isNaN(pct)) pct = 100;
+                applyGlow(pct);
+                if (NP.state && NP.state.data) {
+                    NP.state.data.glow_intensity = pct;
+                }
+                if (NP.settings._glowSaveTimer) {
+                    clearTimeout(NP.settings._glowSaveTimer);
+                }
+                NP.settings._glowSaveTimer = setTimeout(function () {
+                    if (NP.api && NP.api.saveSettings) {
+                        NP.api.saveSettings({ glow_intensity: pct });
+                    }
+                }, 500);
+            });
+        }
 
         /* CRT lives in localStorage (effects.js), not the backend. */
         bindToggle(
@@ -520,6 +581,9 @@ window.NP = window.NP || {};
                Settings radio and the stored value in sync. Ctrl+L / Settings
                still switch during the session; a reload resets to Landscape. */
             NP.settings.setOrientation("landscape");
+            /* Apply persisted glow strength at startup (not the 100%
+               default) so the saved slider value takes effect on load. */
+            applyGlow(sget("glow_intensity", 100));
         },
 
         /* Public orientation API — shared by the Settings radio, the
@@ -578,6 +642,13 @@ window.NP = window.NP || {};
 
             syncRadioGroup("page-orientation",
                 sget("page_orientation", "landscape"));
+
+            var glowSlider2 = document.getElementById("setting-glow-intensity");
+            if (glowSlider2) {
+                var glow = sget("glow_intensity", 100);
+                glowSlider2.value = glow;
+                applyGlow(glow);
+            }
         },
 
         open: function () {
@@ -585,6 +656,7 @@ window.NP = window.NP || {};
             if (!overlay) return;
             NP.settings.syncFromState();
             applyUiFont(currentUiFont());
+            refreshStorageUsed();
             overlay.classList.add("visible");
         },
 
