@@ -30,6 +30,21 @@ window.NP = window.NP || {};
         el: null,
         _autosaveTimer: null,
         _currentNoteId: null,
+        /* Whether the note currently loaded in the editor is stored
+           encrypted on the server. Derived from the FRESHLY fetched
+           content in loadNote (NP.state.data is only refreshed by the
+           5s poll, so it can't be trusted right after encrypt/decrypt).
+           Combined with _encryptedNotePassword this gives the 3 lock
+           states: plain / encrypted+unlocked / encrypted+locked. */
+        _currentNoteEncrypted: false,
+
+        /* Re-sync the #btn-lock label/title with the current note's
+           lock state. Safe to call before encryption.js is wired. */
+        _refreshLockButton: function () {
+            if (NP.encryption && NP.encryption.updateLockButtonState) {
+                NP.encryption.updateLockButtonState();
+            }
+        },
 
         init: function () {
             NP.editor.el = NP.$("#editor");
@@ -80,14 +95,17 @@ window.NP = window.NP || {};
                     }
                 } catch (e) { /* not JSON, not encrypted */ }
 
+                NP.editor._currentNoteEncrypted = isEncrypted;
+
                 if (isEncrypted) {
                     NP.editor.stopAutosave();
                     NP.editor._encryptedNotePassword = null;
                     /* Prompt for password immediately */
                     var password = prompt("🔒 Enter password to unlock this note:");
                     if (!password) {
-                        /* User cancelled — show lock screen */
+                        /* User cancelled — show lock screen (STATE C) */
                         NP.editor._showLockScreen();
+                        NP.editor._refreshLockButton();
                         return;
                     }
                     /* Decrypt for viewing only (file stays encrypted) */
@@ -107,9 +125,13 @@ window.NP = window.NP || {};
                         NP.editor.updateCharCount();
                         NP.editor.startAutosave();
                         if (NP.tags && NP.tags.render) NP.tags.render();
+                        /* STATE B: encrypted + unlocked */
+                        NP.editor._refreshLockButton();
                     }).catch(function (err) {
                         alert("Wrong password.");
                         NP.editor._showLockScreen();
+                        /* STATE C: encrypted + locked */
+                        NP.editor._refreshLockButton();
                     });
                 }
 
@@ -125,6 +147,9 @@ window.NP = window.NP || {};
 
                 /* Update tags if available */
                 if (NP.tags && NP.tags.render) NP.tags.render();
+
+                /* STATE A: plain note */
+                NP.editor._refreshLockButton();
             }).catch(function (err) {
                 console.error("loadNote error:", err);
                 if (NP.editor.el) {
@@ -165,7 +190,9 @@ window.NP = window.NP || {};
             NP.editor.stopAutosave();
             NP.editor._currentNoteId = null;
             NP.editor._encryptedNotePassword = null;
+            NP.editor._currentNoteEncrypted = false;
             NP.editor.el.contentEditable = "false";
+            NP.editor._refreshLockButton();
 
             var html = "";
             html += "<style>";
@@ -215,7 +242,10 @@ window.NP = window.NP || {};
 
             NP.editor.stopAutosave();
             NP.editor._currentNoteId = null;
+            NP.editor._encryptedNotePassword = null;
+            NP.editor._currentNoteEncrypted = false;
             NP.editor.el.contentEditable = "false";
+            NP.editor._refreshLockButton();
 
             var childCount = item.children ? item.children.length : 0;
             var totalCount = countAllItems(item.children || [], null);

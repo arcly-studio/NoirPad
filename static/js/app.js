@@ -42,6 +42,8 @@ window.NP = window.NP || {};
                 if (NP.shortcutsManager && NP.shortcutsManager.init) {
                     NP.shortcutsManager.init();
                 }
+                /* Auto-lock: reads idle_lock_minutes + arms the timer. */
+                if (NP.autoLock && NP.autoLock.init) NP.autoLock.init();
                 NP.state.startPolling();
 
                 if (NP.editor && NP.editor.showWelcome) {
@@ -381,13 +383,8 @@ window.NP = window.NP || {};
             var btnLock = NP.$("#btn-lock");
             if (btnLock) {
                 btnLock.addEventListener("click", function () {
-                    if (!NP.encryption) return;
-                    var noteId = NP.state.currentNoteId;
-                    if (!noteId) return;
-                    if (NP.encryption.isEncrypted(noteId)) {
-                        NP.encryption.decrypt();
-                    } else {
-                        NP.encryption.encrypt();
+                    if (NP.encryption && NP.encryption.handleLockButtonClick) {
+                        NP.encryption.handleLockButtonClick();
                     }
                 });
             }

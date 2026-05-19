@@ -409,9 +409,14 @@ window.NP = window.NP || {};
         var idleDd = document.getElementById("setting-idle-lock");
         if (idleDd) {
             idleDd.addEventListener("np-dropdown-change", function (e) {
-                saveSetting({ idle_lock_minutes: e.detail.value });
-                /* TODO: implement idle timer + re-prompt mechanism — value
-                   is persisted/visual only for now. */
+                var value = e.detail.value;   /* "off" | "5" | "30" | "60" */
+                /* saveSetting mirrors to NP.state.data + persists. */
+                saveSetting({ idle_lock_minutes: value });
+                /* Apply live: off => 0, otherwise the numeric minutes. */
+                if (NP.autoLock && NP.autoLock.setMinutes) {
+                    var n = parseInt(value, 10);
+                    NP.autoLock.setMinutes(isNaN(n) ? 0 : n);
+                }
             });
         }
 
