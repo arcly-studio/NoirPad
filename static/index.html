@@ -6,9 +6,9 @@
     <title>NoirPad</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;700;900&display=swap">
-    <link rel="stylesheet" href="/static/css/themes.css?v=2.0.1">
-    <link rel="stylesheet" href="/static/css/noirpad.css?v=2.0.1">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;700;900&family=Space+Grotesk:wght@400;500;700&family=Outfit:wght@400;500;700;800&family=Unbounded:wght@400;500;700;900&display=swap">
+    <link rel="stylesheet" href="/static/css/themes.css?v=2.1.2">
+    <link rel="stylesheet" href="/static/css/noirpad.css?v=2.1.2">
 </head>
 <body>
 
@@ -42,6 +42,12 @@
                 <line x1="5" y1="1" x2="5" y2="13"/>
             </svg>
         </button>
+        <button id="btn-settings" title="Settings (:settings)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="7" cy="7" r="2.4"/>
+                <path d="M7 1v1.6M7 11.4V13M1 7h1.6M11.4 7H13M2.76 2.76l1.13 1.13M10.11 10.11l1.13 1.13M11.24 2.76l-1.13 1.13M3.89 10.11l-1.13 1.13"/>
+            </svg>
+        </button>
         <div id="status-label">Ready</div>
     </div>
 
@@ -56,6 +62,7 @@
                 <button id="btn-new-note" title="New Note">+Note</button>
                 <button id="btn-delete" title="Delete">Delete</button>
                 <button id="btn-rename" title="Rename">Rename</button>
+                <button id="btn-backup" title="Download backup .zip">Backup</button>
             </div>
 
             <!-- Tree -->
@@ -176,6 +183,219 @@
     </div>
 </div>
 
+<!-- ============ Settings Overlay ============ -->
+<div id="settings-overlay">
+    <div id="settings-window">
+        <div id="settings-header">
+            <h2>Settings</h2>
+            <button id="settings-close">&times;</button>
+        </div>
+        <div id="settings-body">
+            <div class="settings-section-title">Appearance</div>
+
+            <div class="settings-row">
+                <span class="settings-label">Theme</span>
+                <div class="np-dropdown" data-value="matrix" id="setting-theme">
+                    <button class="np-dropdown-trigger" type="button">
+                        <span class="np-dropdown-label">Matrix</span>
+                        <span class="np-dropdown-arrow">&#9660;</span>
+                    </button>
+                    <div class="np-dropdown-menu">
+                        <div class="np-dropdown-option" data-value="matrix"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Matrix</span></div>
+                        <div class="np-dropdown-option" data-value="amber"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Amber</span></div>
+                        <div class="np-dropdown-option" data-value="cyan"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Cyan</span></div>
+                        <div class="np-dropdown-option" data-value="red"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Red</span></div>
+                        <div class="np-dropdown-option" data-value="purple"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Purple</span></div>
+                        <div class="np-dropdown-option" data-value="blue"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Blue</span></div>
+                        <div class="np-dropdown-option" data-value="pink"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Pink</span></div>
+                        <div class="np-dropdown-option" data-value="white"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">White</span></div>
+                        <div class="np-dropdown-option" data-value="gold"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Gold</span></div>
+                        <div class="np-dropdown-option" data-value="lime"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Lime</span></div>
+                        <div class="np-dropdown-option" data-value="orange"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Orange</span></div>
+                        <div class="np-dropdown-option" data-value="ice"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Ice</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">UI font</span>
+                <div class="np-dropdown" data-value="orbitron" id="setting-ui-font">
+                    <button class="np-dropdown-trigger" type="button">
+                        <span class="np-dropdown-label" style="font-family: 'Orbitron', sans-serif;">Orbitron</span>
+                        <span class="np-dropdown-arrow">&#9660;</span>
+                    </button>
+                    <div class="np-dropdown-menu">
+                        <div class="np-dropdown-option" data-value="orbitron" data-font-family="'Orbitron', sans-serif">
+                            <span class="np-dropdown-marker">&rsaquo;</span>
+                            <span class="np-dropdown-option-label" style="font-family: 'Orbitron', sans-serif; font-weight: 700;">Orbitron</span>
+                        </div>
+                        <div class="np-dropdown-option" data-value="space-grotesk" data-font-family="'Space Grotesk', sans-serif">
+                            <span class="np-dropdown-marker">&rsaquo;</span>
+                            <span class="np-dropdown-option-label" style="font-family: 'Space Grotesk', sans-serif; font-weight: 500;">Space Grotesk</span>
+                        </div>
+                        <div class="np-dropdown-option" data-value="outfit" data-font-family="'Outfit', sans-serif">
+                            <span class="np-dropdown-marker">&rsaquo;</span>
+                            <span class="np-dropdown-option-label" style="font-family: 'Outfit', sans-serif; font-weight: 500;">Outfit</span>
+                        </div>
+                        <div class="np-dropdown-option" data-value="unbounded" data-font-family="'Unbounded', sans-serif">
+                            <span class="np-dropdown-marker">&rsaquo;</span>
+                            <span class="np-dropdown-option-label" style="font-family: 'Unbounded', sans-serif; font-weight: 500;">Unbounded</span>
+                        </div>
+                        <div class="np-dropdown-option" data-value="inter" data-font-family="'Inter', sans-serif">
+                            <span class="np-dropdown-marker">&rsaquo;</span>
+                            <span class="np-dropdown-option-label" style="font-family: 'Inter', sans-serif; font-weight: 500;">Inter</span>
+                        </div>
+                        <div class="np-dropdown-option" data-value="jetbrains-mono" data-font-family="'JetBrains Mono', monospace">
+                            <span class="np-dropdown-marker">&rsaquo;</span>
+                            <span class="np-dropdown-option-label" style="font-family: 'JetBrains Mono', monospace; font-weight: 500;">JetBrains Mono</span>
+                        </div>
+                        <div class="np-dropdown-option" data-value="system" data-font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+                            <span class="np-dropdown-marker">&rsaquo;</span>
+                            <span class="np-dropdown-option-label" style="font-family: system-ui, -apple-system, sans-serif; font-weight: 500;">System default</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Font &amp; size</span>
+                <button class="settings-link-btn" id="setting-open-font-picker">Open font picker &rarr;</button>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Glow intensity</span>
+                <input type="range" id="setting-glow-intensity" class="settings-slider" min="0" max="100" value="60" disabled title="Coming soon">
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">CRT scanlines</span>
+                <button class="settings-toggle" id="setting-crt" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Matrix rain background</span>
+                <button class="settings-toggle" id="setting-matrix-rain" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Show splash on startup</span>
+                <button class="settings-toggle" id="setting-show-splash" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <hr class="settings-divider">
+            <div class="settings-section-title">Editor</div>
+
+            <div class="settings-row">
+                <div class="settings-label-col">
+                    <span class="settings-label">Autosave</span>
+                    <span class="settings-sublabel">Saves while typing</span>
+                </div>
+                <button class="settings-toggle" id="setting-autosave" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Autosave interval</span>
+                <div class="np-dropdown" data-value="5" id="setting-autosave-interval">
+                    <button class="np-dropdown-trigger" type="button">
+                        <span class="np-dropdown-label">5 seconds</span>
+                        <span class="np-dropdown-arrow">&#9660;</span>
+                    </button>
+                    <div class="np-dropdown-menu">
+                        <div class="np-dropdown-option" data-value="5"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">5 seconds</span></div>
+                        <div class="np-dropdown-option" data-value="30"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">30 seconds</span></div>
+                        <div class="np-dropdown-option" data-value="60"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">1 minute</span></div>
+                        <div class="np-dropdown-option" data-value="300"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">5 minutes</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Page orientation</span>
+                <div class="settings-radio-group">
+                    <button class="settings-radio" id="setting-page-orientation-landscape" data-value="landscape"><span class="settings-radio-dot"></span>Landscape</button>
+                    <button class="settings-radio" id="setting-page-orientation-portrait" data-value="portrait"><span class="settings-radio-dot"></span>Portrait</button>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Spellcheck</span>
+                <button class="settings-toggle" id="setting-spellcheck" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Glitch typing effect<span class="settings-new-badge">NEW</span></span>
+                <button class="settings-toggle" id="setting-glitch-effect" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <hr class="settings-divider">
+            <div class="settings-section-title">Behavior</div>
+
+            <div class="settings-row">
+                <span class="settings-label">Confirm before delete</span>
+                <button class="settings-toggle" id="setting-confirm-delete" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <div class="settings-row">
+                <div class="settings-label-col">
+                    <span class="settings-label">Auto-lock notes when idle</span>
+                    <span class="settings-sublabel">Re-prompts password for encrypted notes</span>
+                </div>
+                <div class="np-dropdown" data-value="off" id="setting-idle-lock">
+                    <button class="np-dropdown-trigger" type="button">
+                        <span class="np-dropdown-label">Off</span>
+                        <span class="np-dropdown-arrow">&#9660;</span>
+                    </button>
+                    <div class="np-dropdown-menu">
+                        <div class="np-dropdown-option" data-value="off"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Off</span></div>
+                        <div class="np-dropdown-option" data-value="5"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">5 minutes</span></div>
+                        <div class="np-dropdown-option" data-value="30"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">30 minutes</span></div>
+                        <div class="np-dropdown-option" data-value="60"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">1 hour</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Default new note as encrypted</span>
+                <button class="settings-toggle" id="setting-default-encrypted" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Show shortcut hints in bottom bar</span>
+                <button class="settings-toggle" id="setting-shortcut-hints" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <hr class="settings-divider">
+            <div class="settings-section-title">Data</div>
+
+            <div class="settings-data-row">
+                <button class="settings-btn" id="setting-download-backup">Download backup</button>
+                <button class="settings-btn" id="setting-import-backup">Import backup</button>
+                <button class="settings-btn" id="setting-export-all">Export all notes</button>
+                <button class="settings-btn settings-btn-danger" id="setting-empty-trash">Empty trash</button>
+                <button class="settings-btn settings-btn-danger" id="setting-reset-all">Reset all settings</button>
+            </div>
+
+            <hr class="settings-divider">
+            <div class="settings-section-title">About</div>
+
+            <div class="settings-row">
+                <span class="settings-label">Version</span>
+                <span class="settings-sublabel">v2.0 &mdash; web edition</span>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Source</span>
+                <a class="settings-link" href="https://github.com/krystof/noirpad" target="_blank" rel="noopener">github.com/krystof/noirpad &#8599;</a>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label">Storage used</span>
+                <span class="settings-sublabel" id="setting-storage-used">&mdash;</span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ============ Context Menu ============ -->
 <div id="context-menu"></div>
 
@@ -190,31 +410,32 @@
 </div>
 
 <!-- ============ Scripts (no modules, no build) ============ -->
-<script src="/static/js/utils.js?v=2.0.1"></script>
-<script src="/static/js/api.js?v=2.0.1"></script>
-<script src="/static/js/state.js?v=2.0.1"></script>
-<script src="/static/js/themes.js?v=2.0.1"></script>
-<script src="/static/js/tree.js?v=2.0.1"></script>
-<script src="/static/js/editor.js?v=2.0.1"></script>
-<script src="/static/js/tabs.js?v=2.0.1"></script>
-<script src="/static/js/tags.js?v=2.0.1"></script>
-<script src="/static/js/search.js?v=2.0.1"></script>
-<script src="/static/js/command-bar.js?v=2.0.1"></script>
-<script src="/static/js/trash.js?v=2.0.1"></script>
-<script src="/static/js/favorites.js?v=2.0.1"></script>
-<script src="/static/js/images.js?v=2.0.1"></script>
-<script src="/static/js/encryption.js?v=2.0.1"></script>
-<script src="/static/js/export.js?v=2.0.1"></script>
-<script src="/static/js/focus-mode.js?v=2.0.1"></script>
-<script src="/static/js/matrix-rain.js?v=2.0.1"></script>
-<script src="/static/js/splash.js?v=2.0.1"></script>
-<script src="/static/js/cursor.js?v=2.0.1"></script>
-<script src="/static/js/font-picker.js?v=2.0.1"></script>
-<script src="/static/js/help.js?v=2.0.1"></script>
-<script src="/static/js/backup.js?v=2.0.1"></script>
-<script src="/static/js/effects.js?v=2.0.1"></script>
-<script src="/static/js/find-all.js?v=2.0.1"></script>
-<script src="/static/js/app.js?v=2.0.1"></script>
+<script src="/static/js/utils.js?v=2.1.2"></script>
+<script src="/static/js/api.js?v=2.1.2"></script>
+<script src="/static/js/state.js?v=2.1.2"></script>
+<script src="/static/js/themes.js?v=2.1.2"></script>
+<script src="/static/js/tree.js?v=2.1.2"></script>
+<script src="/static/js/editor.js?v=2.1.2"></script>
+<script src="/static/js/tabs.js?v=2.1.2"></script>
+<script src="/static/js/tags.js?v=2.1.2"></script>
+<script src="/static/js/search.js?v=2.1.2"></script>
+<script src="/static/js/command-bar.js?v=2.1.2"></script>
+<script src="/static/js/trash.js?v=2.1.2"></script>
+<script src="/static/js/favorites.js?v=2.1.2"></script>
+<script src="/static/js/images.js?v=2.1.2"></script>
+<script src="/static/js/encryption.js?v=2.1.2"></script>
+<script src="/static/js/export.js?v=2.1.2"></script>
+<script src="/static/js/focus-mode.js?v=2.1.2"></script>
+<script src="/static/js/matrix-rain.js?v=2.1.2"></script>
+<script src="/static/js/splash.js?v=2.1.2"></script>
+<script src="/static/js/cursor.js?v=2.1.2"></script>
+<script src="/static/js/font-picker.js?v=2.1.2"></script>
+<script src="/static/js/help.js?v=2.1.2"></script>
+<script src="/static/js/backup.js?v=2.1.2"></script>
+<script src="/static/js/effects.js?v=2.1.2"></script>
+<script src="/static/js/find-all.js?v=2.1.2"></script>
+<script src="/static/js/settings.js?v=2.1.2"></script>
+<script src="/static/js/app.js?v=2.1.2"></script>
 
 </body>
 </html>

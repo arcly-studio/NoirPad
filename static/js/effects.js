@@ -42,6 +42,12 @@ window.NP = window.NP || {};
         /* ---- Glitch typing ---- */
 
         onEditorInput: function () {
+            /* Settings v2: glitch typing effect toggle (default on — only
+               an explicit false disables it). */
+            if (NP.state && NP.state.data &&
+                NP.state.data.glitch_effect === false) {
+                return;
+            }
             var now = performance.now();
             inputTimes.push(now);
             /* Drop entries older than the rolling window */

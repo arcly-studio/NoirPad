@@ -46,6 +46,11 @@ window.NP = window.NP || {};
     NP.splash = {
 
         show: function () {
+            /* Settings v2: respect the show_splash setting (default true —
+               undefined/missing key still shows the splash). */
+            if (NP.state && NP.state.data && NP.state.data.show_splash === false) {
+                return;
+            }
             /* Remove any existing splash */
             var existing = document.getElementById("splash-overlay");
             if (existing) existing.parentNode.removeChild(existing);
@@ -64,7 +69,7 @@ window.NP = window.NP || {};
             var logoPre = document.createElement("pre");
             logoPre.style.cssText =
                 "font-family:'Cascadia Code','Fira Code','JetBrains Mono','Consolas',monospace;" +
-                "font-size:12px;line-height:1.3;color:#00e5ff;" +
+                "font-size:12px;line-height:1.3;color:var(--accent);" +
                 "text-shadow:none;filter:none;" +
                 "text-align:center;" +
                 "white-space:pre;margin-bottom:32px;";

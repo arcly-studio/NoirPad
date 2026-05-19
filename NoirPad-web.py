@@ -69,10 +69,21 @@ DEFAULT_DATA: dict[str, Any] = {
     # encrypted notes (whose content can't be regex-parsed) from the trash.
     "note_images": {},
     "theme": "matrix",
+    "ui_font": "orbitron",
     "font_family": "Cascadia Code",
     "font_size": 12,
     "autosave": False,
     "page_orientation": "landscape",
+    # Settings v2 fields.
+    "matrix_rain_enabled": True,
+    "show_splash": True,
+    "autosave_interval": 5,
+    "spellcheck": True,
+    "glitch_effect": True,
+    "confirm_delete": True,
+    "show_shortcut_hints": True,
+    "idle_lock_minutes": "off",
+    "default_encrypted": False,
 }
 
 
@@ -413,10 +424,21 @@ class RestoreReq(BaseModel):
 
 class SettingsBody(BaseModel):
     theme: Optional[str] = None
+    ui_font: Optional[str] = None
     font_family: Optional[str] = None
     font_size: Optional[int] = None
     autosave: Optional[bool] = None
     page_orientation: Optional[str] = None
+    # Settings v2 fields.
+    matrix_rain_enabled: Optional[bool] = None
+    show_splash: Optional[bool] = None
+    autosave_interval: Optional[int] = None
+    spellcheck: Optional[bool] = None
+    glitch_effect: Optional[bool] = None
+    confirm_delete: Optional[bool] = None
+    show_shortcut_hints: Optional[bool] = None
+    idle_lock_minutes: Optional[str] = None
+    default_encrypted: Optional[bool] = None
 
 
 class CryptoReq(BaseModel):
@@ -782,10 +804,20 @@ async def update_settings(body: SettingsBody):
     def _mut(data: dict) -> None:
         for field in (
             "theme",
+            "ui_font",
             "font_family",
             "font_size",
             "autosave",
             "page_orientation",
+            "matrix_rain_enabled",
+            "show_splash",
+            "autosave_interval",
+            "spellcheck",
+            "glitch_effect",
+            "confirm_delete",
+            "show_shortcut_hints",
+            "idle_lock_minutes",
+            "default_encrypted",
         ):
             value = getattr(body, field)
             if value is not None:

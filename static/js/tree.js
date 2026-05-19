@@ -356,7 +356,11 @@ window.NP = window.NP || {};
                 case "delete":
                     var delItem = findItemById(NP.state.data.tree, id);
                     var delName = delItem ? delItem.name : "this item";
-                    if (confirm("Move '" + delName + "' to trash?")) {
+                    /* Settings v2: confirm_delete (default true — only an
+                       explicit false skips the confirm dialog). */
+                    var skipConfirm = NP.state.data &&
+                        NP.state.data.confirm_delete === false;
+                    if (skipConfirm || confirm("Move '" + delName + "' to trash?")) {
                         NP.api.deleteItem(id).then(function () {
                             if (NP.state.currentNoteId === id) {
                                 NP.state.currentNoteId = null;

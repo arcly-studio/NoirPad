@@ -13,6 +13,13 @@ window.NP = window.NP || {};
                 NP.themes.apply(NP.state.data.theme || "matrix");
 
                 /* Initialize modules */
+                if (NP.settings && NP.settings.init) NP.settings.init();
+                /* Settings v2: apply persisted runtime state (matrix rain,
+                   shortcut hints, spellcheck, page orientation) now that
+                   NP.state.data is loaded. */
+                if (NP.settings && NP.settings.applyRuntimeState) {
+                    NP.settings.applyRuntimeState();
+                }
                 if (NP.editor && NP.editor.init) NP.editor.init();
                 if (NP.images && NP.images.init) NP.images.init();
                 /* cursor.js disabled while debugging "dot" report */
@@ -295,7 +302,11 @@ window.NP = window.NP || {};
                     if (!NP.state.currentNoteId) return;
                     var item = NP.editor._findItemInTree(NP.state.data.tree, NP.state.currentNoteId);
                     var itemName = item ? item.name : "this item";
-                    if (!confirm("Move '" + itemName + "' to trash?")) return;
+                    /* Settings v2: confirm_delete (default true — only an
+                       explicit false skips the confirm dialog). */
+                    var skipConfirm = NP.state.data &&
+                        NP.state.data.confirm_delete === false;
+                    if (!skipConfirm && !confirm("Move '" + itemName + "' to trash?")) return;
                     NP.api.deleteItem(NP.state.currentNoteId).then(function () {
                         if (NP.tabs) NP.tabs.close(NP.state.currentNoteId);
                         NP.state.currentNoteId = null;
@@ -324,11 +335,36 @@ window.NP = window.NP || {};
                 });
             }
 
-            /* Focus mode button */
+            /* Focus mode button (back in the top bar — same #btn-focus id,
+               so this handler attaches to the top-bar element). */
             var btnFocus = NP.$("#btn-focus");
             if (btnFocus) {
                 btnFocus.addEventListener("click", function () {
                     if (NP.focusMode && NP.focusMode.toggle) NP.focusMode.toggle();
+                });
+            }
+
+            /* Sidebar Backup button — download the .zip backup. Reuses the
+               app's established download path (anchor download, no SPA
+               navigation); same as Settings "Download backup" / :backup. */
+            var btnBackup = NP.$("#btn-backup");
+            if (btnBackup) {
+                btnBackup.addEventListener("click", function () {
+                    if (NP.backup && NP.backup.download) {
+                        NP.backup.download();
+                    } else if (NP.api && NP.api.downloadBackup) {
+                        NP.api.downloadBackup();
+                    } else {
+                        window.location.href = "/api/backup";
+                    }
+                });
+            }
+
+            /* Settings button — opens the Settings panel */
+            var btnSettings = NP.$("#btn-settings");
+            if (btnSettings) {
+                btnSettings.addEventListener("click", function () {
+                    if (NP.settings && NP.settings.open) NP.settings.open();
                 });
             }
 

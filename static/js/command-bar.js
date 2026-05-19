@@ -31,6 +31,7 @@ window.NP = window.NP || {};
         { cmd: ":closetab", hint: "", desc: "Close current tab" },
         { cmd: ":closeall", hint: "", desc: "Close all tabs" },
         { cmd: ":crt", hint: "", desc: "Toggle CRT scanlines" },
+        { cmd: ":settings", hint: "", desc: "Open settings" },
         { cmd: ":findall", hint: "<text>", desc: "Search across all notes" }
     ];
 
@@ -318,6 +319,8 @@ window.NP = window.NP || {};
                 if (NP.tabs && NP.tabs.closeAll) NP.tabs.closeAll();
             } else if (lower === ":crt") {
                 if (NP.effects && NP.effects.crtToggle) NP.effects.crtToggle();
+            } else if (lower === ":settings") {
+                if (NP.settings && NP.settings.open) NP.settings.open();
             } else if (lower.indexOf(":findall ") === 0) {
                 var fq = cmd.substring(9).trim();
                 if (fq && NP.findAll && NP.findAll.show) NP.findAll.show(fq);

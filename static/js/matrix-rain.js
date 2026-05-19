@@ -50,16 +50,34 @@ window.NP = window.NP || {};
             }
         },
 
+        /* Settings v2: gate visibility on the matrix_rain_enabled setting. */
+        setEnabled: function (v) {
+            if (v) {
+                this.start();
+            } else {
+                this.stop();
+            }
+        },
+
         start: function () {
             if (this.running) return;
+            /* Settings v2: respect the matrix_rain_enabled setting (default
+               true — undefined/missing key still starts the rain). */
+            if (NP.state && NP.state.data &&
+                NP.state.data.matrix_rain_enabled === false) {
+                return;
+            }
             this.running = true;
 
             /* Create canvas overlay */
             var canvas = document.createElement("canvas");
             canvas.id = "matrix-rain-canvas";
+            /* z-index:0 keeps it BEHIND #app (which is z-index:1) so the
+               rain is a subtle background, not an overlay covering the UI.
+               Layering only — colours/chars/speed are unchanged. */
             canvas.style.cssText =
                 "position:fixed;top:0;left:0;width:100%;height:100%;" +
-                "z-index:900;pointer-events:none;";
+                "z-index:0;pointer-events:none;";
             document.body.appendChild(canvas);
             this.canvas = canvas;
             this.ctx = canvas.getContext("2d");
