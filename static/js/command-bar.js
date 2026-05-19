@@ -308,7 +308,7 @@ window.NP = window.NP || {};
             } else if (lower === ":emptytrash") {
                 if (NP.trash) NP.trash.empty();
             } else if (lower === ":orientation") {
-                if (NP.layout && NP.layout.toggleOrientation) NP.layout.toggleOrientation();
+                if (NP.settings && NP.settings.toggleOrientation) NP.settings.toggleOrientation();
             } else if (lower === ":matrix") {
                 if (NP.matrixRain && NP.matrixRain.toggle) NP.matrixRain.toggle();
             } else if (lower === ":help") {

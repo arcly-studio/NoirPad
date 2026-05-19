@@ -96,11 +96,11 @@ window.NP = window.NP || {};
                     return;
                 }
 
-                /* Ctrl+L - Toggle orientation */
+                /* Ctrl+L - Toggle page orientation (landscape <-> portrait) */
                 if (ctrl && !shift && key === "l") {
                     e.preventDefault();
-                    if (NP.layout && NP.layout.toggleOrientation) {
-                        NP.layout.toggleOrientation();
+                    if (NP.settings && NP.settings.toggleOrientation) {
+                        NP.settings.toggleOrientation();
                     }
                     return;
                 }

@@ -208,8 +208,11 @@ window.NP = window.NP || {};
     /* No existing layout module applies orientation; keep it to a safe,
        non-breaking data attribute so the value round-trips + persists. */
     function applyOrientation(value) {
-        var panel = document.getElementById("editor-panel");
-        if (panel) panel.setAttribute("data-page-orientation", value);
+        /* Landscape is the CSS default for #editor; portrait is the
+           body-class override. Toggle both so state is always explicit. */
+        var portrait = value === "portrait";
+        document.body.classList.toggle("orientation-portrait", portrait);
+        document.body.classList.toggle("orientation-landscape", !portrait);
     }
 
     function syncRadioGroup(name, value) {
@@ -512,7 +515,28 @@ window.NP = window.NP || {};
             applyShortcutHints(sget("show_shortcut_hints", true) !== false);
             var ed = document.getElementById("editor");
             if (ed) ed.spellcheck = sget("spellcheck", true) !== false;
-            applyOrientation(sget("page_orientation", "landscape"));
+            /* Startup ALWAYS forces Landscape (user choice) — overrides any
+               persisted Portrait. setOrientation keeps the body class, the
+               Settings radio and the stored value in sync. Ctrl+L / Settings
+               still switch during the session; a reload resets to Landscape. */
+            NP.settings.setOrientation("landscape");
+        },
+
+        /* Public orientation API — shared by the Settings radio, the
+           Ctrl+L shortcut and the :orientation command so the body class,
+           the persisted setting and the radio UI stay in sync. */
+        setOrientation: function (value) {
+            if (value !== "portrait" && value !== "landscape") return;
+            applyOrientation(value);
+            syncRadioGroup("page-orientation", value);
+            saveSetting({ page_orientation: value });
+        },
+
+        toggleOrientation: function () {
+            var cur = sget("page_orientation", "landscape");
+            NP.settings.setOrientation(
+                cur === "portrait" ? "landscape" : "portrait"
+            );
         },
 
         /* Reflect saved theme / ui_font into the dropdowns WITHOUT firing

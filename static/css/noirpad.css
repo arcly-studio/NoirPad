@@ -537,27 +537,67 @@ input, textarea {
 /* ---- Editor Container ---- */
 #editor-wrapper {
     flex: 1;
+    /* position:relative kept — anchors the absolutely-positioned
+       #command-bar and #lock-overlay children. */
     position: relative;
-    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bg);            /* dark "desk" around the page */
 }
 
 #editor {
+    /* "Paper" — landscape is the default; portrait is the override below. */
     width: 100%;
-    height: 100%;
-    padding: 16px 20px;
+    max-width: 1300px;
+    min-height: 730px;               /* ~16:9 of 1300 */
+    padding: 40px 50px;
     font-family: var(--font-mono);
     font-size: 14px;
     line-height: 1.7;
     color: var(--fg);
     background: var(--bg-entry);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
     caret-color: var(--cursor-color);
     outline: none;
-    overflow-y: auto;
-    overflow-x: hidden;
+    position: relative;              /* anchor welcome-screen overlay to the page */
     white-space: pre-wrap;
     word-wrap: break-word;
     tab-size: 4;
+}
+
+/* Portrait = A4 proportions (1 : 1.414). Landscape is the #editor default. */
+body.orientation-portrait #editor {
+    max-width: 800px;
+    min-height: 1131px;              /* 800 * 1.414 */
+}
+
+/* Welcome screen = NO "paper": full-bleed, no frame/shadow/centering.
+   showWelcome() renders a .welcome-wrap; a note or folder overview does
+   NOT — so the paper returns automatically when one is opened. The
+   `body ` prefix gives (1,1,1) specificity so this still wins over
+   `body.orientation-portrait #editor` if orientation is toggled here. */
+body #editor-wrapper:has(.welcome-wrap) {
+    padding: 0;
+    display: block;
+    overflow: hidden;
+    background: var(--bg-entry);
+}
+
+body #editor:has(.welcome-wrap) {
+    max-width: none;
+    min-height: 0;
+    height: 100%;
+    padding: 0;
+    border: none;
     border-radius: 0;
+    box-shadow: none;
 }
 
 #editor:empty::before {
