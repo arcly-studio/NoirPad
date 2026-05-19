@@ -35,6 +35,13 @@ window.NP = window.NP || {};
 
                 NP.app.bindKeys();
                 NP.app.bindButtons();
+                /* Registrations done above; now load custom mappings
+                   (state is loaded) and attach the single dispatcher. */
+                if (NP.shortcuts && NP.shortcuts.init) NP.shortcuts.init();
+                /* Manager UI — after core shortcuts (needs the registry). */
+                if (NP.shortcutsManager && NP.shortcutsManager.init) {
+                    NP.shortcutsManager.init();
+                }
                 NP.state.startPolling();
 
                 if (NP.editor && NP.editor.showWelcome) {
@@ -55,112 +62,119 @@ window.NP = window.NP || {};
         },
 
         bindKeys: function () {
+            /* ---- Migrated to the central shortcut registry ----
+               Behaviour-preserving: each handler does exactly what the
+               old hardcoded branch did. The dispatcher (shortcuts.js)
+               preventDefaults on a match unless the handler returns
+               `false` (passthrough) — used by `delete` so typing still
+               deletes text in the editor. */
+            var S = NP.shortcuts;
+            if (S && S.register) {
+                S.register("save", function () {
+                    if (NP.editor && NP.editor.save) NP.editor.save();
+                });
+                S.register("find", function () {
+                    if (NP.search && NP.search.toggle) NP.search.toggle();
+                });
+                S.register("find-next", function () {
+                    if (NP.search && NP.search.next) NP.search.next();
+                });
+                S.register("find-prev", function () {
+                    if (NP.search && NP.search.prev) NP.search.prev();
+                });
+                S.register("insert-image", function () {
+                    var b = document.getElementById("btn-insert-image");
+                    if (b) b.click();
+                });
+                S.register("new-folder", function () {
+                    var b = document.getElementById("btn-new-folder");
+                    if (b) b.click();
+                });
+                S.register("new-note", function () {
+                    var b = document.getElementById("btn-new-note");
+                    if (b) b.click();
+                });
+                S.register("delete", function () {
+                    /* Original guard: while an input/contenteditable is
+                       focused, do nothing and let the browser delete text
+                       (return false = no preventDefault / passthrough). */
+                    var a = document.activeElement;
+                    var isInput = a && (a.tagName === "INPUT" ||
+                        a.tagName === "TEXTAREA" || a.isContentEditable);
+                    if (isInput) return false;
+                    if (NP.tree && NP.tree.deleteSelected) {
+                        NP.tree.deleteSelected();
+                    }
+                });
+                S.register("rename", function () {
+                    if (NP.tree && NP.tree.renameSelected) {
+                        NP.tree.renameSelected();
+                    }
+                });
+                S.register("toggle-favorite", function () {
+                    var b = document.getElementById("btn-favorite");
+                    if (b) b.click();
+                    else if (NP.favorites && NP.favorites.toggle) {
+                        NP.favorites.toggle();
+                    }
+                });
+                S.register("toggle-lock", function () {
+                    var b = document.getElementById("btn-lock");
+                    if (b) b.click();
+                });
+                S.register("toggle-sidebar", function () {
+                    if (NP.focusMode && NP.focusMode.toggle) {
+                        NP.focusMode.toggle();
+                    }
+                });
+                S.register("toggle-orientation", function () {
+                    if (NP.settings && NP.settings.toggleOrientation) {
+                        NP.settings.toggleOrientation();
+                    }
+                });
+                S.register("open-settings", function () {
+                    if (NP.settings && NP.settings.open) NP.settings.open();
+                });
+                S.register("open-help", function () {
+                    if (NP.help && NP.help.show) NP.help.show();
+                });
+                S.register("open-command-palette", function () {
+                    if (NP.commandBar && NP.commandBar.toggle) {
+                        NP.commandBar.toggle();
+                    }
+                });
+                S.register("open-font-picker", function () {
+                    if (NP.fontPicker && NP.fontPicker.show) {
+                        NP.fontPicker.show();
+                    }
+                });
+                S.register("fullscreen", function () {
+                    if (NP.fullscreen && NP.fullscreen.toggle) {
+                        NP.fullscreen.toggle();
+                    }
+                });
+                S.register("next-tab", function () {
+                    if (NP.tabs && NP.tabs.next) NP.tabs.next();
+                });
+                S.register("prev-tab", function () {
+                    if (NP.tabs && NP.tabs.prev) NP.tabs.prev();
+                });
+                S.register("close-tab", function () {
+                    if (NP.tabs && NP.tabs.closeCurrent) {
+                        NP.tabs.closeCurrent();
+                    }
+                });
+            }
+
+            /* NOT migrated (per spec): Escape overlay-close priority +
+               contentEditable formatting/undo/redo. These are not in the
+               registry, so the central dispatcher ignores them and this
+               (bubble-phase) listener handles them exactly as before. */
             document.addEventListener("keydown", function (e) {
                 var key = e.key;
                 var ctrl = e.ctrlKey || e.metaKey;
                 var shift = e.shiftKey;
 
-                /* Ctrl+S - Save */
-                if (ctrl && !shift && key === "s") {
-                    e.preventDefault();
-                    if (NP.editor && NP.editor.save) {
-                        NP.editor.save();
-                    }
-                    return;
-                }
-
-                /* Ctrl+F - Find */
-                if (ctrl && !shift && key === "f") {
-                    e.preventDefault();
-                    if (NP.search && NP.search.toggle) {
-                        NP.search.toggle();
-                    }
-                    return;
-                }
-
-                /* Ctrl+B - Focus mode */
-                if (ctrl && !shift && key === "b") {
-                    e.preventDefault();
-                    if (NP.focusMode && NP.focusMode.toggle) {
-                        NP.focusMode.toggle();
-                    }
-                    return;
-                }
-
-                /* Ctrl+Shift+P - Command bar */
-                if (ctrl && shift && key === "P") {
-                    e.preventDefault();
-                    if (NP.commandBar && NP.commandBar.toggle) {
-                        NP.commandBar.toggle();
-                    }
-                    return;
-                }
-
-                /* Ctrl+L - Toggle page orientation (landscape <-> portrait) */
-                if (ctrl && !shift && key === "l") {
-                    e.preventDefault();
-                    if (NP.settings && NP.settings.toggleOrientation) {
-                        NP.settings.toggleOrientation();
-                    }
-                    return;
-                }
-
-                /* F1 - Help */
-                if (key === "F1") {
-                    e.preventDefault();
-                    if (NP.help && NP.help.show) {
-                        NP.help.show();
-                    }
-                    return;
-                }
-
-                /* F2 - Rename */
-                if (key === "F2") {
-                    e.preventDefault();
-                    if (NP.tree && NP.tree.renameSelected) {
-                        NP.tree.renameSelected();
-                    }
-                    return;
-                }
-
-                /* F3 - Find next, Shift+F3 - Find previous */
-                if (key === "F3") {
-                    e.preventDefault();
-                    if (NP.search) {
-                        if (shift && NP.search.prev) {
-                            NP.search.prev();
-                        } else if (NP.search.next) {
-                            NP.search.next();
-                        }
-                    }
-                    return;
-                }
-
-                /* F11 - Fullscreen */
-                if (key === "F11") {
-                    e.preventDefault();
-                    if (NP.fullscreen && NP.fullscreen.toggle) {
-                        NP.fullscreen.toggle();
-                    }
-                    return;
-                }
-
-                /* Delete - Delete selected item */
-                if (key === "Delete" && !ctrl && !shift) {
-                    var active = document.activeElement;
-                    var isInput =
-                        active &&
-                        (active.tagName === "INPUT" ||
-                            active.tagName === "TEXTAREA" ||
-                            active.isContentEditable);
-                    if (!isInput && NP.tree && NP.tree.deleteSelected) {
-                        e.preventDefault();
-                        NP.tree.deleteSelected();
-                    }
-                    return;
-                }
-
-                /* Escape - Close overlays */
                 if (key === "Escape") {
                     if (NP.commandBar && NP.commandBar.visible && NP.commandBar.close) {
                         NP.commandBar.close();
@@ -170,34 +184,6 @@ window.NP = window.NP || {};
                     return;
                 }
 
-                /* Ctrl+Tab - Next tab */
-                if (ctrl && !shift && key === "Tab") {
-                    e.preventDefault();
-                    if (NP.tabs && NP.tabs.next) {
-                        NP.tabs.next();
-                    }
-                    return;
-                }
-
-                /* Ctrl+Shift+Tab - Previous tab */
-                if (ctrl && shift && key === "Tab") {
-                    e.preventDefault();
-                    if (NP.tabs && NP.tabs.prev) {
-                        NP.tabs.prev();
-                    }
-                    return;
-                }
-
-                /* Ctrl+W - Close tab */
-                if (ctrl && !shift && key === "w") {
-                    e.preventDefault();
-                    if (NP.tabs && NP.tabs.closeCurrent) {
-                        NP.tabs.closeCurrent();
-                    }
-                    return;
-                }
-
-                /* Ctrl+I - Italic */
                 if (ctrl && !shift && key === "i") {
                     e.preventDefault();
                     if (NP.editor && NP.editor.toggleItalic) {
@@ -206,7 +192,6 @@ window.NP = window.NP || {};
                     return;
                 }
 
-                /* Ctrl+U - Underline */
                 if (ctrl && !shift && key === "u") {
                     e.preventDefault();
                     if (NP.editor && NP.editor.toggleUnderline) {
@@ -215,9 +200,7 @@ window.NP = window.NP || {};
                     return;
                 }
 
-                /* Ctrl+Z - Undo */
                 if (ctrl && !shift && key === "z") {
-                    /* Let browser handle native undo in contenteditable/textarea */
                     if (NP.editor && NP.editor.undo) {
                         e.preventDefault();
                         NP.editor.undo();
@@ -225,7 +208,6 @@ window.NP = window.NP || {};
                     return;
                 }
 
-                /* Ctrl+Y - Redo */
                 if (ctrl && !shift && key === "y") {
                     if (NP.editor && NP.editor.redo) {
                         e.preventDefault();

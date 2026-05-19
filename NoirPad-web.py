@@ -85,6 +85,7 @@ DEFAULT_DATA: dict[str, Any] = {
     "idle_lock_minutes": "off",
     "default_encrypted": False,
     "glow_intensity": 100,  # 0-150 percent
+    "custom_shortcuts": {},  # id -> "Ctrl+Shift+X" (only non-default)
 }
 
 
@@ -441,6 +442,7 @@ class SettingsBody(BaseModel):
     idle_lock_minutes: Optional[str] = None
     default_encrypted: Optional[bool] = None
     glow_intensity: Optional[int] = None
+    custom_shortcuts: Optional[dict] = None
 
 
 class CryptoReq(BaseModel):
@@ -842,6 +844,7 @@ async def update_settings(body: SettingsBody):
             "idle_lock_minutes",
             "default_encrypted",
             "glow_intensity",
+            "custom_shortcuts",
         ):
             value = getattr(body, field)
             if value is not None:

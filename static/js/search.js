@@ -270,13 +270,7 @@ window.NP = window.NP || {};
         }
     };
 
-    /* Global F3 / Shift+F3 */
-    document.addEventListener("keydown", function (e) {
-        if (e.key === "F3" && NP.search.visible) {
-            e.preventDefault();
-            if (e.shiftKey) NP.search.prev();
-            else NP.search.next();
-        }
-    });
+    /* F3 / Shift+F3 are now handled centrally (NP.shortcuts:
+       find-next / find-prev → NP.search.next/prev). */
 
 })(window.NP);

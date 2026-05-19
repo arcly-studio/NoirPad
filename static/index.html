@@ -7,8 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;700;900&family=Space+Grotesk:wght@400;500;700&family=Outfit:wght@400;500;700;800&family=Unbounded:wght@400;500;700;900&display=swap">
-    <link rel="stylesheet" href="/static/css/themes.css?v=2.1.21">
-    <link rel="stylesheet" href="/static/css/noirpad.css?v=2.1.21">
+    <link rel="stylesheet" href="/static/css/themes.css?v=2.1.24">
+    <link rel="stylesheet" href="/static/css/noirpad.css?v=2.1.24">
 </head>
 <body>
 
@@ -361,6 +361,14 @@
                 <button class="settings-toggle" id="setting-shortcut-hints" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
+            <div class="settings-row">
+                <div class="settings-label-col">
+                    <span class="settings-label">Keyboard shortcuts</span>
+                    <span class="settings-sublabel" id="shortcuts-summary">&mdash; shortcuts &middot; &mdash; customized</span>
+                </div>
+                <button class="settings-link-btn" id="open-shortcuts-manager">Manage &rarr;</button>
+            </div>
+
             <hr class="settings-divider">
             <div class="settings-section-title">Data</div>
 
@@ -406,33 +414,58 @@
     </div>
 </div>
 
+<!-- ============ Shortcuts Manager Overlay ============ -->
+<div id="shortcuts-overlay" class="np-overlay" aria-hidden="true">
+    <div id="shortcuts-panel">
+        <div id="shortcuts-header">
+            <h2 id="shortcuts-title">Shortcuts</h2>
+            <button id="shortcuts-close" aria-label="Close">&times;</button>
+        </div>
+
+        <div id="shortcuts-toolbar">
+            <input id="shortcuts-search" type="text" placeholder="Search shortcuts..." spellcheck="false" autocomplete="off">
+            <button id="shortcuts-filter-customized" class="shortcuts-toolbar-btn" aria-pressed="false">Customized only</button>
+            <button id="shortcuts-reset-all" class="shortcuts-toolbar-btn shortcuts-btn-danger">Reset all</button>
+        </div>
+
+        <div id="shortcuts-body"></div>
+
+        <div id="shortcuts-footer">
+            <span id="shortcuts-footer-info">&mdash; shortcuts &middot; &mdash; customized</span>
+            <span class="shortcuts-footer-hint">Press Escape to cancel recording</span>
+        </div>
+    </div>
+</div>
+
 <!-- ============ Scripts (no modules, no build) ============ -->
-<script src="/static/js/utils.js?v=2.1.21"></script>
-<script src="/static/js/api.js?v=2.1.21"></script>
-<script src="/static/js/state.js?v=2.1.21"></script>
-<script src="/static/js/themes.js?v=2.1.21"></script>
-<script src="/static/js/tree.js?v=2.1.21"></script>
-<script src="/static/js/editor.js?v=2.1.21"></script>
-<script src="/static/js/tabs.js?v=2.1.21"></script>
-<script src="/static/js/tags.js?v=2.1.21"></script>
-<script src="/static/js/search.js?v=2.1.21"></script>
-<script src="/static/js/command-bar.js?v=2.1.21"></script>
-<script src="/static/js/trash.js?v=2.1.21"></script>
-<script src="/static/js/favorites.js?v=2.1.21"></script>
-<script src="/static/js/images.js?v=2.1.21"></script>
-<script src="/static/js/encryption.js?v=2.1.21"></script>
-<script src="/static/js/export.js?v=2.1.21"></script>
-<script src="/static/js/focus-mode.js?v=2.1.21"></script>
-<script src="/static/js/matrix-rain.js?v=2.1.21"></script>
-<script src="/static/js/splash.js?v=2.1.21"></script>
-<script src="/static/js/cursor.js?v=2.1.21"></script>
-<script src="/static/js/font-picker.js?v=2.1.21"></script>
-<script src="/static/js/help.js?v=2.1.21"></script>
-<script src="/static/js/backup.js?v=2.1.21"></script>
-<script src="/static/js/effects.js?v=2.1.21"></script>
-<script src="/static/js/find-all.js?v=2.1.21"></script>
-<script src="/static/js/settings.js?v=2.1.21"></script>
-<script src="/static/js/app.js?v=2.1.21"></script>
+<script src="/static/js/utils.js?v=2.1.24"></script>
+<script src="/static/js/api.js?v=2.1.24"></script>
+<script src="/static/js/state.js?v=2.1.24"></script>
+<script src="/static/js/themes.js?v=2.1.24"></script>
+<script src="/static/js/tree.js?v=2.1.24"></script>
+<script src="/static/js/editor.js?v=2.1.24"></script>
+<script src="/static/js/tabs.js?v=2.1.24"></script>
+<script src="/static/js/tags.js?v=2.1.24"></script>
+<script src="/static/js/search.js?v=2.1.24"></script>
+<script src="/static/js/command-bar.js?v=2.1.24"></script>
+<script src="/static/js/trash.js?v=2.1.24"></script>
+<script src="/static/js/favorites.js?v=2.1.24"></script>
+<script src="/static/js/images.js?v=2.1.24"></script>
+<script src="/static/js/encryption.js?v=2.1.24"></script>
+<script src="/static/js/export.js?v=2.1.24"></script>
+<script src="/static/js/focus-mode.js?v=2.1.24"></script>
+<script src="/static/js/matrix-rain.js?v=2.1.24"></script>
+<script src="/static/js/splash.js?v=2.1.24"></script>
+<script src="/static/js/cursor.js?v=2.1.24"></script>
+<script src="/static/js/font-picker.js?v=2.1.24"></script>
+<script src="/static/js/help.js?v=2.1.24"></script>
+<script src="/static/js/backup.js?v=2.1.24"></script>
+<script src="/static/js/effects.js?v=2.1.24"></script>
+<script src="/static/js/find-all.js?v=2.1.24"></script>
+<script src="/static/js/settings.js?v=2.1.24"></script>
+<script src="/static/js/shortcuts.js?v=2.1.24"></script>
+<script src="/static/js/shortcuts-manager.js?v=2.1.24"></script>
+<script src="/static/js/app.js?v=2.1.24"></script>
 
 </body>
 </html>

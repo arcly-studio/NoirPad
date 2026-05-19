@@ -258,6 +258,10 @@ window.NP = window.NP || {};
         if (vEl) vEl.textContent = pct + "%";
     }
 
+    /* Shortcuts list + recording UI moved to shortcuts-manager.js
+       (standalone #shortcuts-overlay). The core registry/dispatch/
+       validation stays in shortcuts.js. */
+
     function syncRadioGroup(name, value) {
         var btns = document.querySelectorAll(
             '[id^="setting-' + name + '-"]'
@@ -501,6 +505,13 @@ window.NP = window.NP || {};
                    dropdown, a second closes the panel. */
                 document.addEventListener("keydown", function (e) {
                     if (e.key !== "Escape") return;
+                    /* Recording a shortcut? Let Escape reach the recorder
+                       (cancel) instead of closing Settings. */
+                    if (NP.shortcuts && NP.shortcuts._recordingActive) return;
+                    /* Shortcuts manager open on top of Settings? Let its
+                       own Escape handler close it, don't close Settings. */
+                    var sov = document.getElementById("shortcuts-overlay");
+                    if (sov && sov.classList.contains("visible")) return;
                     if (!overlay.classList.contains("visible")) return;
                     if (overlay.querySelector(".np-dropdown.open")) {
                         closeAllDropdowns(null);
@@ -657,6 +668,9 @@ window.NP = window.NP || {};
             NP.settings.syncFromState();
             applyUiFont(currentUiFont());
             refreshStorageUsed();
+            if (NP.shortcutsManager && NP.shortcutsManager.refreshSummary) {
+                NP.shortcutsManager.refreshSummary();
+            }
             overlay.classList.add("visible");
         },
 
