@@ -4,47 +4,77 @@ window.NP = window.NP || {};
 (function (NP) {
     "use strict";
 
-    var MONOSPACE_FONTS = [
-        "Cascadia Code",
-        "Fira Code",
-        "JetBrains Mono",
-        "Consolas",
-        "Source Code Pro",
-        "IBM Plex Mono",
-        "Roboto Mono",
-        "Ubuntu Mono",
-        "Inconsolata",
-        "Hack",
-        "Droid Sans Mono",
-        "PT Mono",
-        "Anonymous Pro",
-        "Courier New",
-        "Courier",
-        "Lucida Console",
-        "Monaco",
-        "Menlo",
-        "DejaVu Sans Mono",
-        "Liberation Mono",
-        "monospace"
+    /* Curated, categorized list. We intentionally show ALL of these
+       regardless of whether they're installed — the browser falls back
+       per the category's generic family, which is fine (most are stock
+       Windows fonts; Inter/Outfit/Space Grotesk/Orbitron/Unbounded are
+       loaded via Google Fonts in index.html). */
+    var FONT_CATEGORIES = [
+        { name: "Monospace", fallback: "monospace", fonts: [
+            "Cascadia Code", "JetBrains Mono", "Consolas", "Courier New",
+            "Fira Code", "Source Code Pro", "Lucida Console"
+        ] },
+        { name: "Sans-serif", fallback: "sans-serif", fonts: [
+            "Arial", "Calibri", "Helvetica", "Segoe UI", "Tahoma",
+            "Trebuchet MS", "Verdana", "Inter", "Outfit", "Space Grotesk"
+        ] },
+        { name: "Serif", fallback: "serif", fonts: [
+            "Times New Roman", "Georgia", "Cambria", "Garamond",
+            "Palatino", "Book Antiqua"
+        ] },
+        { name: "Display", fallback: "sans-serif", fonts: [
+            "Comic Sans MS", "Impact", "Orbitron", "Unbounded"
+        ] }
     ];
+
+    /* font name -> generic fallback, used for preview AND when applying. */
+    var FONT_FALLBACK = {};
+    (function () {
+        for (var c = 0; c < FONT_CATEGORIES.length; c++) {
+            var cat = FONT_CATEGORIES[c];
+            for (var i = 0; i < cat.fonts.length; i++) {
+                FONT_FALLBACK[cat.fonts[i]] = cat.fallback;
+            }
+        }
+    })();
+
+    function fallbackFor(name) {
+        return FONT_FALLBACK[name] || "monospace";
+    }
 
     var MIN_SIZE = 6;
     var MAX_SIZE = 72;
     var overlayEl = null;
-    /* Editor selection captured when the picker opens — opening the modal
-       moves focus, so we must remember the range to style only that text. */
-    var savedRange = null;
+    /* Robust selection handling: clicking the toolbar "Font" button moves
+       focus off the contenteditable, so reading the LIVE selection at
+       open-time is unreliable (it may be collapsed/lost). Instead we
+       CONTINUOUSLY track the editor's last non-collapsed selection
+       (selectionchange) and snapshot that when the picker opens. */
+    var lastEditorRange = null;   /* last real editor text selection */
+    var savedRange = null;        /* snapshot used by the Apply button */
 
-    function saveEditorSelection() {
-        savedRange = null;
+    function trackEditorSelection() {
+        if (overlayEl) return;    /* don't track while the modal is open */
         var editor = document.getElementById("editor");
         if (!editor) return;
         var sel = window.getSelection();
         if (!sel || sel.rangeCount === 0) return;
         var range = sel.getRangeAt(0);
-        if (range.collapsed) return;                  /* nothing selected */
+        if (range.collapsed) return;
         if (!editor.contains(range.commonAncestorContainer)) return;
-        savedRange = range.cloneRange();
+        lastEditorRange = range.cloneRange();
+    }
+
+    /* Bound once — selectionchange fires on every selection change; the
+       handler is just a few cheap early-returns. */
+    document.addEventListener("selectionchange", trackEditorSelection);
+
+    /* Called when the picker opens: snapshot the last TRACKED editor
+       selection (not the live one, which is now the focused Font button). */
+    function saveEditorSelection() {
+        savedRange = (lastEditorRange && !lastEditorRange.collapsed)
+            ? lastEditorRange.cloneRange()
+            : null;
     }
 
     /* Wrap the saved selection in a <span> carrying font-family + size.
@@ -56,62 +86,43 @@ window.NP = window.NP || {};
         if (!editor || !savedRange || savedRange.collapsed) return false;
         if (!editor.contains(savedRange.commonAncestorContainer)) return false;
         try {
+            console.log("[font-picker] apply to selection:", {
+                font: fontFamily, size: sizePx,
+                text: savedRange.toString().slice(0, 40)
+            });
             var span = document.createElement("span");
             span.style.fontFamily = fontFamily;
             span.style.fontSize = sizePx;
-            span.appendChild(savedRange.extractContents());
+            var frag = savedRange.extractContents();
+            /* The selection may cross existing styled <span>s (mixed
+               fonts/sizes). Their inline font-family/font-size would
+               OVERRIDE the new outer span (= "nothing happens"), so strip
+               those two props from every descendant. Other styling
+               (italic/underline/color) is left intact. */
+            var inner = frag.querySelectorAll
+                ? frag.querySelectorAll("*") : [];
+            for (var i = 0; i < inner.length; i++) {
+                inner[i].style.removeProperty("font-family");
+                inner[i].style.removeProperty("font-size");
+            }
+            span.appendChild(frag);
             savedRange.insertNode(span);
-            try {
-                /* Re-select the styled text so the change is visible. */
-                var sel = window.getSelection();
-                var r = document.createRange();
-                r.selectNodeContents(span);
-                sel.removeAllRanges();
-                sel.addRange(r);
-                savedRange = r.cloneRange();
-            } catch (e2) { /* reselect is cosmetic — ignore */ }
+            /* Clear snapshot + tracked range so a later open WITHOUT a
+               fresh selection cannot re-style this just-changed region
+               (that was the "applies to a previously changed part" bug).
+               We intentionally do NOT programmatically re-select it. */
+            savedRange = null;
+            lastEditorRange = null;
             return true;
         } catch (e) {
-            console.warn("Font apply to selection failed:", e);
+            console.error("[font-picker] apply to selection failed:", e);
             return false;
         }
     }
 
-    function isFontAvailable(fontName) {
-        if (fontName === "monospace") return true;
-        var testStr = "mmmmmmmmmmlli";
-        var baseFonts = ["monospace", "sans-serif", "serif"];
-        var canvas = document.createElement("canvas");
-        var ctx = canvas.getContext("2d");
-        ctx.font = "72px monospace";
-        var defaultWidth = ctx.measureText(testStr).width;
-
-        ctx.font = "72px '" + fontName + "', monospace";
-        var testWidth = ctx.measureText(testStr).width;
-        if (testWidth !== defaultWidth) return true;
-
-        for (var i = 0; i < baseFonts.length; i++) {
-            ctx.font = "72px " + baseFonts[i];
-            var baseW = ctx.measureText(testStr).width;
-            ctx.font = "72px '" + fontName + "', " + baseFonts[i];
-            var fontW = ctx.measureText(testStr).width;
-            if (fontW !== baseW) return true;
-        }
-        return false;
-    }
-
-    function getAvailableFonts() {
-        var available = [];
-        for (var i = 0; i < MONOSPACE_FONTS.length; i++) {
-            if (isFontAvailable(MONOSPACE_FONTS[i])) {
-                available.push(MONOSPACE_FONTS[i]);
-            }
-        }
-        if (available.length === 0) {
-            available.push("monospace");
-        }
-        return available;
-    }
+    /* Note: the old canvas-based isFontAvailable()/getAvailableFonts()
+       were removed — the picker now shows the full curated list and
+       relies on the browser's per-category fallback for missing fonts. */
 
     function escapeHTML(str) {
         var div = document.createElement("div");
@@ -127,7 +138,6 @@ window.NP = window.NP || {};
             /* Capture the editor selection BEFORE the modal steals focus. */
             saveEditorSelection();
 
-            var fonts = getAvailableFonts();
             var currentFont = (NP.state && NP.state.data && NP.state.data.font_family) || "Consolas";
             var currentSize = (NP.state && NP.state.data && NP.state.data.font_size) || 14;
 
@@ -186,35 +196,56 @@ window.NP = window.NP || {};
             function renderList(filter) {
                 listContainer.innerHTML = "";
                 var lowerFilter = (filter || "").toLowerCase();
-                for (var i = 0; i < fonts.length; i++) {
-                    if (lowerFilter && fonts[i].toLowerCase().indexOf(lowerFilter) === -1) continue;
-                    var item = document.createElement("div");
-                    item.textContent = fonts[i];
-                    item.dataset.font = fonts[i];
-                    item.style.cssText =
-                        "padding:5px 16px;cursor:pointer;font-size:12px;" +
-                        "font-family:'" + fonts[i] + "',monospace;" +
-                        "color:var(--fg, #00ff41);transition:background 0.1s ease;";
-                    if (fonts[i] === selectedFont) {
-                        item.style.background = "var(--hover-bg, #0f2314)";
-                        item.style.color = "var(--fg-bright, #4cff7a)";
+
+                for (var c = 0; c < FONT_CATEGORIES.length; c++) {
+                    var cat = FONT_CATEGORIES[c];
+                    var matched = [];
+                    for (var j = 0; j < cat.fonts.length; j++) {
+                        if (!lowerFilter ||
+                            cat.fonts[j].toLowerCase().indexOf(lowerFilter) !== -1) {
+                            matched.push(cat.fonts[j]);
+                        }
                     }
-                    (function (fontName, el) {
-                        el.addEventListener("click", function () {
-                            selectedFont = fontName;
-                            renderList(filterInput.value);
-                            updatePreview();
-                        });
-                        el.addEventListener("mouseenter", function () {
-                            el.style.background = "var(--hover-bg, #0f2314)";
-                        });
-                        el.addEventListener("mouseleave", function () {
-                            if (fontName !== selectedFont) {
-                                el.style.background = "transparent";
-                            }
-                        });
-                    })(fonts[i], item);
-                    listContainer.appendChild(item);
+                    if (matched.length === 0) continue;
+
+                    var hdr = document.createElement("div");
+                    hdr.textContent = cat.name;
+                    hdr.style.cssText =
+                        "padding:8px 16px 3px;font-size:10px;letter-spacing:1px;" +
+                        "text-transform:uppercase;color:var(--fg-dim, #00bf30);" +
+                        "opacity:0.7;user-select:none;";
+                    listContainer.appendChild(hdr);
+
+                    for (var k = 0; k < matched.length; k++) {
+                        var fontName = matched[k];
+                        var item = document.createElement("div");
+                        item.textContent = fontName;
+                        item.dataset.font = fontName;
+                        item.style.cssText =
+                            "padding:5px 16px;cursor:pointer;font-size:13px;" +
+                            "font-family:'" + fontName + "'," + cat.fallback + ";" +
+                            "color:var(--fg, #00ff41);transition:background 0.1s ease;";
+                        if (fontName === selectedFont) {
+                            item.style.background = "var(--hover-bg, #0f2314)";
+                            item.style.color = "var(--fg-bright, #4cff7a)";
+                        }
+                        (function (fName, el) {
+                            el.addEventListener("click", function () {
+                                selectedFont = fName;
+                                renderList(filterInput.value);
+                                updatePreview();
+                            });
+                            el.addEventListener("mouseenter", function () {
+                                el.style.background = "var(--hover-bg, #0f2314)";
+                            });
+                            el.addEventListener("mouseleave", function () {
+                                if (fName !== selectedFont) {
+                                    el.style.background = "transparent";
+                                }
+                            });
+                        })(fontName, item);
+                        listContainer.appendChild(item);
+                    }
                 }
             }
 
@@ -265,7 +296,8 @@ window.NP = window.NP || {};
                 var size = parseInt(sizeInput.value, 10) || currentSize;
                 if (size < MIN_SIZE) size = MIN_SIZE;
                 if (size > MAX_SIZE) size = MAX_SIZE;
-                previewArea.style.fontFamily = "'" + selectedFont + "', monospace";
+                previewArea.style.fontFamily =
+                    "'" + selectedFont + "', " + fallbackFor(selectedFont);
                 previewArea.style.fontSize = size + "px";
             }
 
@@ -316,7 +348,7 @@ window.NP = window.NP || {};
                 if (size < MIN_SIZE) size = MIN_SIZE;
                 if (size > MAX_SIZE) size = MAX_SIZE;
 
-                var fontFamily = "'" + selectedFont + "', monospace";
+                var fontFamily = "'" + selectedFont + "', " + fallbackFor(selectedFont);
                 var sizePx = size + "px";
 
                 if (savedRange && !savedRange.collapsed &&
