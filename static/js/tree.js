@@ -36,6 +36,19 @@ window.NP = window.NP || {};
         return null;
     }
 
+    /* Returns the parent folder id of `id`: null if `id` is top-level,
+       undefined if `id` is not found anywhere in `items`. */
+    function findParentId(items, id, parentId) {
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].id === id) return parentId;
+            if (items[i].children) {
+                var r = findParentId(items[i].children, id, items[i].id);
+                if (r !== undefined) return r;
+            }
+        }
+        return undefined;
+    }
+
     function countChildren(item) {
         if (!item.children) return 0;
         var count = 0;
@@ -64,6 +77,20 @@ window.NP = window.NP || {};
         render: function () {
             var container = NP.$("#tree-container");
             if (!container) return;
+
+            /* Click on empty tree area (not on an item — items
+               stopPropagation) clears the selection so +Note goes to
+               root. Bound once on the persistent container element. */
+            if (!container._npDeselectBound) {
+                container._npDeselectBound = true;
+                container.addEventListener("click", function (e) {
+                    if (e.target === container) {
+                        NP.state.selectedId = null;
+                        NP.tree.render();
+                    }
+                });
+            }
+
             container.innerHTML = "";
 
             var data = NP.state.data;
@@ -105,7 +132,7 @@ window.NP = window.NP || {};
             var favs = (NP.state.data && NP.state.data.favorites) || [];
             var isFav = favs.indexOf(item.id) !== -1;
             var isFolder = item.type === "folder";
-            var isSelected = NP.state.currentNoteId === item.id;
+            var isSelected = NP.state.selectedId === item.id;
             var locked = !isFolder && isEncrypted(item.id);
 
             if (isFolder) {
@@ -140,7 +167,7 @@ window.NP = window.NP || {};
 
             /* Click handler */
             div.addEventListener("click", function (e) {
-                NP.tree._onItemClick(item.id, item.type);
+                NP.tree._onItemClick(e, item.id, item.type);
                 e.stopPropagation();
             });
 
@@ -229,12 +256,22 @@ window.NP = window.NP || {};
             }
         },
 
-        _onItemClick: function (id, type) {
+        _onItemClick: function (e, id, type) {
             if (type === "folder") {
-                var isOpen = NP.state.getFolderOpenState(id);
-                NP.state.setFolderOpenState(id, !isOpen);
+                var onArrow = !!(e && e.target && e.target.closest &&
+                    e.target.closest(".tree-arrow"));
+                if (onArrow) {
+                    /* Chevron ▾▸ → expand/collapse only (no selection) */
+                    NP.state.setFolderOpenState(
+                        id, !NP.state.getFolderOpenState(id)
+                    );
+                } else {
+                    /* Name/icon → select the folder (no expand/collapse) */
+                    NP.state.selectedId = id;
+                }
                 NP.tree.render();
             } else {
+                NP.state.selectedId = id;
                 NP.state.currentNoteId = id;
                 if (NP.tabs) {
                     var item = findItemById(NP.state.data.tree, id);
@@ -246,6 +283,20 @@ window.NP = window.NP || {};
                 }
                 NP.tree.render();
             }
+        },
+
+        /* Parent folder id for a NEW note created via the +Note toolbar
+           button: selected folder -> that folder; selected note -> its
+           parent folder; nothing / stale-deleted selection -> null (root). */
+        getNewItemParentId: function () {
+            var sel = NP.state.selectedId;
+            var data = NP.state.data;
+            if (!sel || !data || !data.tree) return null;
+            var item = findItemById(data.tree, sel);
+            if (!item) return null;
+            if (item.type === "folder") return sel;
+            var p = findParentId(data.tree, sel, null);
+            return p === undefined ? null : p;
         },
 
         _onRightClick: function (e, id, type) {

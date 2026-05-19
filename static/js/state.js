@@ -14,6 +14,7 @@ window.NP = window.NP || {};
         openTabs: [],
         activeTabId: null,
         currentNoteId: null,
+        selectedId: null,
         focusMode: false,
         fullscreen: false,
         searchVisible: false,

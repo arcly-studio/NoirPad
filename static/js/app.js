@@ -284,7 +284,13 @@ window.NP = window.NP || {};
                 btnNewNote.addEventListener("click", function () {
                     var name = prompt("Note name:");
                     if (!name) return;
-                    NP.api.newNote(null, name).then(function (res) {
+                    var parentId = (NP.tree && NP.tree.getNewItemParentId)
+                        ? NP.tree.getNewItemParentId() : null;
+                    NP.api.newNote(parentId, name).then(function (res) {
+                        /* Make the new note visible inside its folder */
+                        if (parentId && NP.state.setFolderOpenState) {
+                            NP.state.setFolderOpenState(parentId, true);
+                        }
                         return NP.state.init().then(function () {
                             NP.tree.render();
                             if (res && res.id) {

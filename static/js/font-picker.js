@@ -31,6 +31,51 @@ window.NP = window.NP || {};
     var MIN_SIZE = 6;
     var MAX_SIZE = 72;
     var overlayEl = null;
+    /* Editor selection captured when the picker opens — opening the modal
+       moves focus, so we must remember the range to style only that text. */
+    var savedRange = null;
+
+    function saveEditorSelection() {
+        savedRange = null;
+        var editor = document.getElementById("editor");
+        if (!editor) return;
+        var sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+        var range = sel.getRangeAt(0);
+        if (range.collapsed) return;                  /* nothing selected */
+        if (!editor.contains(range.commonAncestorContainer)) return;
+        savedRange = range.cloneRange();
+    }
+
+    /* Wrap the saved selection in a <span> carrying font-family + size.
+       _extractFormats() (editor.js) picks the span up as a
+       {font,size,start,end} range, so it persists in the note and is
+       re-emitted by _applyFormats() on reload — full round-trip. */
+    function applyFontToSelection(fontFamily, sizePx) {
+        var editor = document.getElementById("editor");
+        if (!editor || !savedRange || savedRange.collapsed) return false;
+        if (!editor.contains(savedRange.commonAncestorContainer)) return false;
+        try {
+            var span = document.createElement("span");
+            span.style.fontFamily = fontFamily;
+            span.style.fontSize = sizePx;
+            span.appendChild(savedRange.extractContents());
+            savedRange.insertNode(span);
+            try {
+                /* Re-select the styled text so the change is visible. */
+                var sel = window.getSelection();
+                var r = document.createRange();
+                r.selectNodeContents(span);
+                sel.removeAllRanges();
+                sel.addRange(r);
+                savedRange = r.cloneRange();
+            } catch (e2) { /* reselect is cosmetic — ignore */ }
+            return true;
+        } catch (e) {
+            console.warn("Font apply to selection failed:", e);
+            return false;
+        }
+    }
 
     function isFontAvailable(fontName) {
         if (fontName === "monospace") return true;
@@ -79,6 +124,9 @@ window.NP = window.NP || {};
         show: function () {
             if (overlayEl) return;
 
+            /* Capture the editor selection BEFORE the modal steals focus. */
+            saveEditorSelection();
+
             var fonts = getAvailableFonts();
             var currentFont = (NP.state && NP.state.data && NP.state.data.font_family) || "Consolas";
             var currentSize = (NP.state && NP.state.data && NP.state.data.font_size) || 14;
@@ -94,8 +142,8 @@ window.NP = window.NP || {};
             var modal = document.createElement("div");
             modal.style.cssText =
                 "background:var(--bg, #0a0a0a);border:1px solid var(--border, #1a2e1a);" +
-                "border-radius:8px;width:520px;max-height:70vh;display:flex;flex-direction:column;" +
-                "overflow:hidden;";
+                "border-radius:8px;width:520px;max-width:90vw;max-height:85vh;" +
+                "display:flex;flex-direction:column;overflow:hidden;";
 
             /* Header */
             var header = document.createElement("div");
@@ -109,6 +157,13 @@ window.NP = window.NP || {};
                 'cursor:pointer;background:none;border:none;padding:2px 8px;" title="Zav\u0159\u00edt">&times;</button>';
             modal.appendChild(header);
 
+            /* Scrollable body — header stays fixed above, footer fixed
+               below. flex:1 + min-height:0 + overflow-y:auto makes large
+               previews scroll instead of pushing the buttons off-screen. */
+            var body = document.createElement("div");
+            body.style.cssText = "flex:1 1 auto;min-height:0;overflow-y:auto;";
+            modal.appendChild(body);
+
             /* Filter input */
             var filterRow = document.createElement("div");
             filterRow.style.cssText = "padding:8px 16px;border-bottom:1px solid var(--border, #1a2e1a);flex-shrink:0;";
@@ -119,7 +174,7 @@ window.NP = window.NP || {};
                 "width:100%;padding:4px 8px;font-size:12px;background:var(--bg-entry, #0d0d0d);" +
                 "border:1px solid var(--border, #1a2e1a);border-radius:4px;color:var(--fg, #00ff41);";
             filterRow.appendChild(filterInput);
-            modal.appendChild(filterRow);
+            body.appendChild(filterRow);
 
             /* Font list */
             var listContainer = document.createElement("div");
@@ -164,7 +219,7 @@ window.NP = window.NP || {};
             }
 
             renderList("");
-            modal.appendChild(listContainer);
+            body.appendChild(listContainer);
 
             /* Size input row */
             var sizeRow = document.createElement("div");
@@ -185,7 +240,7 @@ window.NP = window.NP || {};
             sizeRow.appendChild(sizeInput);
             sizeRow.innerHTML += '<span style="font-size:11px;color:var(--fg-dim, #00bf30);">px (' + MIN_SIZE + '-' + MAX_SIZE + ')</span>';
             /* Re-get sizeInput after innerHTML concat */
-            modal.appendChild(sizeRow);
+            body.appendChild(sizeRow);
             sizeInput = sizeRow.querySelector("input");
 
             /* Preview area */
@@ -200,10 +255,11 @@ window.NP = window.NP || {};
             var previewArea = document.createElement("div");
             previewArea.style.cssText =
                 "padding:10px;background:var(--bg-entry, #0d0d0d);border:1px solid var(--border, #1a2e1a);" +
-                "border-radius:4px;color:var(--fg, #00ff41);min-height:48px;white-space:pre-wrap;";
+                "border-radius:4px;color:var(--fg, #00ff41);min-height:48px;max-height:180px;" +
+                "overflow:auto;white-space:pre-wrap;";
             previewArea.textContent = "The quick brown fox jumps over the lazy dog.\nABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789\n!@#$%^&*() {}<>[] =+-_";
             previewBox.appendChild(previewArea);
-            modal.appendChild(previewBox);
+            body.appendChild(previewBox);
 
             function updatePreview() {
                 var size = parseInt(sizeInput.value, 10) || currentSize;
@@ -260,20 +316,31 @@ window.NP = window.NP || {};
                 if (size < MIN_SIZE) size = MIN_SIZE;
                 if (size > MAX_SIZE) size = MAX_SIZE;
 
-                /* Update editor font */
-                var editor = document.getElementById("editor");
-                if (editor) {
-                    editor.style.fontFamily = "'" + selectedFont + "', monospace";
-                    editor.style.fontSize = size + "px";
-                }
+                var fontFamily = "'" + selectedFont + "', monospace";
+                var sizePx = size + "px";
 
-                /* Save via state/API */
-                if (NP.state && NP.state.data) {
-                    NP.state.data.font_family = selectedFont;
-                    NP.state.data.font_size = size;
-                }
-                if (NP.api && NP.api.saveSettings) {
-                    NP.api.saveSettings({ font_family: selectedFont, font_size: size });
+                if (savedRange && !savedRange.collapsed &&
+                    applyFontToSelection(fontFamily, sizePx)) {
+                    /* Per-text styling: lives in the note's content/formats,
+                       NOT the global app default — so do NOT touch
+                       editor.style or saveSettings. Persist the note now so
+                       it survives reload (via _extractFormats). */
+                    if (NP.editor && NP.editor.save) NP.editor.save(true);
+                } else {
+                    /* No selection → editor-wide default (existing
+                       behaviour, persisted as a global app setting). */
+                    var editor = document.getElementById("editor");
+                    if (editor) {
+                        editor.style.fontFamily = fontFamily;
+                        editor.style.fontSize = sizePx;
+                    }
+                    if (NP.state && NP.state.data) {
+                        NP.state.data.font_family = selectedFont;
+                        NP.state.data.font_size = size;
+                    }
+                    if (NP.api && NP.api.saveSettings) {
+                        NP.api.saveSettings({ font_family: selectedFont, font_size: size });
+                    }
                 }
 
                 close();
