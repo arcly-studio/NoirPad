@@ -46,14 +46,19 @@ window.NP = window.NP || {};
     NP.splash = {
 
         show: function () {
+            /* ALWAYS remove the HTML pre-app splash from index.html —
+               it's a "Loading..." placeholder shown until JS boot
+               completes. Keeping the early-return below the removal
+               means show_splash=false still uncovers the app; we only
+               skip the ASCII boot animation, not the cleanup. */
+            var existing = document.getElementById("splash-overlay");
+            if (existing) existing.parentNode.removeChild(existing);
+
             /* Settings v2: respect the show_splash setting (default true —
                undefined/missing key still shows the splash). */
             if (NP.state && NP.state.data && NP.state.data.show_splash === false) {
                 return;
             }
-            /* Remove any existing splash */
-            var existing = document.getElementById("splash-overlay");
-            if (existing) existing.parentNode.removeChild(existing);
 
             /* Create overlay */
             var overlay = document.createElement("div");
