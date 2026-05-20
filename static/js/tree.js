@@ -366,6 +366,39 @@ window.NP = window.NP || {};
             }, 0);
         },
 
+        /* Unified delete for #btn-delete, context menu, and Delete key.
+           explicitId wins (context menu passes the right-clicked id);
+           otherwise fall back to selectedId, then currentNoteId so a
+           note open without an active tree selection still deletes. */
+        deleteSelected: function (explicitId) {
+            var data = NP.state.data;
+            if (!data || !data.tree) return;
+            var id = explicitId || NP.state.selectedId || NP.state.currentNoteId;
+            if (!id) return;
+            var item = findItemById(data.tree, id);
+            if (!item) return;
+            var name = item.name || "this item";
+            var isFolder = item.type === "folder";
+            var skipConfirm = data.confirm_delete === false;
+            var msg = isFolder
+                ? "Move folder '" + name + "' and all its contents to trash?"
+                : "Move '" + name + "' to trash?";
+            if (!skipConfirm && !confirm(msg)) return;
+            NP.api.deleteItem(id).then(function () {
+                if (NP.state.currentNoteId === id) {
+                    NP.state.currentNoteId = null;
+                    if (NP.tabs) NP.tabs.close(id);
+                    if (NP.editor) NP.editor.showWelcome();
+                }
+                if (NP.state.selectedId === id) {
+                    NP.state.selectedId = null;
+                }
+                return NP.state.init();
+            }).then(function () {
+                NP.tree.render();
+            });
+        },
+
         _handleContextAction: function (action, id, type) {
             switch (action) {
                 case "new-note":
@@ -405,24 +438,7 @@ window.NP = window.NP || {};
                     break;
 
                 case "delete":
-                    var delItem = findItemById(NP.state.data.tree, id);
-                    var delName = delItem ? delItem.name : "this item";
-                    /* Settings v2: confirm_delete (default true — only an
-                       explicit false skips the confirm dialog). */
-                    var skipConfirm = NP.state.data &&
-                        NP.state.data.confirm_delete === false;
-                    if (skipConfirm || confirm("Move '" + delName + "' to trash?")) {
-                        NP.api.deleteItem(id).then(function () {
-                            if (NP.state.currentNoteId === id) {
-                                NP.state.currentNoteId = null;
-                                if (NP.tabs) NP.tabs.close(id);
-                                if (NP.editor) NP.editor.showWelcome();
-                            }
-                            return NP.state.init();
-                        }).then(function () {
-                            NP.tree.render();
-                        });
-                    }
+                    NP.tree.deleteSelected(id);
                     break;
 
                 case "favorite":

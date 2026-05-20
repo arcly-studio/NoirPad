@@ -420,8 +420,9 @@ window.NP = window.NP || {};
             });
         }
 
-        /* TODO: modify new note flow to prompt for encryption password.
-           Persisted + visual only for now. */
+        /* When ON, the +Note flow prompts for an encryption password
+           immediately after loading the new note (see app.js #btn-new-note
+           handler). Cancelling the prompt leaves the note plain. */
         bindToggle(
             "setting-default-encrypted",
             function () { return !!sget("default_encrypted", false); },
@@ -457,9 +458,39 @@ window.NP = window.NP || {};
         var exportAll = document.getElementById("setting-export-all");
         if (exportAll) {
             exportAll.addEventListener("click", function () {
-                /* TODO: bulk export (zip of per-note txt/html) — no backend
-                   endpoint yet. */
-                alert("Export all notes — coming soon");
+                /* Fetch as blob so we can show a loading state during the
+                   server-side zip build (vs. window.location.href which
+                   gives no feedback). */
+                var originalText = exportAll.textContent;
+                exportAll.textContent = "Exporting...";
+                exportAll.disabled = true;
+
+                fetch("/api/notes/export")
+                    .then(function (r) {
+                        if (!r.ok) {
+                            throw new Error("Export failed: " + r.status);
+                        }
+                        return r.blob();
+                    })
+                    .then(function (blob) {
+                        var url = URL.createObjectURL(blob);
+                        var a = document.createElement("a");
+                        a.href = url;
+                        var today = new Date().toISOString().slice(0, 10);
+                        a.download = "noirpad-notes-" + today + ".zip";
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    })
+                    .catch(function (err) {
+                        alert("Export failed: " +
+                            (err && err.message ? err.message : err));
+                    })
+                    .finally(function () {
+                        exportAll.textContent = originalText;
+                        exportAll.disabled = false;
+                    });
             });
         }
 
@@ -474,9 +505,32 @@ window.NP = window.NP || {};
         var resetAll = document.getElementById("setting-reset-all");
         if (resetAll) {
             resetAll.addEventListener("click", function () {
-                /* TODO: reset-to-defaults flow (needs a backend endpoint or
-                   a known DEFAULT_DATA settings subset). */
-                alert("Reset all settings — coming soon");
+                var ok = window.confirm(
+                    "Reset all settings to defaults?\n\n" +
+                    "This restores theme, fonts, toggles, idle-lock, and " +
+                    "custom shortcuts. Your notes, folders, and trash will " +
+                    "NOT be affected."
+                );
+                if (!ok) return;
+
+                fetch("/api/settings/reset", { method: "POST" })
+                    .then(function (r) {
+                        if (!r.ok) {
+                            throw new Error("Server error " + r.status);
+                        }
+                        return r.json();
+                    })
+                    .then(function () {
+                        /* Reload — simpler and more reliable than
+                           re-applying every setting in JS (theme, font,
+                           glow multiplier, CRT/matrix rain, autosave
+                           timer, shortcut bindings, ...). */
+                        window.location.reload();
+                    })
+                    .catch(function (err) {
+                        alert("Failed to reset settings: " +
+                            (err && err.message ? err.message : err));
+                    });
             });
         }
     }

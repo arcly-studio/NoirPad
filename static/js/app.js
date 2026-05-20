@@ -278,8 +278,22 @@ window.NP = window.NP || {};
                         return NP.state.init().then(function () {
                             NP.tree.render();
                             if (res && res.id) {
-                                NP.editor.loadNote(res.id);
+                                var loaded = NP.editor.loadNote(res.id);
                                 if (NP.tabs) NP.tabs.add(res.id, name);
+                                /* Settings v2: default_encrypted — after the
+                                   note is loaded (so currentNoteId is set and
+                                   editor state is ready), prompt to encrypt.
+                                   Cancel inside NP.encryption.encrypt() leaves
+                                   the note plain — we never delete it. */
+                                var defEnc = NP.state.data &&
+                                    NP.state.data.default_encrypted === true;
+                                if (defEnc && NP.encryption && NP.encryption.encrypt) {
+                                    var after = loaded && loaded.then
+                                        ? loaded : Promise.resolve();
+                                    after.then(function () {
+                                        NP.encryption.encrypt();
+                                    });
+                                }
                             }
                         });
                     });
@@ -289,22 +303,9 @@ window.NP = window.NP || {};
             var btnDelete = NP.$("#btn-delete");
             if (btnDelete) {
                 btnDelete.addEventListener("click", function () {
-                    if (!NP.state.currentNoteId) return;
-                    var item = NP.editor._findItemInTree(NP.state.data.tree, NP.state.currentNoteId);
-                    var itemName = item ? item.name : "this item";
-                    /* Settings v2: confirm_delete (default true — only an
-                       explicit false skips the confirm dialog). */
-                    var skipConfirm = NP.state.data &&
-                        NP.state.data.confirm_delete === false;
-                    if (!skipConfirm && !confirm("Move '" + itemName + "' to trash?")) return;
-                    NP.api.deleteItem(NP.state.currentNoteId).then(function () {
-                        if (NP.tabs) NP.tabs.close(NP.state.currentNoteId);
-                        NP.state.currentNoteId = null;
-                        return NP.state.init();
-                    }).then(function () {
-                        NP.tree.render();
-                        if (NP.editor) NP.editor.showWelcome();
-                    });
+                    if (NP.tree && NP.tree.deleteSelected) {
+                        NP.tree.deleteSelected();
+                    }
                 });
             }
 

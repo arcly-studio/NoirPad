@@ -824,31 +824,50 @@ async def trash_delete_item(req: RestoreReq):
 # ---- Settings ----
 
 
+_SETTINGS_FIELDS: tuple[str, ...] = (
+    "theme",
+    "ui_font",
+    "font_family",
+    "font_size",
+    "autosave",
+    "page_orientation",
+    "matrix_rain_enabled",
+    "show_splash",
+    "autosave_interval",
+    "spellcheck",
+    "glitch_effect",
+    "confirm_delete",
+    "show_shortcut_hints",
+    "idle_lock_minutes",
+    "default_encrypted",
+    "glow_intensity",
+    "custom_shortcuts",
+)
+
+
 @app.put("/api/settings")
 async def update_settings(body: SettingsBody):
     def _mut(data: dict) -> None:
-        for field in (
-            "theme",
-            "ui_font",
-            "font_family",
-            "font_size",
-            "autosave",
-            "page_orientation",
-            "matrix_rain_enabled",
-            "show_splash",
-            "autosave_interval",
-            "spellcheck",
-            "glitch_effect",
-            "confirm_delete",
-            "show_shortcut_hints",
-            "idle_lock_minutes",
-            "default_encrypted",
-            "glow_intensity",
-            "custom_shortcuts",
-        ):
+        for field in _SETTINGS_FIELDS:
             value = getattr(body, field)
             if value is not None:
                 data[field] = value
+
+    _update_data(_mut)  # Fix #6
+    return {"ok": True}
+
+
+@app.post("/api/settings/reset")
+async def reset_settings():
+    """Restore every settings field to its DEFAULT_DATA value.
+
+    Touches only the keys listed in _SETTINGS_FIELDS — user content (notes,
+    folders, trash, tabs, favorites, note_images) is left untouched.
+    """
+    def _mut(data: dict) -> None:
+        for field in _SETTINGS_FIELDS:
+            if field in DEFAULT_DATA:
+                data[field] = copy.deepcopy(DEFAULT_DATA[field])
 
     _update_data(_mut)  # Fix #6
     return {"ok": True}
@@ -1036,6 +1055,150 @@ async def export_html(note_id: str):
         buf,
         media_type="text/html; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{name}.html"'},
+    )
+
+
+def _safe_filename(name: str) -> str:
+    """Strip filesystem-unsafe chars from *name* for use as a zip entry name.
+
+    Same character set rejected by Windows + control bytes. Leading/trailing
+    dots and spaces are stripped (Windows treats `..` and trailing dots
+    specially). Capped at 200 chars to leave headroom under typical zip /
+    filesystem path limits. Empty result falls back to 'untitled'.
+    """
+    cleaned = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", name or "untitled")
+    cleaned = cleaned.strip(" .")
+    return cleaned[:200] or "untitled"
+
+
+def _is_encrypted_content(content: str) -> bool:
+    """True if *content* is a NoirPad encryption envelope ({"encrypted":true})."""
+    try:
+        obj = json.loads(content)
+    except (json.JSONDecodeError, TypeError):
+        return False
+    return isinstance(obj, dict) and obj.get("encrypted") is True
+
+
+def _build_note_html(name: str, content: str, font: str, size: int) -> str:
+    """Render a single note as a standalone HTML5 document.
+
+    Identical visual treatment to the per-note `/api/export/{id}/html`
+    endpoint so users get a consistent look between single-note and
+    bulk export. Body uses white-space:pre-wrap so the plaintext lines
+    survive as-is without needing <br> substitution.
+    """
+    escaped_name = (
+        name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    )
+    escaped_body = (
+        content.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\n", "<br>\n")
+    )
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{escaped_name}</title>
+<style>
+  body {{
+    background: #0a0a0a;
+    color: #00ff00;
+    font-family: '{font}', monospace;
+    font-size: {size}px;
+    padding: 2rem;
+    white-space: pre-wrap;
+  }}
+</style>
+</head>
+<body>
+{escaped_body}
+</body>
+</html>"""
+
+
+@app.get("/api/notes/export")
+async def export_all_notes():
+    """Bulk-export every plain note as readable .html inside a single zip.
+
+    Folder hierarchy is reproduced as zip directories. Encrypted notes are
+    skipped (we don't ship the user opaque ciphertext as an "export") and
+    listed in `_EXCLUDED.txt` so the user knows what is missing.
+    """
+    from datetime import datetime
+
+    data = _read_data()
+    notes: dict[str, str] = data.get("notes", {}) or {}
+    font = data.get("font_family", "Cascadia Code")
+    size = data.get("font_size", 12)
+
+    buf = io.BytesIO()
+    excluded: list[str] = []
+    included = 0
+
+    # Track used paths within each folder to avoid silent overwrites when
+    # two notes share a name. Maps folder_path -> set of filenames seen.
+    used: dict[str, set[str]] = {}
+
+    def visit(items: list[dict], path_parts: list[str], zf: zipfile.ZipFile) -> None:
+        nonlocal included
+        for item in items:
+            kind = item.get("type")
+            name = item.get("name") or "untitled"
+            if kind == "folder":
+                visit(
+                    item.get("children") or [],
+                    path_parts + [_safe_filename(name)],
+                    zf,
+                )
+                continue
+            if kind != "note":
+                continue
+            content = notes.get(item.get("id"), "")
+            if _is_encrypted_content(content):
+                excluded.append("/".join(path_parts + [name]) if path_parts else name)
+                continue
+
+            folder_key = "/".join(path_parts)
+            seen = used.setdefault(folder_key, set())
+            base = _safe_filename(name)
+            filename = base + ".html"
+            # Disambiguate on collision (a, a (2), a (3), ...).
+            n = 2
+            while filename in seen:
+                filename = f"{base} ({n}).html"
+                n += 1
+            seen.add(filename)
+
+            full_path = "/".join(path_parts + [filename]) if path_parts else filename
+            zf.writestr(full_path, _build_note_html(name, content, font, size))
+            included += 1
+
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        visit(data.get("tree") or [], [], zf)
+
+        if excluded:
+            info_lines = [
+                f"NoirPad Export — {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                f"Notes exported: {included}",
+                f"Notes skipped (encrypted): {len(excluded)}",
+                "",
+                "The following encrypted notes were SKIPPED:",
+                *(f"  - {p}" for p in excluded),
+                "",
+                "To include them, unlock and remove encryption first, "
+                "then re-export.",
+            ]
+            zf.writestr("_EXCLUDED.txt", "\n".join(info_lines))
+
+    buf.seek(0)
+    filename = f"noirpad-notes-{datetime.now().strftime('%Y-%m-%d')}.zip"
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
