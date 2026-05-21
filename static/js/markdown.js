@@ -285,6 +285,137 @@ window.NP = window.NP || {};
         isActive: isMdMode
     };
 
+    /* ---- Shortcut handlers (textarea-based) ----
+
+       All MD shortcut handlers return `false` when the textarea isn't
+       focused / MD mode isn't active. The shortcuts dispatcher treats
+       that as passthrough and tries the next matching binding (so e.g.
+       Ctrl+B in rich-text mode falls through to toggle-sidebar).
+
+       Edits go through setRangeText so the textarea's native undo stack
+       is preserved, then dispatch an `input` event so the preview pane
+       re-renders. */
+
+    function activeTa() {
+        if (!isMdMode()) return null;
+        var ta = document.getElementById("editor-md");
+        if (!ta || document.activeElement !== ta) return null;
+        return ta;
+    }
+
+    function fireInput(ta) {
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    /* Surround the current selection with `before`/`after`. Empty
+       selection places the caret between them; non-empty selection
+       leaves the caret at the end of the inserted run. */
+    function wrapSel(ta, before, after) {
+        var s = ta.selectionStart;
+        var e = ta.selectionEnd;
+        var sel = ta.value.substring(s, e);
+        var ins = before + sel + after;
+        ta.setRangeText(ins, s, e, "end");
+        if (sel.length === 0) {
+            var caret = s + before.length;
+            ta.setSelectionRange(caret, caret);
+        }
+        fireInput(ta);
+    }
+
+    /* Prepend `prefix` to the start of the line containing the caret,
+       keeping the caret's relative position within the line. */
+    function insertLinePrefix(ta, prefix) {
+        var s = ta.selectionStart;
+        var lineStart = ta.value.lastIndexOf("\n", s - 1) + 1;
+        ta.setRangeText(prefix, lineStart, lineStart, "end");
+        var newPos = s + prefix.length;
+        ta.setSelectionRange(newPos, newPos);
+        fireInput(ta);
+    }
+
+    /* Insert `text` at the caret. When `newlineBefore` is true and the
+       caret isn't already at the start of a line, a leading \n is added
+       so the new content starts on its own line. */
+    function insertAtCaret(ta, text, newlineBefore) {
+        var s = ta.selectionStart;
+        var lead = "";
+        if (newlineBefore && s > 0 && ta.value.charAt(s - 1) !== "\n") {
+            lead = "\n";
+        }
+        ta.setRangeText(lead + text, s, s, "end");
+        fireInput(ta);
+    }
+
+    /* Wrap selection in [label](url) and select the "url" placeholder
+       so the user can immediately type the destination. */
+    function insertLink(ta) {
+        var s = ta.selectionStart;
+        var e = ta.selectionEnd;
+        var sel = ta.value.substring(s, e);
+        var label = sel || "text";
+        var ins = "[" + label + "](url)";
+        ta.setRangeText(ins, s, e, "end");
+        var urlStart = s + 1 + label.length + 2;  /* "[" + label + "](" */
+        ta.setSelectionRange(urlStart, urlStart + 3);  /* select "url" */
+        fireInput(ta);
+    }
+
+    function insertImage(ta) {
+        var s = ta.selectionStart;
+        var ins = "![alt](url)";
+        ta.setRangeText(ins, s, s, "end");
+        var urlStart = s + 2 + 3 + 2;  /* "![" + "alt" + "](" */
+        ta.setSelectionRange(urlStart, urlStart + 3);
+        fireInput(ta);
+    }
+
+    function insertCodeBlock(ta) {
+        var s = ta.selectionStart;
+        var lead = (s > 0 && ta.value.charAt(s - 1) !== "\n") ? "\n" : "";
+        var ins = lead + "```\n\n```\n";
+        ta.setRangeText(ins, s, s, "end");
+        /* Caret on the empty line between the fences. */
+        var caret = s + lead.length + 4;  /* lead + "```\n" */
+        ta.setSelectionRange(caret, caret);
+        fireInput(ta);
+    }
+
+    function registerMarkdownShortcuts() {
+        if (!NP.shortcuts || !NP.shortcuts.register) return;
+        var R = NP.shortcuts.register;
+
+        function mdAction(fn) {
+            return function () {
+                var ta = activeTa();
+                if (!ta) return false;  /* passthrough — try next binding */
+                fn(ta);
+            };
+        }
+
+        R("md-h1", mdAction(function (ta) { insertLinePrefix(ta, "# "); }));
+        R("md-h2", mdAction(function (ta) { insertLinePrefix(ta, "## "); }));
+        R("md-h3", mdAction(function (ta) { insertLinePrefix(ta, "### "); }));
+
+        R("md-bold",          mdAction(function (ta) { wrapSel(ta, "**", "**"); }));
+        R("md-italic",        mdAction(function (ta) { wrapSel(ta, "*", "*"); }));
+        R("md-code-inline",   mdAction(function (ta) { wrapSel(ta, "`", "`"); }));
+        R("md-strikethrough", mdAction(function (ta) { wrapSel(ta, "~~", "~~"); }));
+
+        R("md-code-block", mdAction(insertCodeBlock));
+
+        R("md-quote",         mdAction(function (ta) { insertLinePrefix(ta, "> "); }));
+        R("md-list-bullet",   mdAction(function (ta) { insertLinePrefix(ta, "- "); }));
+        R("md-list-numbered", mdAction(function (ta) { insertLinePrefix(ta, "1. "); }));
+
+        R("md-horizontal-rule", mdAction(function (ta) {
+            insertAtCaret(ta, "---\n", true);
+        }));
+
+        R("md-link",  mdAction(insertLink));
+        R("md-image", mdAction(insertImage));
+    }
+
     /* ---- Wiring ---- */
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -295,6 +426,7 @@ window.NP = window.NP || {};
         if (els.ta) {
             els.ta.addEventListener("input", scheduleRender);
         }
+        registerMarkdownShortcuts();
     });
 
 })(window.NP);

@@ -5,14 +5,21 @@
  * each id lives in `registry` (default + current) and can later be
  * remapped from Settings (next phase) and persisted to the backend.
  *
- * Dispatcher contract (IMPORTANT — preserves existing behaviour):
+ * Dispatcher contract:
  *   - On a keystroke match the registered handler is called.
- *   - If the handler returns `false`, the event is treated as NOT
- *     handled: NO preventDefault / stopPropagation, the event keeps
- *     propagating (e.g. `delete` returns false while typing so the
- *     browser still deletes text in the editor).
- *   - Otherwise the event is consumed (preventDefault + stopPropagation),
- *     exactly like the old hardcoded handlers did.
+ *   - If the handler returns `false`, the dispatcher CONTINUES iterating
+ *     to find the next matching binding. This enables context-aware
+ *     bindings (e.g. md-bold's Ctrl+B consumes only in MD mode; in
+ *     rich-text it returns false so toggle-sidebar — also Ctrl+B — can
+ *     fire). When all matching handlers passthrough, the event falls
+ *     through to browser default (e.g. Delete in a focused input still
+ *     deletes the character).
+ *   - Otherwise the event is consumed (preventDefault + stopPropagation).
+ *
+ * Iteration order is for...in (insertion order). Place higher-priority
+ * (more specific) bindings earlier in the registry — Markdown actions
+ * are listed first so they get the first chance to claim conflicting
+ * keystrokes like Ctrl+B.
  */
 window.NP = window.NP || {};
 
@@ -96,6 +103,26 @@ window.NP = window.NP || {};
     /* ============== Registry ============== */
 
     var registry = {
+        /* Markdown — listed FIRST so for...in dispatch order gives these
+           priority over conflicting bindings (e.g. md-bold's Ctrl+B vs
+           toggle-sidebar's Ctrl+B). MD handlers return false when the MD
+           textarea isn't focused, and the dispatcher's "continue on
+           passthrough" semantics let the next matching binding fire. */
+        "md-h1":                { default: "",              current: "",              label: "Markdown: H1 heading",        category: "Markdown" },
+        "md-h2":                { default: "",              current: "",              label: "Markdown: H2 heading",        category: "Markdown" },
+        "md-h3":                { default: "",              current: "",              label: "Markdown: H3 heading",        category: "Markdown" },
+        "md-bold":              { default: "Ctrl+B",        current: "Ctrl+B",        label: "Markdown: Bold",              category: "Markdown" },
+        "md-italic":            { default: "Ctrl+I",        current: "Ctrl+I",        label: "Markdown: Italic",            category: "Markdown" },
+        "md-code-inline":       { default: "Ctrl+E",        current: "Ctrl+E",        label: "Markdown: Inline code",       category: "Markdown" },
+        "md-strikethrough":     { default: "",              current: "",              label: "Markdown: Strikethrough",     category: "Markdown" },
+        "md-code-block":        { default: "Ctrl+Shift+E",  current: "Ctrl+Shift+E",  label: "Markdown: Code block",        category: "Markdown" },
+        "md-quote":             { default: "",              current: "",              label: "Markdown: Quote",             category: "Markdown" },
+        "md-list-bullet":       { default: "",              current: "",              label: "Markdown: Bullet list",       category: "Markdown" },
+        "md-list-numbered":     { default: "",              current: "",              label: "Markdown: Numbered list",     category: "Markdown" },
+        "md-horizontal-rule":   { default: "",              current: "",              label: "Markdown: Horizontal rule",   category: "Markdown" },
+        "md-link":              { default: "Ctrl+K",        current: "Ctrl+K",        label: "Markdown: Link",              category: "Markdown" },
+        "md-image":             { default: "",              current: "",              label: "Markdown: Image",             category: "Markdown" },
+
         /* Editor */
         "save":                 { default: "Ctrl+S",        current: "Ctrl+S",        label: "Save note",              category: "Editor" },
         "find":                 { default: "Ctrl+F",        current: "Ctrl+F",        label: "Find in note",           category: "Editor" },
@@ -253,9 +280,10 @@ window.NP = window.NP || {};
 
                     var handler = handlers[id];
                     if (!handler) {
-                        /* Bound but no handler: do nothing and DON'T
-                           block the key (avoid dead keystrokes). */
-                        return;
+                        /* Bound but no handler — try the next binding for
+                           this keystroke (could be a more specific action
+                           that owns the key). */
+                        continue;
                     }
                     var result;
                     try {
@@ -266,9 +294,12 @@ window.NP = window.NP || {};
                         );
                     }
                     if (result === false) {
-                        /* Context passthrough (e.g. Delete while typing):
-                           let the browser / other listeners handle it. */
-                        return;
+                        /* Context-aware passthrough — try the next binding
+                           that matches the same keystroke (e.g. md-bold
+                           defers to toggle-sidebar outside MD mode). If
+                           none matches, the key falls through to browser
+                           default at the bottom of the loop. */
+                        continue;
                     }
                     e.preventDefault();
                     e.stopPropagation();
