@@ -4,7 +4,11 @@ window.NP = window.NP || {};
 (function (NP) {
     "use strict";
 
-    var IMG_MARKER_RE = /<<IMG:([^>]+)>>/g;
+    /* Marker grammar:
+         <<IMG:filename>>              — plain image
+         <<IMG:filename|w=NNN>>        — image with persisted zoom width
+       The width capture is optional (Ctrl+wheel zoom feature). */
+    var IMG_MARKER_RE = /<<IMG:([^|>]+)(?:\|w=(\d+))?>>/g;
 
     function findItemById(tree, id) {
         for (var i = 0; i < tree.length; i++) {
@@ -86,6 +90,18 @@ window.NP = window.NP || {};
                 var content = data.content || "";
                 var formats = data.formats || [];
 
+                /* Mirror the server's mode into state so toggles + the MD
+                   button stay in sync without a separate fetch. */
+                if (data.mode !== undefined &&
+                    NP.state && NP.state.data) {
+                    NP.state.data.note_modes = NP.state.data.note_modes || {};
+                    if (data.mode === "markdown") {
+                        NP.state.data.note_modes[id] = "markdown";
+                    } else {
+                        delete NP.state.data.note_modes[id];
+                    }
+                }
+
                 /* Check if note is encrypted */
                 var isEncrypted = false;
                 try {
@@ -127,6 +143,9 @@ window.NP = window.NP || {};
                         if (NP.tags && NP.tags.render) NP.tags.render();
                         /* STATE B: encrypted + unlocked */
                         NP.editor._refreshLockButton();
+                        if (NP.markdown && NP.markdown.applyForLoadedNote) {
+                            NP.markdown.applyForLoadedNote(id);
+                        }
                     }).catch(function (err) {
                         alert("Wrong password.");
                         NP.editor._showLockScreen();
@@ -150,6 +169,9 @@ window.NP = window.NP || {};
 
                 /* STATE A: plain note */
                 NP.editor._refreshLockButton();
+                if (NP.markdown && NP.markdown.applyForLoadedNote) {
+                    NP.markdown.applyForLoadedNote(id);
+                }
             }).catch(function (err) {
                 console.error("loadNote error:", err);
                 if (NP.editor.el) {
@@ -385,7 +407,7 @@ window.NP = window.NP || {};
                         var parts = node.src.split("/");
                         fname = parts[parts.length - 1];
                     }
-                    var marker = "<<IMG:" + fname + ">>";
+                    var marker = "<<IMG:" + fname + NP.editor._imgWidthSuffix(node) + ">>";
                     fullText += marker;
                     offset += marker.length;
                 } else if (node.nodeName === "PRE" && node.classList && node.classList.contains("np-code")) {
@@ -476,6 +498,15 @@ window.NP = window.NP || {};
 
         /* ---- Images ---- */
 
+        _imgWidthSuffix: function (node) {
+            var w = node.getAttribute("data-w");
+            if (!w && node.style && node.style.width) {
+                var parsed = parseInt(node.style.width, 10);
+                if (parsed) w = String(parsed);
+            }
+            return w ? "|w=" + w : "";
+        },
+
         _textToHtmlWithImages: function (text, formats) {
             if (!text) return "";
 
@@ -491,21 +522,32 @@ window.NP = window.NP || {};
                 return " CODE" + idx + " ";
             });
 
-            /* Step 2: existing IMG split + format application on processed text */
+            /* Step 2: IMG split + format application on processed text.
+               Regex has 2 capture groups (filename, optional width), so
+               split yields tuples of (text, fname, width, text, fname, …). */
             var parts = processed.split(IMG_MARKER_RE);
             var html;
             if (parts.length === 1) {
                 html = NP.editor._applyFormats(processed, formats);
             } else {
                 html = "";
-                for (var i = 0; i < parts.length; i++) {
-                    if (i % 2 === 0) {
-                        if (parts[i]) html += NP.editor._applyFormats(parts[i], formats);
-                    } else {
-                        var filename = parts[i];
+                for (var i = 0; i < parts.length; i += 3) {
+                    if (parts[i]) html += NP.editor._applyFormats(parts[i], formats);
+                    if (i + 1 < parts.length) {
+                        var filename = parts[i + 1];
+                        var width = parts[i + 2];
+                        var widthStyle = "";
+                        var widthAttr = "";
+                        if (width) {
+                            widthStyle = "width:" + width + "px;max-width:" + width + "px;";
+                            widthAttr = " data-w='" + NP.escapeHtml(width) + "'";
+                        } else {
+                            widthStyle = "max-width:100%;";
+                        }
                         html += "<img src='/images/" + NP.escapeHtml(filename) +
-                            "' data-filename='" + NP.escapeHtml(filename) +
-                            "' style='max-width:100%;display:block;margin:8px 0;'>";
+                            "' data-filename='" + NP.escapeHtml(filename) + "'" +
+                            widthAttr +
+                            " style='" + widthStyle + "display:block;margin:8px 0;'>";
                     }
                 }
             }
@@ -633,7 +675,7 @@ window.NP = window.NP || {};
                         var parts = node.src.split("/");
                         fname = parts[parts.length - 1];
                     }
-                    text += "<<IMG:" + fname + ">>";
+                    text += "<<IMG:" + fname + NP.editor._imgWidthSuffix(node) + ">>";
                 } else if (node.nodeName === "PRE" && node.classList && node.classList.contains("np-code")) {
                     /* Round-trip code block back to ```lang\n...\n``` form */
                     var raw = node.getAttribute("data-code");
@@ -683,13 +725,24 @@ window.NP = window.NP || {};
                 return Promise.resolve();
             }
 
-            if (NP.editor.el.contentEditable !== "true") {
-                return Promise.resolve();
+            /* Markdown mode: textarea is the source of truth. Skip
+               the rich-text walker entirely — its output would be
+               whatever HTML the hidden #editor still holds (stale or
+               empty), not the user's actual markdown. */
+            var mdActive = NP.markdown && NP.markdown.isActive &&
+                NP.markdown.isActive();
+            var text;
+            var formats;
+            if (mdActive) {
+                text = NP.markdown.getRawText();
+                formats = [];
+            } else {
+                if (NP.editor.el.contentEditable !== "true") {
+                    return Promise.resolve();
+                }
+                text = NP.editor._htmlToTextWithImages().text;
+                formats = NP.editor._extractFormats();
             }
-
-            var result = NP.editor._htmlToTextWithImages();
-            var text = result.text;
-            var formats = NP.editor._extractFormats();
 
             var savePromise;
             if (NP.editor._encryptedNotePassword) {

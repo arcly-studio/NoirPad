@@ -4,83 +4,385 @@ window.NP = window.NP || {};
 (function (NP) {
     "use strict";
 
+    /* The +Img toolbar button blurs the editor before the file dialog
+       opens, so window.getSelection() loses the cursor by the time
+       onchange fires. Stash it on click via saveSelection() and apply
+       it again when the upload resolves. */
+    var savedRange = null;
+    var savedMd = null;
+
+    function inMarkdownMode() {
+        return !!(NP.markdown && NP.markdown.isActive && NP.markdown.isActive());
+    }
+
+    /* Elements the click/wheel handlers must cover. #editor is the
+       rich-text contenteditable (visible in non-MD mode); #md-preview
+       is the rendered HTML pane (visible in MD mode). The hidden one
+       just never fires events, so attaching to both is safe. */
+    function imageHostElements() {
+        var out = [];
+        var ed = document.getElementById("editor");
+        if (ed) out.push(ed);
+        var pv = document.getElementById("md-preview");
+        if (pv) out.push(pv);
+        return out;
+    }
+
     NP.images = {
         init: function () {
             var editor = document.getElementById("editor");
-            if (!editor) return;
-
-            editor.addEventListener("paste", NP.images._onPaste);
+            if (editor) {
+                editor.addEventListener("paste", NP.images._onPasteEditor);
+            }
+            var ta = document.getElementById("editor-md");
+            if (ta) {
+                ta.addEventListener("paste", NP.images._onPasteTextarea);
+            }
             NP.images._setupZoom();
+            NP.images._setupClick();
         },
 
-        _onPaste: function (e) {
-            var items = e.clipboardData && e.clipboardData.items;
-            if (!items) return;
-
-            for (var i = 0; i < items.length; i++) {
-                if (items[i].type.indexOf("image/") === 0) {
-                    e.preventDefault();
-                    var file = items[i].getAsFile();
-                    if (file) NP.images.upload(file);
-                    return;
-                }
+        saveSelection: function () {
+            savedRange = null;
+            savedMd = null;
+            if (inMarkdownMode()) {
+                var ta = document.getElementById("editor-md");
+                if (ta) savedMd = { start: ta.selectionStart, end: ta.selectionEnd };
+                return;
+            }
+            var editor = document.getElementById("editor");
+            var sel = window.getSelection();
+            if (sel && sel.rangeCount > 0 && editor && editor.contains(sel.anchorNode)) {
+                savedRange = sel.getRangeAt(0).cloneRange();
             }
         },
 
+        _onPasteEditor: function (e) {
+            var file = NP.images._extractImageFile(e);
+            if (!file) return;
+            e.preventDefault();
+            NP.images.saveSelection();
+            NP.images._showPasteDialog(file);
+        },
+
+        _onPasteTextarea: function (e) {
+            var file = NP.images._extractImageFile(e);
+            if (!file) return;
+            e.preventDefault();
+            NP.images.saveSelection();
+            NP.images._showPasteDialog(file);
+        },
+
+        _extractImageFile: function (e) {
+            var items = e.clipboardData && e.clipboardData.items;
+            if (!items) return null;
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf("image/") === 0) {
+                    return items[i].getAsFile();
+                }
+            }
+            return null;
+        },
+
         upload: function (file) {
+            if (!NP.editor || !NP.editor._currentNoteId) {
+                console.warn("[images] no note loaded — upload skipped");
+                return Promise.resolve();
+            }
             return NP.api.uploadImage(file).then(function (res) {
                 var url = res && (res.url || res.path);
                 var filename = res && res.filename;
-                if (!url) return;
+                if (!url || !filename) return;
 
-                var editor = document.getElementById("editor");
-                if (!editor) return;
-
-                var img = document.createElement("img");
-                img.src = url;
-                if (filename) img.setAttribute("data-filename", filename);
-                img.style.cssText = "max-width:100%;height:auto;display:block;margin:8px 0;";
-                img.setAttribute("draggable", "false");
-
-                /* Insert at cursor or append */
-                var sel = window.getSelection();
-                if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
-                    var range = sel.getRangeAt(0);
-                    range.deleteContents();
-                    range.insertNode(img);
-                    /* Move cursor after image */
-                    range.setStartAfter(img);
-                    range.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(range);
+                if (inMarkdownMode()) {
+                    NP.images._insertMarkdown(url);
                 } else {
-                    editor.appendChild(img);
+                    NP.images._insertImage(url, filename);
                 }
+
+                /* Persist immediately — autosave is 30s and the user
+                   may switch notes or refresh before then. */
+                if (NP.editor && NP.editor.save) NP.editor.save(true);
             }).catch(function (err) {
                 console.error("Image upload failed:", err);
+                alert("Image upload failed: " + (err && err.message ? err.message : err));
             });
         },
 
-        _setupZoom: function () {
+        _insertImage: function (url, filename) {
             var editor = document.getElementById("editor");
-            if (!editor) return;
+            if (!editor || editor.contentEditable !== "true") return;
 
-            editor.addEventListener("wheel", function (e) {
-                if (!e.ctrlKey) return;
-                var target = e.target;
-                if (target.tagName !== "IMG") return;
+            var img = document.createElement("img");
+            img.src = url;
+            img.setAttribute("data-filename", filename);
+            img.style.cssText = "max-width:100%;height:auto;display:block;margin:8px 0;";
+            img.setAttribute("draggable", "false");
 
-                e.preventDefault();
-                var scale = parseFloat(target.dataset.scale || "1");
-                if (e.deltaY < 0) {
-                    scale = Math.min(scale * 1.1, 5);
+            editor.focus();
+            var sel = window.getSelection();
+            var range = null;
+
+            if (savedRange && editor.contains(savedRange.startContainer)) {
+                range = savedRange;
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
+                range = sel.getRangeAt(0);
+            }
+
+            if (range) {
+                range.deleteContents();
+                range.insertNode(img);
+                range.setStartAfter(img);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else {
+                editor.appendChild(img);
+            }
+            savedRange = null;
+        },
+
+        _insertMarkdown: function (url) {
+            var ta = document.getElementById("editor-md");
+            if (!ta) return;
+            var snippet = "![](" + url + ")";
+            var start = savedMd ? savedMd.start : ta.selectionStart;
+            var end = savedMd ? savedMd.end : ta.selectionEnd;
+            ta.value = ta.value.substring(0, start) + snippet + ta.value.substring(end);
+            ta.focus();
+            ta.selectionStart = ta.selectionEnd = start + snippet.length;
+            /* Re-render the preview pane. */
+            ta.dispatchEvent(new Event("input", { bubbles: true }));
+            savedMd = null;
+        },
+
+        /* Ctrl+V from clipboard offers a choice: full <img> vs a plain
+           link to the uploaded file. The +Img toolbar button bypasses
+           this dialog and goes straight through upload() — direct insert
+           is the expected behavior for an explicit "insert image" click. */
+        _showPasteDialog: function (file) {
+            var savedRangeAtOpen = savedRange;
+            var savedMdAtOpen = savedMd;
+
+            var overlay = document.createElement("div");
+            overlay.className = "paste-image-overlay";
+            overlay.innerHTML =
+                '<div class="paste-image-modal">' +
+                    '<h3>Paste image</h3>' +
+                    '<p>How do you want to paste this image?</p>' +
+                    '<div class="paste-image-buttons">' +
+                        '<button id="paste-as-image">Insert as image</button>' +
+                        '<button id="paste-as-link">Insert as link only</button>' +
+                        '<button id="paste-cancel">Cancel</button>' +
+                    '</div>' +
+                '</div>';
+            document.body.appendChild(overlay);
+
+            function close() {
+                document.removeEventListener("keydown", onKey);
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            }
+            function onKey(e) {
+                if (e.key === "Escape") close();
+            }
+            document.addEventListener("keydown", onKey);
+
+            overlay.querySelector("#paste-as-image").addEventListener("click", function () {
+                close();
+                /* upload() reads savedRange/savedMd — restore them in case
+                   anything cleared them while the modal was up. */
+                savedRange = savedRangeAtOpen;
+                savedMd = savedMdAtOpen;
+                NP.images.upload(file);
+            });
+            overlay.querySelector("#paste-as-link").addEventListener("click", function () {
+                close();
+                savedRange = savedRangeAtOpen;
+                savedMd = savedMdAtOpen;
+                NP.images._uploadAsLink(file);
+            });
+            overlay.querySelector("#paste-cancel").addEventListener("click", close);
+            overlay.addEventListener("click", function (e) {
+                if (e.target === overlay) close();
+            });
+        },
+
+        _uploadAsLink: function (file) {
+            if (!NP.editor || !NP.editor._currentNoteId) {
+                console.warn("[images] no note loaded — upload skipped");
+                return Promise.resolve();
+            }
+            return NP.api.uploadImage(file).then(function (res) {
+                var url = res && (res.url || res.path);
+                if (!url) return;
+
+                if (inMarkdownMode()) {
+                    NP.images._insertMarkdownLink(url);
                 } else {
-                    scale = Math.max(scale * 0.9, 0.2);
+                    NP.images._insertLink(url);
                 }
-                target.dataset.scale = String(scale);
-                target.style.transform = "scale(" + scale + ")";
-                target.style.transformOrigin = "top left";
-            }, { passive: false });
+                if (NP.editor && NP.editor.save) NP.editor.save(true);
+            }).catch(function (err) {
+                console.error("Image upload failed:", err);
+                alert("Image upload failed: " + (err && err.message ? err.message : err));
+            });
+        },
+
+        _insertLink: function (url) {
+            var editor = document.getElementById("editor");
+            if (!editor || editor.contentEditable !== "true") return;
+
+            var a = document.createElement("a");
+            a.href = url;
+            a.textContent = url;
+            a.target = "_blank";
+            a.rel = "noopener";
+
+            editor.focus();
+            var sel = window.getSelection();
+            var range = null;
+
+            if (savedRange && editor.contains(savedRange.startContainer)) {
+                range = savedRange;
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
+                range = sel.getRangeAt(0);
+            }
+
+            if (range) {
+                range.deleteContents();
+                range.insertNode(a);
+                range.setStartAfter(a);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else {
+                editor.appendChild(a);
+            }
+            savedRange = null;
+        },
+
+        _insertMarkdownLink: function (url) {
+            var ta = document.getElementById("editor-md");
+            if (!ta) return;
+            var snippet = "[Image](" + url + ")";
+            var start = savedMd ? savedMd.start : ta.selectionStart;
+            var end = savedMd ? savedMd.end : ta.selectionEnd;
+            ta.value = ta.value.substring(0, start) + snippet + ta.value.substring(end);
+            ta.focus();
+            ta.selectionStart = ta.selectionEnd = start + snippet.length;
+            ta.dispatchEvent(new Event("input", { bubbles: true }));
+            savedMd = null;
+        },
+
+        _setupZoom: function () {
+            imageHostElements().forEach(function (host) {
+                /* passive:false is REQUIRED for preventDefault() — without
+                   it Chrome ignores the call and zooms the whole page. */
+                host.addEventListener("wheel", function (e) {
+                    if (!e.ctrlKey && !e.metaKey) return;
+                    var target = e.target;
+                    /* Walk up in case the target is a child of the <img>
+                       (shouldn't happen with our markup, but cheap to be safe). */
+                    while (target && target !== host && target.tagName !== "IMG") {
+                        target = target.parentElement;
+                    }
+                    if (!target || target.tagName !== "IMG") return;
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    var current = parseFloat(target.style.width);
+                    if (!current || isNaN(current)) {
+                        current = parseFloat(target.dataset.w);
+                    }
+                    if (!current || isNaN(current)) current = target.offsetWidth || 300;
+
+                    var factor = e.deltaY < 0 ? 1.1 : 0.9;
+                    var next = Math.round(Math.max(50, Math.min(2000, current * factor)));
+
+                    target.style.width = next + "px";
+                    target.style.maxWidth = next + "px";
+                    target.style.height = "auto";
+                    target.dataset.w = String(next);
+
+                    /* Persistence only matters for the rich-text editor —
+                       the MD preview re-renders from textarea on next
+                       keystroke, where width is not part of the source. */
+                    if (host.id === "editor" && NP.editor && NP.editor.save) {
+                        NP.editor.save(true);
+                    }
+                }, { passive: false });
+            });
+        },
+
+        _setupClick: function () {
+            imageHostElements().forEach(function (host) {
+                host.addEventListener("click", NP.images._onHostClick);
+            });
+        },
+
+        _onHostClick: function (e) {
+            /* Modifier-clicks reserved: Ctrl/Cmd for zoom-grip, Shift for
+               cursor placement / text selection by the user. */
+            if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+
+            if (e.target && e.target.tagName === "IMG") {
+                e.preventDefault();
+                NP.images._openViewer(e.target.src);
+                return;
+            }
+
+            var a = e.target && e.target.closest ? e.target.closest("a") : null;
+            if (!a) return;
+            var href = a.getAttribute("href") || "";
+            if (!href) return;
+
+            if (href.indexOf("/images/") === 0 ||
+                /\.(png|jpe?g|gif|webp|svg|bmp)(\?|#|$)/i.test(href)) {
+                e.preventDefault();
+                NP.images._openViewer(href);
+            } else if (/^(https?:|\/\/|mailto:)/i.test(href)) {
+                e.preventDefault();
+                window.open(href, "_blank", "noopener,noreferrer");
+            }
+        },
+
+        _openViewer: function (url) {
+            /* Idempotent — second invocation replaces the first. */
+            var existing = document.getElementById("image-viewer-overlay");
+            if (existing && existing.parentNode) {
+                existing.parentNode.removeChild(existing);
+            }
+
+            var overlay = document.createElement("div");
+            overlay.id = "image-viewer-overlay";
+            overlay.className = "image-viewer-overlay";
+            overlay.innerHTML =
+                '<button class="image-viewer-close" aria-label="Close">&times;</button>' +
+                '<img class="image-viewer-img" alt="Image viewer">';
+            overlay.querySelector(".image-viewer-img").src = url;
+            document.body.appendChild(overlay);
+
+            function close() {
+                document.removeEventListener("keydown", onKey);
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            }
+            function onKey(e) {
+                if (e.key === "Escape") close();
+            }
+            document.addEventListener("keydown", onKey);
+
+            overlay.querySelector(".image-viewer-close")
+                .addEventListener("click", close);
+            overlay.addEventListener("click", function (e) {
+                /* Click on the dark backdrop closes; click on the image
+                   itself doesn't. */
+                if (e.target === overlay) close();
+            });
         }
     };
 

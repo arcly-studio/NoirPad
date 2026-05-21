@@ -7,8 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;700;900&family=Space+Grotesk:wght@400;500;700&family=Outfit:wght@400;500;700;800&family=Unbounded:wght@400;500;700;900&display=swap">
-    <link rel="stylesheet" href="/static/css/themes.css?v=2.1.26">
-    <link rel="stylesheet" href="/static/css/noirpad.css?v=2.1.26">
+    <link rel="stylesheet" href="/static/css/themes.css?v=2.1.29">
+    <link rel="stylesheet" href="/static/css/noirpad.css?v=2.1.29">
 </head>
 <body>
 
@@ -79,6 +79,7 @@
                 <input id="note-title-input" type="text" placeholder="Untitled" spellcheck="false" autocomplete="off">
                 <button class="header-btn" id="btn-help" title="Help">Help</button>
                 <button class="header-btn" id="btn-font" title="Font settings">Font</button>
+                <button class="header-btn" id="btn-md-toggle" title="Toggle markdown mode (Ctrl+M)">MD</button>
                 <button class="header-btn" id="btn-favorite" title="Toggle favorite">&#9733;</button>
                 <button class="header-btn" id="btn-lock" title="Lock / Unlock note">Lock</button>
                 <button class="header-btn" id="btn-insert-image" title="Insert image">+Img</button>
@@ -109,6 +110,18 @@
 
                 <!-- Contenteditable editor -->
                 <div id="editor" contenteditable="true" spellcheck="true" data-placeholder="Start typing..."></div>
+
+                <!-- Markdown-mode editor: split-pane layout.
+                     Left pane = plain textarea source.
+                     Right pane = rendered HTML preview with real
+                     block-level styling (big H1, blockquotes, etc.).
+                     Hidden until body.editor-md-active. -->
+                <div id="md-stack">
+                    <div id="md-source">
+                        <textarea id="editor-md" spellcheck="false" autocomplete="off" wrap="soft" placeholder="Start typing markdown..."></textarea>
+                    </div>
+                    <div id="md-preview" aria-hidden="true"></div>
+                </div>
             </div>
 
             <!-- Search bar (hidden by default) -->
@@ -438,35 +451,36 @@
 </div>
 
 <!-- ============ Scripts (no modules, no build) ============ -->
-<script src="/static/js/utils.js?v=2.1.26"></script>
-<script src="/static/js/api.js?v=2.1.26"></script>
-<script src="/static/js/state.js?v=2.1.26"></script>
-<script src="/static/js/themes.js?v=2.1.26"></script>
-<script src="/static/js/tree.js?v=2.1.26"></script>
-<script src="/static/js/editor.js?v=2.1.26"></script>
-<script src="/static/js/tabs.js?v=2.1.26"></script>
-<script src="/static/js/tags.js?v=2.1.26"></script>
-<script src="/static/js/search.js?v=2.1.26"></script>
-<script src="/static/js/command-bar.js?v=2.1.26"></script>
-<script src="/static/js/trash.js?v=2.1.26"></script>
-<script src="/static/js/favorites.js?v=2.1.26"></script>
-<script src="/static/js/images.js?v=2.1.26"></script>
-<script src="/static/js/encryption.js?v=2.1.26"></script>
-<script src="/static/js/export.js?v=2.1.26"></script>
-<script src="/static/js/focus-mode.js?v=2.1.26"></script>
-<script src="/static/js/matrix-rain.js?v=2.1.26"></script>
-<script src="/static/js/splash.js?v=2.1.26"></script>
-<script src="/static/js/cursor.js?v=2.1.26"></script>
-<script src="/static/js/font-picker.js?v=2.1.26"></script>
-<script src="/static/js/help.js?v=2.1.26"></script>
-<script src="/static/js/backup.js?v=2.1.26"></script>
-<script src="/static/js/effects.js?v=2.1.26"></script>
-<script src="/static/js/find-all.js?v=2.1.26"></script>
-<script src="/static/js/settings.js?v=2.1.26"></script>
-<script src="/static/js/shortcuts.js?v=2.1.26"></script>
-<script src="/static/js/shortcuts-manager.js?v=2.1.26"></script>
-<script src="/static/js/auto-lock.js?v=2.1.26"></script>
-<script src="/static/js/app.js?v=2.1.26"></script>
+<script src="/static/js/utils.js?v=2.1.29"></script>
+<script src="/static/js/api.js?v=2.1.29"></script>
+<script src="/static/js/state.js?v=2.1.29"></script>
+<script src="/static/js/themes.js?v=2.1.29"></script>
+<script src="/static/js/tree.js?v=2.1.29"></script>
+<script src="/static/js/editor.js?v=2.1.29"></script>
+<script src="/static/js/markdown.js?v=2.1.29"></script>
+<script src="/static/js/tabs.js?v=2.1.29"></script>
+<script src="/static/js/tags.js?v=2.1.29"></script>
+<script src="/static/js/search.js?v=2.1.29"></script>
+<script src="/static/js/command-bar.js?v=2.1.29"></script>
+<script src="/static/js/trash.js?v=2.1.29"></script>
+<script src="/static/js/favorites.js?v=2.1.29"></script>
+<script src="/static/js/images.js?v=2.1.29"></script>
+<script src="/static/js/encryption.js?v=2.1.29"></script>
+<script src="/static/js/export.js?v=2.1.29"></script>
+<script src="/static/js/focus-mode.js?v=2.1.29"></script>
+<script src="/static/js/matrix-rain.js?v=2.1.29"></script>
+<script src="/static/js/splash.js?v=2.1.29"></script>
+<script src="/static/js/cursor.js?v=2.1.29"></script>
+<script src="/static/js/font-picker.js?v=2.1.29"></script>
+<script src="/static/js/help.js?v=2.1.29"></script>
+<script src="/static/js/backup.js?v=2.1.29"></script>
+<script src="/static/js/effects.js?v=2.1.29"></script>
+<script src="/static/js/find-all.js?v=2.1.29"></script>
+<script src="/static/js/settings.js?v=2.1.29"></script>
+<script src="/static/js/shortcuts.js?v=2.1.29"></script>
+<script src="/static/js/shortcuts-manager.js?v=2.1.29"></script>
+<script src="/static/js/auto-lock.js?v=2.1.29"></script>
+<script src="/static/js/app.js?v=2.1.29"></script>
 
 </body>
 </html>

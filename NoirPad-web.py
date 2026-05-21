@@ -68,6 +68,10 @@ DEFAULT_DATA: dict[str, Any] = {
     # Fix #9: maps note_id -> [image filename, ...]. Lets us clean images of
     # encrypted notes (whose content can't be regex-parsed) from the trash.
     "note_images": {},
+    # Per-note rendering mode. Absence == "rich-text" (default for legacy
+    # notes); explicit "markdown" enables block-level MD syntax rendering.
+    # Only non-default values are stored, keeping the data file small.
+    "note_modes": {},
     "theme": "matrix",
     "ui_font": "orbitron",
     "font_family": "Cascadia Code",
@@ -410,6 +414,9 @@ class DeleteReq(BaseModel):
 class NoteBody(BaseModel):
     content: str
     formats: list[Any] = []
+    # Optional per-note rendering mode. None means "leave unchanged"; pass
+    # "rich-text" to clear back to default, "markdown" to opt in.
+    mode: Optional[str] = None
 
 
 class ToggleFavReq(BaseModel):
@@ -667,7 +674,8 @@ async def get_note(note_id: str):
     if content is None:
         raise HTTPException(404, "Note not found")
     formats = data.get("note_formats", {}).get(note_id, [])
-    return {"content": content, "formats": formats}
+    mode = data.get("note_modes", {}).get(note_id, "rich-text")
+    return {"content": content, "formats": formats, "mode": mode}
 
 
 @app.put("/api/note/{note_id}")
@@ -683,6 +691,13 @@ async def put_note(note_id: str, body: NoteBody):
             data.setdefault("note_formats", {})[note_id] = body.formats
         else:
             data.get("note_formats", {}).pop(note_id, None)
+        # Per-note mode: only persist non-default ("markdown"); "rich-text"
+        # clears the entry so the dict stays minimal.
+        if body.mode is not None:
+            if body.mode == "markdown":
+                data.setdefault("note_modes", {})[note_id] = "markdown"
+            else:
+                data.get("note_modes", {}).pop(note_id, None)
         # Fix #9: keep the image map in sync for plaintext saves.
         data.setdefault("note_images", {})[note_id] = _extract_image_names(
             body.content
@@ -935,7 +950,8 @@ async def decrypt_view(req: CryptoReq):
     except (InvalidToken, ValueError):  # Fix #5
         raise HTTPException(400, "Wrong password")
     formats = data.get("note_formats", {}).get(req.id, [])
-    return {"content": decrypted, "formats": formats}
+    mode = data.get("note_modes", {}).get(req.id, "rich-text")
+    return {"content": decrypted, "formats": formats, "mode": mode}
 
 
 @app.post("/api/save-encrypted")

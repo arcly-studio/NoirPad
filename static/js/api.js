@@ -51,11 +51,10 @@ window.NP = window.NP || {};
             return request("GET", "/api/note/" + encodeURIComponent(id));
         },
 
-        saveNote: function (id, content, formats) {
-            return request("PUT", "/api/note/" + encodeURIComponent(id), {
-                content: content,
-                formats: formats
-            });
+        saveNote: function (id, content, formats, opts) {
+            var body = { content: content, formats: formats };
+            if (opts && opts.mode !== undefined) body.mode = opts.mode;
+            return request("PUT", "/api/note/" + encodeURIComponent(id), body);
         },
 
         newNote: function (parentId, name) {

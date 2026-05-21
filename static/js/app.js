@@ -88,6 +88,11 @@ window.NP = window.NP || {};
                     var b = document.getElementById("btn-insert-image");
                     if (b) b.click();
                 });
+                S.register("toggle-markdown", function () {
+                    if (NP.markdown && NP.markdown.toggleForCurrentNote) {
+                        NP.markdown.toggleForCurrentNote();
+                    }
+                });
                 S.register("new-folder", function () {
                     var b = document.getElementById("btn-new-folder");
                     if (b) b.click();
@@ -393,6 +398,12 @@ window.NP = window.NP || {};
             var btnInsertImage = NP.$("#btn-insert-image");
             if (btnInsertImage) {
                 btnInsertImage.addEventListener("click", function () {
+                    /* Clicking the toolbar button blurs the editor, so
+                       capture the cursor position before the dialog opens.
+                       NP.images.upload restores it when inserting. */
+                    if (NP.images && NP.images.saveSelection) {
+                        NP.images.saveSelection();
+                    }
                     var input = document.createElement("input");
                     input.type = "file";
                     input.accept = "image/*";

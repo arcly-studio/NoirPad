@@ -102,6 +102,7 @@ window.NP = window.NP || {};
         "find-next":            { default: "F3",            current: "F3",            label: "Find next",              category: "Editor" },
         "find-prev":            { default: "Shift+F3",      current: "Shift+F3",      label: "Find previous",          category: "Editor" },
         "insert-image":         { default: "Ctrl+Shift+I",  current: "Ctrl+Shift+I",  label: "Insert image",           category: "Editor" },
+        "toggle-markdown":      { default: "Ctrl+M",        current: "Ctrl+M",        label: "Toggle markdown mode",   category: "Editor" },
 
         /* Notes */
         "new-folder":           { default: "Ctrl+Shift+F",  current: "Ctrl+Shift+F",  label: "New folder",             category: "Notes" },
