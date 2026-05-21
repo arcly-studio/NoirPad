@@ -2583,3 +2583,127 @@ body.orientation-portrait #md-preview {
     border-color: var(--accent);
     color: var(--accent);
 }
+
+/* ---- Markdown reference section in Help overlay ---- */
+/* Rendered as a section in HELP_SECTIONS (left-nav entry "Markdown").
+   Click on a .md-help-item copies its data-snippet to clipboard. */
+
+.help-section-intro {
+    color: var(--fg-dim);
+    font-size: 12px;
+    line-height: 1.6;
+    margin: 0 0 20px;
+}
+
+.md-help-category {
+    margin-bottom: 20px;
+}
+
+.md-help-cat-title {
+    font-family: var(--font-display, 'Orbitron', sans-serif);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--fg);
+    text-transform: uppercase;
+    margin: 16px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+}
+
+.md-help-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+@media (max-width: 700px) {
+    .md-help-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.md-help-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--bg-entry);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.md-help-item:hover {
+    border-color: var(--accent);
+    background: var(--hover-bg, rgba(255, 255, 255, 0.03));
+}
+
+.md-help-item.md-help-copied {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.12);
+}
+
+.md-help-syntax {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 11px;
+    color: var(--accent);
+    background: transparent;
+    padding: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.md-help-desc {
+    font-size: 11px;
+    color: var(--fg-dim);
+    flex: 1;
+    text-align: right;
+}
+
+.md-help-item.md-help-copied .md-help-desc {
+    color: #4caf50;
+    font-weight: 600;
+}
+
+.md-help-note {
+    margin: 8px 0 0;
+    font-size: 11px;
+    color: var(--fg-dim);
+    font-style: italic;
+}
+
+.md-help-shortcuts {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.md-help-shortcut-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--fg);
+}
+
+.md-help-shortcut-row code {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--bg-entry);
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
+.md-help-kbd {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 10px;
+    padding: 2px 8px;
+    background: var(--bg-entry);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--fg-dim);
+    min-width: 60px;
+    text-align: center;
+}
