@@ -144,6 +144,15 @@ window.NP = window.NP || {};
             NP.editor._currentNoteId = id;
             NP.state.currentNoteId = id;
 
+            /* Sidebar highlight follows whichever note is open,
+               regardless of how it was opened (tree click, tab,
+               +Note, command bar). Single funnel here keeps the
+               selection in sync without sprinkling calls into
+               every caller. */
+            if (NP.tree && NP.tree.setSelected) {
+                NP.tree.setSelected(id);
+            }
+
             /* Set title from tree data */
             var titleInput = NP.$("#note-title-input");
             if (titleInput) {

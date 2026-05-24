@@ -73,7 +73,65 @@ window.NP = window.NP || {};
         }
     }
 
+    /* Walk up the tree to find every folder that contains `id`, so
+       the open-state can be toggled to reveal the highlighted note.
+       Returns the chain ordered root → leaf parent (excludes `id`
+       itself). */
+    function ancestorFolderIds(items, id, chain) {
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].id === id) return chain.slice();
+            if (items[i].children) {
+                chain.push(items[i].id);
+                var hit = ancestorFolderIds(items[i].children, id, chain);
+                if (hit) return hit;
+                chain.pop();
+            }
+        }
+        return null;
+    }
+
     NP.tree = {
+        /* Sync the sidebar highlight with the active note. Called
+           from editor.loadNote so EVERY note-open path (tree click,
+           tab click, +Note, command bar, …) ends up with the right
+           item highlighted — no need to remember to call it from
+           every caller. Expands ancestor folders so the item is
+           actually visible. */
+        setSelected: function (noteId) {
+            if (NP.state.selectedId === noteId) {
+                /* Already selected — still re-render in case the
+                   tree DOM was rebuilt for other reasons. */
+                NP.tree.render();
+                return;
+            }
+            NP.state.selectedId = noteId;
+
+            if (noteId && NP.state.data && NP.state.data.tree) {
+                var ancestors = ancestorFolderIds(
+                    NP.state.data.tree, noteId, []
+                );
+                if (ancestors) {
+                    for (var i = 0; i < ancestors.length; i++) {
+                        if (!NP.state.getFolderOpenState(ancestors[i])) {
+                            NP.state.setFolderOpenState(ancestors[i], true);
+                        }
+                    }
+                }
+            }
+
+            NP.tree.render();
+
+            /* Scroll the now-highlighted row into view if it ended
+               up off-screen (e.g. when activating a tab for a note
+               buried in a long, scrollable tree). */
+            var el = document.querySelector(
+                "#tree-container .tree-item[data-id='" + noteId + "']"
+            );
+            if (el && el.scrollIntoView) {
+                el.scrollIntoView({ block: "nearest" });
+            }
+        },
+
         render: function () {
             var container = NP.$("#tree-container");
             if (!container) return;
