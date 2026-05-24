@@ -100,12 +100,17 @@ window.NP = window.NP || {};
 
         /* Best-effort persist on unload. Skips encrypted notes — the
            re-encryption path requires async crypto + a password we may
-           not have, and a botched save would corrupt the file. */
+           not have, and a botched save would corrupt the file.
+
+           Uses fetch(..., {keepalive:true}) instead of sendBeacon
+           because the backend's save endpoint is PUT /api/note/{id};
+           sendBeacon is hardcoded to POST in the spec and would 405.
+           keepalive is the modern equivalent (Chrome 66+, FF 116+,
+           Safari 13+) — same ~64KB body limit, but any HTTP method. */
         _flushBeacon: function () {
             var id = NP.editor._currentNoteId;
             if (!id) return;
             if (NP.editor._encryptedNotePassword) return;
-            if (!navigator.sendBeacon) return;
             var mdActive = NP.markdown && NP.markdown.isActive &&
                 NP.markdown.isActive();
             var text;
@@ -124,11 +129,15 @@ window.NP = window.NP || {};
                 var body = JSON.stringify({
                     content: text, formats: formats
                 });
-                var blob = new Blob([body],
-                    { type: "application/json" });
-                navigator.sendBeacon(
-                    "/api/note/" + encodeURIComponent(id), blob
-                );
+                fetch("/api/note/" + encodeURIComponent(id), {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: body,
+                    keepalive: true
+                }).catch(function () {
+                    /* unload — request may or may not have left;
+                       nothing to do either way. */
+                });
             } catch (e) { /* unload — nothing we can do */ }
         },
 
