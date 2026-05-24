@@ -198,13 +198,24 @@ window.NP = window.NP || {};
 
         /* Switch to MD mode for the currently open note. Copies the
            editor's plain text into the textarea, renders the preview,
-           reveals the split-pane stack. */
-        enableForEditor: function () {
+           reveals the split-pane stack.
+
+           srcOverride: when provided, use this string as the textarea
+           source instead of reading editor.innerText. The load path
+           must pass the freshly fetched note content here — reading
+           editor.innerText after the editor has been hidden
+           (display:none in MD mode) returns "" and wipes the note. */
+        enableForEditor: function (srcOverride) {
             var els = getEls();
             if (!els.ta || !els.preview) return;
-            /* innerText (not textContent) so the rich-text load
-               path's <br>s become \n in the textarea. */
-            var src = els.editor ? (els.editor.innerText || "") : "";
+            var src;
+            if (typeof srcOverride === "string") {
+                src = srcOverride;
+            } else {
+                /* Toggle path: editor is currently visible (rich-text
+                   mode). innerText preserves <br>s as \n. */
+                src = els.editor ? (els.editor.innerText || "") : "";
+            }
             els.ta.value = src;
             lastRendered = null;
             document.body.classList.add("editor-md-active");
@@ -214,7 +225,9 @@ window.NP = window.NP || {};
         },
 
         /* Leave MD mode — write the textarea back into the editor
-           with <br>s for line breaks, hide the stack. */
+           with <br>s for line breaks, hide the stack. Used by the
+           USER-INITIATED toggle (Ctrl+M / MD button). NOT used by
+           the load path — see leaveForLoad. */
         disableForEditor: function () {
             var els = getEls();
             if (!els.editor) return;
@@ -227,6 +240,18 @@ window.NP = window.NP || {};
                 if (i > 0) els.editor.appendChild(document.createElement("br"));
                 els.editor.appendChild(document.createTextNode(lines[i]));
             }
+        },
+
+        /* Leave MD mode when LOADING a different (rich-text) note.
+           Just drops the md class — must NOT copy the textarea back
+           into the editor (textarea still has the PREVIOUS note's
+           markdown; the editor already holds the new note's HTML). */
+        leaveForLoad: function () {
+            document.body.classList.remove("editor-md-active");
+            var ta = document.getElementById("editor-md");
+            if (ta) ta.value = "";
+            lastRendered = null;
+            updateMdButtonState();
         },
 
         /* MD button click + Ctrl+M shortcut. */
@@ -264,14 +289,31 @@ window.NP = window.NP || {};
         },
 
         /* Called from editor.loadNote once content is in #editor.
-           Flips to MD if the loaded note's mode is markdown. */
-        applyForLoadedNote: function (noteId) {
+           Flips to MD if the loaded note's mode is markdown.
+
+           rawContent: the fresh server content as a plain string.
+           REQUIRED for MD-mode loads — without it we'd fall back to
+           reading editor.innerText, which returns "" when the editor
+           is already hidden by the body.editor-md-active class. */
+        applyForLoadedNote: function (noteId, rawContent) {
             var modes = NP.state && NP.state.data && NP.state.data.note_modes;
             var wantMd = noteId && modes && modes[noteId] === "markdown";
             if (wantMd) {
-                NP.markdown.enableForEditor();
+                /* If rawContent isn't provided (legacy callers), fall
+                   back to the editor read so the toggle path still
+                   works. The load path in editor.js always passes it. */
+                if (typeof rawContent === "string") {
+                    NP.markdown.enableForEditor(rawContent);
+                } else {
+                    NP.markdown.enableForEditor();
+                }
             } else if (isMdMode()) {
-                NP.markdown.disableForEditor();
+                /* Loading a non-MD note while body still has the MD
+                   class — drop the class but DO NOT call
+                   disableForEditor: its textarea→editor copy would
+                   overwrite the freshly loaded content with the
+                   previous note's markdown. */
+                NP.markdown.leaveForLoad();
             }
             updateMdButtonState();
         },

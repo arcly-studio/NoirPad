@@ -283,8 +283,28 @@ window.NP = window.NP || {};
                         return NP.state.init().then(function () {
                             NP.tree.render();
                             if (res && res.id) {
-                                var loaded = NP.editor.loadNote(res.id);
-                                if (NP.tabs) NP.tabs.add(res.id, name);
+                                /* Use tabs.add (which delegates to
+                                   tabs.activate → save current →
+                                   loadNote new). Calling
+                                   editor.loadNote here too caused a
+                                   race: it bumped _currentNoteId to
+                                   the new id, then tabs.activate's
+                                   save() wrote the PREVIOUS textarea
+                                   content under the NEW id — content
+                                   bleeding. */
+                                var loaded;
+                                if (NP.tabs) {
+                                    NP.tabs.add(res.id, name);
+                                    /* tabs.activate returns void but
+                                       kicks off loadNote internally;
+                                       we don't have a handle on its
+                                       promise, so fall back to a
+                                       resolved promise for the
+                                       encrypt step below. */
+                                    loaded = Promise.resolve();
+                                } else {
+                                    loaded = NP.editor.loadNote(res.id);
+                                }
                                 /* Settings v2: default_encrypted — after the
                                    note is loaded (so currentNoteId is set and
                                    editor state is ready), prompt to encrypt.

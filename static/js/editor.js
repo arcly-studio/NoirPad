@@ -64,15 +64,83 @@ window.NP = window.NP || {};
                 if (NP.effects && NP.effects.onEditorInput) NP.effects.onEditorInput();
             });
 
+            /* MD textarea: dirty-flag + per-keystroke autosave debounce.
+               The 30s interval autosave was the only safety net; if the
+               user typed and closed the tab within that window, the
+               textarea contents never reached the backend. */
+            var ta = document.getElementById("editor-md");
+            if (ta) {
+                ta.addEventListener("input", NP.debounce(function () {
+                    if (NP.markdown && NP.markdown.isActive &&
+                        NP.markdown.isActive()) {
+                        NP.editor.save(true);
+                    }
+                }, 800));
+            }
+
+            /* Flush the in-flight note on tab close / navigation.
+               pagehide fires reliably on mobile + desktop; the
+               sendBeacon path keeps the request alive after unload. */
+            window.addEventListener("pagehide", function () {
+                NP.editor._flushBeacon();
+            });
+            /* visibilitychange → hidden also catches mobile background
+               switches where pagehide may be delayed. */
+            document.addEventListener("visibilitychange", function () {
+                if (document.visibilityState === "hidden") {
+                    NP.editor._flushBeacon();
+                }
+            });
+
             /* Keyboard shortcuts (Ctrl+S/I/U) are handled globally in app.js;
                attaching them here too caused double-fire (save twice, format toggled twice). */
 
             /* Paste-to-upload is handled in images.js. */
         },
 
+        /* Best-effort persist on unload. Skips encrypted notes — the
+           re-encryption path requires async crypto + a password we may
+           not have, and a botched save would corrupt the file. */
+        _flushBeacon: function () {
+            var id = NP.editor._currentNoteId;
+            if (!id) return;
+            if (NP.editor._encryptedNotePassword) return;
+            if (!navigator.sendBeacon) return;
+            var mdActive = NP.markdown && NP.markdown.isActive &&
+                NP.markdown.isActive();
+            var text;
+            var formats;
+            if (mdActive) {
+                text = NP.markdown.getRawText();
+                formats = [];
+            } else {
+                if (!NP.editor.el || NP.editor.el.contentEditable !== "true") {
+                    return;
+                }
+                text = NP.editor._htmlToTextWithImages().text;
+                formats = NP.editor._extractFormats();
+            }
+            try {
+                var body = JSON.stringify({
+                    content: text, formats: formats
+                });
+                var blob = new Blob([body],
+                    { type: "application/json" });
+                navigator.sendBeacon(
+                    "/api/note/" + encodeURIComponent(id), blob
+                );
+            } catch (e) { /* unload — nothing we can do */ }
+        },
+
         /* ---- Note loading ---- */
 
         loadNote: function (id) {
+            /* Stop the previous note's autosave FIRST. Without this,
+               a timer fire after _currentNoteId is reassigned but
+               before the fetch resolves would save the previous
+               note's textarea content under the NEW note's id. */
+            NP.editor.stopAutosave();
+
             NP.editor._currentNoteId = id;
             NP.state.currentNoteId = id;
 
@@ -144,7 +212,7 @@ window.NP = window.NP || {};
                         /* STATE B: encrypted + unlocked */
                         NP.editor._refreshLockButton();
                         if (NP.markdown && NP.markdown.applyForLoadedNote) {
-                            NP.markdown.applyForLoadedNote(id);
+                            NP.markdown.applyForLoadedNote(id, decContent);
                         }
                     }).catch(function (err) {
                         alert("Wrong password.");
@@ -170,7 +238,7 @@ window.NP = window.NP || {};
                 /* STATE A: plain note */
                 NP.editor._refreshLockButton();
                 if (NP.markdown && NP.markdown.applyForLoadedNote) {
-                    NP.markdown.applyForLoadedNote(id);
+                    NP.markdown.applyForLoadedNote(id, content);
                 }
             }).catch(function (err) {
                 console.error("loadNote error:", err);
