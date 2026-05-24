@@ -17,6 +17,13 @@ window.NP = window.NP || {};
                 NP.state.data.theme = name;
             }
 
+            /* Notify post-render consumers (syntax-highlight.js
+               needs to invalidate its theme-keyed cache and
+               re-paint). */
+            document.dispatchEvent(new CustomEvent(
+                "np-theme-changed", { detail: { theme: name } }
+            ));
+
             /* Persist to server */
             if (NP.api && NP.api.saveSettings) {
                 NP.api.saveSettings({ theme: name }).catch(function () {

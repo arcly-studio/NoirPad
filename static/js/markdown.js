@@ -98,11 +98,20 @@ window.NP = window.NP || {};
         var out = [];
         var inCode = false;
         var codeLines = [];
+        /* Captured from the OPENING fence (```python → "python").
+           Forwarded to .md-codeblock as data-lang so the syntax
+           highlighter doesn't have to re-detect what the user
+           already told us. */
+        var codeLang = "";
 
         function flushCode() {
-            out.push('<div class="md-codeblock">' +
+            var langAttr = codeLang
+                ? ' data-lang="' + escapeHtml(codeLang) + '"'
+                : "";
+            out.push('<div class="md-codeblock"' + langAttr + '>' +
                 escapeHtml(codeLines.join("\n")) + "</div>");
             codeLines = [];
+            codeLang = "";
         }
 
         for (var i = 0; i < lines.length; i++) {
@@ -114,6 +123,14 @@ window.NP = window.NP || {};
                     inCode = false;
                 } else {
                     inCode = true;
+                    /* Hint after the opening fence, if any.
+                       Allow letters/digits/+/-/# (covers `c++`,
+                       `c#`, `objective-c`); strip anything else
+                       defensively. */
+                    codeLang = (fence[1] || "")
+                        .trim()
+                        .replace(/[^A-Za-z0-9+\-#]/g, "")
+                        .slice(0, 32);
                 }
                 continue;
             }
@@ -183,6 +200,13 @@ window.NP = window.NP || {};
             if (src === lastRendered) return;
             els.preview.innerHTML = renderPreview(src);
             lastRendered = src;
+            /* Decoupled hook for syntax-highlight.js (and any other
+               post-render consumer). Pure visual: the textarea is
+               unaffected, so the save path never sees whatever the
+               listener does to the preview DOM. */
+            els.preview.dispatchEvent(new CustomEvent(
+                "np-md-rendered", { bubbles: true }
+            ));
         }, 60);
     }
 
@@ -222,6 +246,9 @@ window.NP = window.NP || {};
             updateMdButtonState();
             els.preview.innerHTML = renderPreview(src);
             lastRendered = src;
+            els.preview.dispatchEvent(new CustomEvent(
+                "np-md-rendered", { bubbles: true }
+            ));
         },
 
         /* Leave MD mode — write the textarea back into the editor

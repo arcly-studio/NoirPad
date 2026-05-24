@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;700;900&family=Space+Grotesk:wght@400;500;700&family=Outfit:wght@400;500;700;800&family=Unbounded:wght@400;500;700;900&display=swap">
     <link rel="stylesheet" href="/static/css/themes.css?v=2.1.31">
-    <link rel="stylesheet" href="/static/css/noirpad.css?v=2.1.31">
+    <link rel="stylesheet" href="/static/css/noirpad.css?v=2.1.33">
 </head>
 <body>
 
@@ -481,6 +481,87 @@
 <script src="/static/js/shortcuts-manager.js?v=2.1.31"></script>
 <script src="/static/js/auto-lock.js?v=2.1.31"></script>
 <script src="/static/js/app.js?v=2.1.31"></script>
+
+<!-- ============ Syntax highlighting (Shiki via ESM) ============
+     Loaded as separate ESM modules so they don't block the classic
+     scripts above. Each fires a window event when its global is
+     ready; syntax-highlight.js listens. If a CDN fails, the failing
+     module is a no-op — the MD preview still renders with the
+     existing .md-codeblock styling.
+
+     Version pinned (not @1) so we get the same bundle every load
+     and esm.sh can cache aggressively. Bumped to 3.x — current
+     stable, smaller on-demand chunks. -->
+<script type="module">
+    console.log("[Shiki] loader: starting import");
+    try {
+        const mod = await import("https://esm.sh/shiki@3.0.0");
+        if (typeof mod.codeToHtml !== "function") {
+            throw new Error(
+                "module loaded but codeToHtml missing — got keys: " +
+                Object.keys(mod).join(",")
+            );
+        }
+        window.shikiCodeToHtml = mod.codeToHtml;
+        console.log("[Shiki] loader: codeToHtml ready (v3)");
+        window.dispatchEvent(new CustomEvent("shiki-ready"));
+    } catch (err) {
+        console.error("[Shiki] loader: FAILED to import shiki:", err);
+        /* Fire ready anyway so the listener can log "shiki not
+           available" instead of waiting forever. The downstream
+           code already checks for window.shikiCodeToHtml. */
+        window.dispatchEvent(new CustomEvent("shiki-ready"));
+    }
+</script>
+<script type="module">
+    /* vscode-languagedetection ships a TF.js model; on some networks
+       it fails to load. Wrap the whole thing in try/catch and still
+       fire langdetect-ready (with a no-op detector) so the listener
+       knows detection is "done" and won't wait forever. */
+    console.log("[LangDetect] loader: starting import");
+    try {
+        const mod = await import(
+            "https://esm.sh/@vscode/vscode-languagedetection@1.0.21"
+        );
+        const ModelOperations = mod.ModelOperations;
+        const ops = new ModelOperations();
+        window.detectLanguage = async function (code) {
+            if (!code || code.trim().length < 10) return null;
+            try {
+                const res = await ops.runModel(code);
+                if (res && res.length) {
+                    /* Debug — top 3 candidates so a wrong guess is
+                       easy to triage. Drop the threshold to 0.3:
+                       on short snippets (5–10 lines) the model is
+                       routinely 0.35–0.45, never 0.5+. Above 0.3
+                       the heuristic safety net in syntax-highlight
+                       .js still rescues obvious misses. */
+                    console.log("[LangDetect] top 3:",
+                        res.slice(0, 3).map(function (r) {
+                            return r.languageId + "(" +
+                                r.confidence.toFixed(2) + ")";
+                        }).join(", "));
+                    if (res[0].confidence > 0.3) {
+                        return res[0].languageId;
+                    }
+                    console.log("[LangDetect] below threshold (" +
+                        res[0].confidence.toFixed(2) + "), giving " +
+                        "up — heuristic will take over");
+                }
+            } catch (e) {
+                console.warn("[LangDetect] model error:", e);
+            }
+            return null;
+        };
+        console.log("[LangDetect] loader: ready");
+    } catch (e) {
+        console.warn("[LangDetect] loader: unavailable, fallback active:", e);
+        window.detectLanguage = async function () { return null; };
+    }
+    window.dispatchEvent(new CustomEvent("langdetect-ready"));
+</script>
+
+<script src="/static/js/syntax-highlight.js?v=2.1.36"></script>
 
 </body>
 </html>
