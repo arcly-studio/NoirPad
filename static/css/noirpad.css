@@ -2858,62 +2858,75 @@ body.editor-md-active #editor { display: none; }
         width: 100% !important;
     }
 
-    /* Hamburger now visible (replaces sidebar visibility on this size).
-       Detach from top-bar flow and pin to viewport corner with
-       z-index above the sidebar so it stays clickable when the
-       slide-out is open. Without this the sidebar (z-index 999)
-       overlays the top bar and swallows hamburger clicks, leaving
-       the user no way to dismiss the panel via the button.
+    /* Top-bar holds the hamburger inline (as the first child, right
+       before the NoirPad title). For the hamburger to stay visible
+       when the sidebar slides open, the top-bar needs to sit above
+       the panel — `position: relative` so z-index applies, then
+       z-index 1002 (above sidebar's 999 and backdrop's 998). Opaque
+       `--bg` background blocks the sidebar showing through.
 
-       Base mobile style must be high-contrast on its OWN — the
-       sidebar background matches `--bg`, so a transparent/dim
-       button would visually disappear against the open panel.
-       The accent border + bg-light keep it readable in both
-       states. The .sidebar-open class then inverts to accent fill
-       as an extra "active" cue. */
+       Desktop top-bar is `height: 36px` (line 89); on mobile we
+       drop that and use `min-height: 48px` instead so the bar has
+       enough vertical room for a comfortable tap-target hamburger
+       and properly centred NOIRPAD title on the same baseline. */
+    #top-bar {
+        position: relative !important;
+        z-index: 1002 !important;
+        background: var(--bg) !important;
+        display: flex !important;
+        align-items: center !important;
+        height: auto !important;
+        min-height: 48px !important;
+        padding: 8px 12px !important;
+        gap: 6px;
+    }
+
+    /* Hamburger — inline (not fixed), in normal top-bar flow before
+       the NOIRPAD title. Solid dark fill + 2px accent border + accent
+       stroke is readable on every theme independent of theme-specific
+       `--bg-light` definitions. `align-self: center` keeps it on the
+       same vertical baseline as the title regardless of font metrics. */
     .hamburger-btn {
         display: flex !important;
-        position: fixed !important;
-        top: 6px;
-        left: 8px;
-        z-index: 1001 !important;
-        margin: 0 !important;
-        padding: 6px 9px !important;
-        background: var(--bg-light, var(--bg)) !important;
-        border: 1.5px solid var(--accent) !important;
+        position: static !important;
+        align-self: center !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 8px 0 0 !important;
+        padding: 6px 8px !important;
+        height: auto !important;
+        background: #1a1a1a !important;
+        border: 2px solid var(--accent) !important;
         border-radius: 4px;
         color: var(--accent) !important;
-        box-shadow: 0 0 8px var(--glow, transparent), 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+        flex-shrink: 0 !important;
+        cursor: pointer;
+    }
+    .hamburger-btn svg {
+        display: block;
+        width: 20px;
+        height: 20px;
     }
     .hamburger-btn.sidebar-open {
-        /* Inverted accent — same button, "active" state so the user
-           reads it as a dismiss control while the panel is open. */
+        /* Inverted accent — "active" state, signals it now closes. */
         background: var(--accent) !important;
-        border-color: var(--accent) !important;
-        color: var(--bg) !important;
+        color: #1a1a1a !important;
     }
 
-    /* Top-bar reserves space for the fixed hamburger so the title
-       and other top-bar children don't render under it. Without
-       this padding the "NoirPad" title overlaps the hamburger at
-       left:0 (the button is fixed and out of flex flow). */
-    #top-bar {
-        padding-left: 56px !important;
-    }
-
-    /* Sidebar becomes a slide-out panel that overlays the editor.
-       padding-top reserves space for the fixed hamburger button so
-       the topmost row of in-sidebar buttons isn't hidden underneath. */
+    /* Sidebar slides out BELOW the top-bar (top: 48px matches the
+       mobile top-bar's min-height). z-index 999 < top-bar's 1002,
+       so the bar's strip including the hamburger is never covered.
+       padding-top adds breathing room above the first sidebar row. */
     #sidebar {
         position: fixed !important;
-        top: 0;
+        top: 48px !important;
         left: 0;
-        height: 100vh !important;
+        height: calc(100vh - 48px) !important;
         width: 280px !important;
         max-width: 85vw;
         min-width: 0 !important;
-        z-index: 999;
-        padding-top: 56px !important;
+        z-index: 999 !important;
+        padding-top: 12px !important;
         transform: translateX(-100%);
         transition: transform 0.25s ease;
         box-shadow: 2px 0 16px rgba(0, 0, 0, 0.45);
@@ -2922,6 +2935,13 @@ body.editor-md-active #editor { display: none; }
     }
     #sidebar.mobile-open {
         transform: translateX(0);
+    }
+
+    /* Backdrop matches the panel's offset — never covers the
+       top-bar so the hamburger keeps catching clicks. */
+    .sidebar-backdrop {
+        top: 48px !important;
+        z-index: 998 !important;
     }
 
     /* Main / editor pane — fills the whole row now that sidebar is
@@ -2933,12 +2953,6 @@ body.editor-md-active #editor { display: none; }
         width: 100% !important;
         max-width: 100% !important;
         margin-left: 0 !important;
-    }
-
-    /* Top bar — compact, horizontally scrollable if needed. */
-    #top-bar {
-        padding: 4px 8px;
-        gap: 4px;
     }
     #top-bar-title {
         font-size: 12px;
