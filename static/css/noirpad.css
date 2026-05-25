@@ -2996,8 +2996,10 @@ body.orientation-portrait #md-preview {
         overflow: visible !important;
     }
 
-    /* Shiki <pre> → THE dark, rounded box. No border (the dark fill
-       contrasts enough), bigger radius so the rounding reads. */
+    /* Shiki <pre> → rounded code box with subtle frame.
+       page-break-inside: auto so blocks larger than one page split
+       naturally — `avoid` was leaving them un-rendered or losing
+       their background on the second half of the split. */
     #editor pre.shiki,
     #editor .md-codeblock pre,
     #editor .md-codeblock[data-shiki-done="1"] pre,
@@ -3007,15 +3009,15 @@ body.orientation-portrait #md-preview {
     #md-preview .md-codeblock[data-shiki-done="1"] pre,
     #md-preview .md-codeblock.shiki-done pre,
     pre.shiki {
-        background: #1e1e2e !important;
-        border: none !important;
-        border-radius: 14px !important;
+        background: #11111b !important;
+        border: 1px solid #45475a !important;
+        border-radius: 18px !important;
         padding: 12pt 14pt !important;
         margin: 12pt 0 !important;
         font-size: 9pt !important;
         line-height: 1.45 !important;
         color: #e0e0e0 !important;
-        page-break-inside: avoid !important;
+        page-break-inside: auto !important;
         overflow: hidden !important;
         white-space: pre-wrap !important;
         word-wrap: break-word !important;
@@ -3023,18 +3025,18 @@ body.orientation-portrait #md-preview {
         print-color-adjust: exact !important;
     }
 
-    /* Non-Shiki code block (plain ```...```) → IS the dark box itself */
+    /* Non-Shiki code block (plain ```...```) → IS the box itself */
     #editor .md-codeblock:not([data-shiki-done="1"]):not(.shiki-done),
     #md-preview .md-codeblock:not([data-shiki-done="1"]):not(.shiki-done) {
-        background: #1e1e2e !important;
-        border: none !important;
-        border-radius: 14px !important;
+        background: #11111b !important;
+        border: 1px solid #45475a !important;
+        border-radius: 18px !important;
         padding: 12pt 14pt !important;
         margin: 12pt 0 !important;
         font-size: 9pt !important;
         line-height: 1.45 !important;
         color: #e0e0e0 !important;
-        page-break-inside: avoid !important;
+        page-break-inside: auto !important;
         overflow: hidden !important;
         white-space: pre-wrap !important;
         word-wrap: break-word !important;
@@ -3042,14 +3044,16 @@ body.orientation-portrait #md-preview {
         print-color-adjust: exact !important;
     }
 
-    /* Inline code — light pill on white page */
+    /* Inline code — transparent (no white "box" interrupting the
+       text flow); only the colour change marks it as code. */
     #editor .md-inline-code,
     #md-preview .md-inline-code {
-        background: #f0f0f0 !important;
-        border: 1px solid #e0e0e0 !important;
-        border-radius: 4px !important;
-        padding: 1pt 4pt !important;
-        font-size: 9pt !important;
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        font-size: inherit !important;
+        font-family: 'JetBrains Mono', 'Consolas', monospace !important;
         color: #d63384 !important;
     }
 
@@ -3183,6 +3187,137 @@ body.orientation-portrait #md-preview {
     body.np-print-raw-dark {
         margin: 0 !important;
         padding: 0 !important;
+    }
+
+    /* ===== 9b) MARKDOWN RENDERED / RICH-TEXT print wrap =====
+       print.js dynamically wraps #md-preview or #editor content in:
+         <table class="np-print-wrap-table">
+           <thead><tr><td class="np-print-spacer"></td></tr></thead>
+           <tbody><tr><td class="np-print-wrap-content">…</td></tr></tbody>
+           <tfoot><tr><td class="np-print-spacer"></td></tr></tfoot>
+         </table>
+       Same trick as raw mode: thead/tfoot spacers repeat per page,
+       giving 1cm breathing room without @page margin (which is set
+       to 0 so Chrome's headers/footers can't render).
+
+       PAGE LOOKS DARK on purpose — matches the NoirPad editor's
+       aesthetic AND avoids the harsh alternation between white
+       text-rows and dark code blocks (which previously looked like
+       white and black strips piling up on every page). The page
+       itself is one consistent dark colour; code blocks sit on top
+       as slightly darker boxes with a lighter border to mark them
+       out without contrast-shock. */
+    html.np-print-wrapped,
+    body.np-print-wrapped {
+        background: #1a1a1a !important;
+        color: #e8e8e8 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    /* Repeat the dark fill across the WHOLE sheet (incl. any @page
+       margin area Chrome decides to render). Same trick as raw mode. */
+    body.np-print-wrapped::before {
+        content: "" !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: #1a1a1a !important;
+        z-index: -1 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        pointer-events: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    body.np-print-wrapped #md-preview,
+    body.np-print-wrapped #editor {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        color: #e8e8e8 !important;
+    }
+    /* Print only the PANE that matches the current editor mode —
+       in MD mode the rendered preview, in rich-text mode the editor.
+       Section 2 of this @media print block lifts `#editor` back to
+       display:block (so it prints from rich-text mode), which also
+       defeats the on-screen `body.editor-md-active #editor {display:
+       none}` rule and would otherwise make BOTH the editor AND the
+       preview print. */
+    body.np-print-wrapped.editor-md-active #editor {
+        display: none !important;
+    }
+    body.np-print-wrapped:not(.editor-md-active) #md-stack,
+    body.np-print-wrapped:not(.editor-md-active) #md-preview,
+    body.np-print-wrapped:not(.editor-md-active) #md-source {
+        display: none !important;
+    }
+    body.np-print-wrapped .np-print-wrap-table {
+        display: table !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        border-collapse: collapse !important;
+        box-sizing: border-box !important;
+        background: transparent !important;
+    }
+    body.np-print-wrapped .np-print-wrap-table td {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        vertical-align: top !important;
+    }
+    body.np-print-wrapped .np-print-wrap-table td.np-print-spacer {
+        height: 1cm !important;
+    }
+    body.np-print-wrapped .np-print-wrap-table td.np-print-wrap-content {
+        padding: 0 1.5cm !important;
+    }
+
+    /* Override section 4 colours (which target #md-preview .md-h1 etc.
+       with black-on-white) when the page is in dark wrapped mode —
+       text needs to be LIGHT on dark, not black on dark. */
+    body.np-print-wrapped #md-preview .md-h1,
+    body.np-print-wrapped #md-preview .md-h2,
+    body.np-print-wrapped #md-preview .md-h3,
+    body.np-print-wrapped #md-preview .md-bold,
+    body.np-print-wrapped #md-preview .md-italic,
+    body.np-print-wrapped #md-preview .md-line,
+    body.np-print-wrapped #md-preview .md-list,
+    body.np-print-wrapped #editor,
+    body.np-print-wrapped #editor p,
+    body.np-print-wrapped #editor div {
+        color: #ffffff !important;
+    }
+    body.np-print-wrapped #md-preview .md-syntax,
+    body.np-print-wrapped #md-preview .md-link-url {
+        color: #888 !important;
+    }
+    body.np-print-wrapped #md-preview .md-quote {
+        color: #c0c0c0 !important;
+        border-left-color: #555 !important;
+    }
+    body.np-print-wrapped #md-preview .md-strike {
+        color: #888 !important;
+    }
+    body.np-print-wrapped #md-preview .md-inline-code,
+    body.np-print-wrapped #editor .md-inline-code {
+        color: #ff79c6 !important;
+    }
+    body.np-print-wrapped #md-preview .md-link,
+    body.np-print-wrapped #md-preview a,
+    body.np-print-wrapped #editor a {
+        color: #8be9fd !important;
+    }
+    /* Link URL suffix from section 7 — make readable on dark. */
+    body.np-print-wrapped #md-preview a[href]::after,
+    body.np-print-wrapped #editor a[href]::after {
+        color: #888 !important;
     }
 
     /* Why ::before instead of `html { background: … }`:

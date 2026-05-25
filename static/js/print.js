@@ -51,6 +51,67 @@ window.NP = window.NP || {};
         if (s && s.parentNode) s.parentNode.removeChild(s);
     }
 
+    /* ---- markdown / rich-text print wrap ----
+
+       For rendered markdown (and rich-text notes) we use the same
+       table+thead/tfoot trick as raw mode: temporarily move the
+       container's children into a <tbody><td>, sandwiched between
+       1cm-tall <thead> and <tfoot> spacer rows that the browser
+       repeats on every printed page. That keeps per-page breathing
+       room while @page margin can stay 0 (no Chrome headers/footers).
+       wrapHostForPrint() returns a cleanup function that restores
+       the original DOM. */
+    function wrapHostForPrint(hostId) {
+        var host = document.getElementById(hostId);
+        if (!host) return function () {};
+
+        var originalChildren = [];
+        var child = host.firstChild;
+        while (child) {
+            originalChildren.push(child);
+            child = child.nextSibling;
+        }
+
+        var table = document.createElement("table");
+        table.className = "np-print-wrap-table";
+
+        var thead = document.createElement("thead");
+        var theadTr = document.createElement("tr");
+        var theadTd = document.createElement("td");
+        theadTd.className = "np-print-spacer";
+        theadTr.appendChild(theadTd);
+        thead.appendChild(theadTr);
+
+        var tbody = document.createElement("tbody");
+        var tbodyTr = document.createElement("tr");
+        var tbodyTd = document.createElement("td");
+        tbodyTd.className = "np-print-wrap-content";
+        for (var i = 0; i < originalChildren.length; i++) {
+            tbodyTd.appendChild(originalChildren[i]); /* moves, not clones */
+        }
+        tbodyTr.appendChild(tbodyTd);
+        tbody.appendChild(tbodyTr);
+
+        var tfoot = document.createElement("tfoot");
+        var tfootTr = document.createElement("tr");
+        var tfootTd = document.createElement("td");
+        tfootTd.className = "np-print-spacer";
+        tfootTr.appendChild(tfootTd);
+        tfoot.appendChild(tfootTr);
+
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        table.appendChild(tfoot);
+        host.appendChild(table);
+
+        return function unwrap() {
+            if (table.parentNode === host) host.removeChild(table);
+            for (var i = 0; i < originalChildren.length; i++) {
+                host.appendChild(originalChildren[i]);
+            }
+        };
+    }
+
     /* ---- helpers ---- */
 
     function findItemById(tree, id) {
@@ -331,16 +392,40 @@ window.NP = window.NP || {};
                             removeRawNode();
                         });
                     } else {
+                        /* Rendered markdown — wrap #md-preview in table
+                           so thead/tfoot spacers give per-page breathing
+                           room without needing @page margin (which would
+                           reintroduce Chrome's headers/footers). */
                         expandLinkedImages();
-                        doPrint(cleanupInjectedImages);
+                        var unwrap = wrapHostForPrint("md-preview");
+                        document.documentElement.classList.add("np-print-wrapped");
+                        document.body.classList.add("np-print-wrapped");
+                        ensureRawPageStyle();
+                        doPrint(function () {
+                            document.documentElement.classList.remove("np-print-wrapped");
+                            document.body.classList.remove("np-print-wrapped");
+                            clearRawPageStyle();
+                            unwrap();
+                            cleanupInjectedImages();
+                        });
                     }
                 });
                 return;
             }
 
-            /* Rich-text / plain mode */
+            /* Rich-text / plain mode — same table wrap trick. */
             expandLinkedImages();
-            doPrint(cleanupInjectedImages);
+            var unwrap = wrapHostForPrint("editor");
+            document.documentElement.classList.add("np-print-wrapped");
+            document.body.classList.add("np-print-wrapped");
+            ensureRawPageStyle();
+            doPrint(function () {
+                document.documentElement.classList.remove("np-print-wrapped");
+                document.body.classList.remove("np-print-wrapped");
+                clearRawPageStyle();
+                unwrap();
+                cleanupInjectedImages();
+            });
         }
     };
 
