@@ -557,14 +557,38 @@ input, textarea {
     padding: 24px;
     overflow-y: auto;
     overflow-x: hidden;
+    /* min-height: 0 is REQUIRED for overflow-y: auto to work on a
+       flex item. Without it the flex item refuses to shrink below
+       its content size and the scrollbar never appears — long notes
+       (100+ lines) render their full height past the viewport and
+       the user can't reach the bottom. The earlier `align-items:
+       stretch` masked this by locking the editor height to wrapper
+       height, which clipped tall content instead of scrolling it. */
+    min-height: 0;
     background: var(--bg);            /* dark "desk" around the page */
 }
 
 #editor {
-    /* "Paper" — landscape is the default; portrait is the override below. */
+    /* "Paper" — landscape is the default; portrait is the override below.
+       max-width uses min(px, %) so the paper grows on wide monitors
+       (up to the cap) but never exceeds the viewport on small ones.
+       Per-breakpoint caps for 1920px+ / 2560px+ live at the bottom
+       of this file.
+
+       Height is content-driven: `height: auto` + `min-height: 100%`
+       means the editor box fills the wrapper when content is short
+       (no awkward empty space below the paper) and grows past the
+       wrapper when content is long. The wrapper's `overflow-y: auto`
+       then provides the scrollbar, so 100+ line notes are fully
+       reachable. `max-height: none` + `overflow: visible` are
+       belt-and-suspenders so no later rule can accidentally clip
+       tall notes. */
     width: 100%;
-    max-width: 1300px;
-    min-height: 730px;               /* ~16:9 of 1300 */
+    max-width: min(1600px, 95%);
+    height: auto;
+    min-height: 100%;
+    max-height: none;
+    overflow: visible;
     padding: 40px 50px;
     font-family: var(--font-mono);
     font-size: 14px;
@@ -583,10 +607,13 @@ input, textarea {
     tab-size: 4;
 }
 
-/* Portrait = A4 proportions (1 : 1.414). Landscape is the #editor default. */
+/* Portrait orientation only narrows the paper — height stays
+   content-driven (inherited from #editor). The old A4-derived
+   `min-height: 1131px` capped the paper at one screen on tall
+   notes and combined with align-items: stretch to clip overflow;
+   dropped in favour of the content-driven height above. */
 body.orientation-portrait #editor {
-    max-width: 800px;
-    min-height: 1131px;              /* 800 * 1.414 */
+    max-width: min(900px, 90%);
 }
 
 /* Inline images: zoom-in cursor hints that Ctrl+wheel resizes them. */
@@ -2294,11 +2321,13 @@ body.crt-on #crt-overlay {
     flex-direction: row;
     gap: 16px;
     width: 100%;
-    max-width: 1300px;
+    /* Same responsive cap as #editor — split view follows the paper
+       width so on ultrawide monitors both panes get more room. */
+    max-width: min(1600px, 95%);
     box-sizing: border-box;
 }
 
-body.orientation-portrait #md-stack { max-width: 800px; }
+body.orientation-portrait #md-stack { max-width: min(900px, 90%); }
 body.editor-md-active #md-stack { display: flex; align-items: stretch; }
 body.editor-md-active #editor { display: none; }
 
@@ -2306,18 +2335,20 @@ body.editor-md-active #editor { display: none; }
 #md-preview {
     flex: 1;
     min-width: 0;                 /* allow flex shrink */
-    min-height: 730px;
+    /* Same content-driven height as #editor — see comment there.
+       Old `min-height: 730px / 1131px` capped both panes at one
+       screen, which fought with align-items: stretch on #md-stack
+       and clipped long previews. */
+    min-height: 100%;
+    height: auto;
+    max-height: none;
+    overflow: visible;
     background: var(--bg-entry);
     border: 1px solid var(--border);
     border-radius: 4px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
     box-sizing: border-box;
     padding: 40px 50px;
-}
-
-body.orientation-portrait #md-source,
-body.orientation-portrait #md-preview {
-    min-height: 1131px;
 }
 
 #editor-md {
@@ -2767,6 +2798,293 @@ body.orientation-portrait #md-preview {
 }
 
 /* ============================================================
+   MOBILE / TABLET RESPONSIVE LAYOUT
+   --------------------------------------------------------------
+   Desktop (>900px) layout above this block stays untouched.
+   This section adds:
+     - hamburger button (mobile only)
+     - slide-out sidebar over the editor on small viewports
+     - full-width editor, compact top/bottom bars, big tap targets
+   All rules sit BEFORE @media print so they don't interact with
+   the print pipeline.
+   ============================================================ */
+
+/* Hamburger button — hidden by default (desktop). The @media block
+   below flips it to display:flex when the viewport is mobile. */
+.hamburger-btn {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg-dim);
+    border-radius: 4px;
+    padding: 4px 6px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    -webkit-app-region: no-drag;
+}
+.hamburger-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.hamburger-btn:active {
+    transform: scale(0.95);
+}
+
+/* Backdrop behind the slide-out sidebar — hidden by default; the
+   .visible class is toggled by mobile.js when the sidebar opens. */
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 998;
+    -webkit-tap-highlight-color: transparent;
+}
+.sidebar-backdrop.visible {
+    display: block;
+}
+
+/* ============================================================
+   TABLET / MOBILE — viewport ≤ 900px
+   ============================================================ */
+@media (max-width: 900px) {
+    /* #app's desktop default is min-width:640px which causes horizontal
+       overflow + body scroll on every phone narrower than that. Drop
+       the constraint on mobile so the layout reflows to fit. */
+    #app {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+
+    /* Hamburger now visible (replaces sidebar visibility on this size).
+       Detach from top-bar flow and pin to viewport corner with
+       z-index above the sidebar so it stays clickable when the
+       slide-out is open. Without this the sidebar (z-index 999)
+       overlays the top bar and swallows hamburger clicks, leaving
+       the user no way to dismiss the panel via the button.
+
+       Base mobile style must be high-contrast on its OWN — the
+       sidebar background matches `--bg`, so a transparent/dim
+       button would visually disappear against the open panel.
+       The accent border + bg-light keep it readable in both
+       states. The .sidebar-open class then inverts to accent fill
+       as an extra "active" cue. */
+    .hamburger-btn {
+        display: flex !important;
+        position: fixed !important;
+        top: 6px;
+        left: 8px;
+        z-index: 1001 !important;
+        margin: 0 !important;
+        padding: 6px 9px !important;
+        background: var(--bg-light, var(--bg)) !important;
+        border: 1.5px solid var(--accent) !important;
+        border-radius: 4px;
+        color: var(--accent) !important;
+        box-shadow: 0 0 8px var(--glow, transparent), 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+    }
+    .hamburger-btn.sidebar-open {
+        /* Inverted accent — same button, "active" state so the user
+           reads it as a dismiss control while the panel is open. */
+        background: var(--accent) !important;
+        border-color: var(--accent) !important;
+        color: var(--bg) !important;
+    }
+
+    /* Top-bar reserves space for the fixed hamburger so the title
+       and other top-bar children don't render under it. Without
+       this padding the "NoirPad" title overlaps the hamburger at
+       left:0 (the button is fixed and out of flex flow). */
+    #top-bar {
+        padding-left: 56px !important;
+    }
+
+    /* Sidebar becomes a slide-out panel that overlays the editor.
+       padding-top reserves space for the fixed hamburger button so
+       the topmost row of in-sidebar buttons isn't hidden underneath. */
+    #sidebar {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        height: 100vh !important;
+        width: 280px !important;
+        max-width: 85vw;
+        min-width: 0 !important;
+        z-index: 999;
+        padding-top: 56px !important;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        box-shadow: 2px 0 16px rgba(0, 0, 0, 0.45);
+        overflow-y: auto;
+        border-right: 1px solid var(--border);
+    }
+    #sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    /* Main / editor pane — fills the whole row now that sidebar is
+       absolutely positioned. */
+    #main {
+        width: 100% !important;
+    }
+    #editor-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+    }
+
+    /* Top bar — compact, horizontally scrollable if needed. */
+    #top-bar {
+        padding: 4px 8px;
+        gap: 4px;
+    }
+    #top-bar-title {
+        font-size: 12px;
+        letter-spacing: 1px;
+    }
+    #status-label {
+        display: none;          /* not enough room on mobile */
+    }
+    #btn-focus,
+    #btn-settings {
+        margin-left: 4px;
+    }
+
+    /* Note header buttons — wrap rather than overflow horizontally. */
+    #note-header {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    #note-header .header-btn {
+        flex-shrink: 0;
+    }
+
+    /* Editor — full width, modest padding. Override the desktop A4
+       portrait/landscape sizing which would otherwise leave huge
+       gutters or force horizontal scrolling. */
+    #editor-wrapper {
+        padding: 8px !important;
+    }
+    #editor {
+        max-width: 100% !important;
+        padding: 14px !important;
+    }
+    body.orientation-portrait #editor,
+    body.orientation-landscape #editor {
+        max-width: 100% !important;
+        min-height: auto !important;
+    }
+    /* Markdown split-pane: stack vertically on mobile so each pane
+       gets the full width (side-by-side at this width = unreadable). */
+    body.editor-md-active #md-stack {
+        flex-direction: column !important;
+        max-width: 100% !important;
+        gap: 8px !important;
+    }
+    body.editor-md-active #md-source,
+    body.editor-md-active #md-preview {
+        min-height: 320px !important;
+        padding: 16px 18px !important;
+        max-width: 100% !important;
+    }
+
+    /* Tab bar — horizontal scroll instead of wrapping. */
+    #tab-bar {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
+    /* Bottom bar — compact + scroll. The shortcut hints (centre group)
+       eat too much room on a phone. */
+    #bottom-bar {
+        font-size: 10px;
+        padding: 3px 8px;
+        overflow-x: auto;
+    }
+    #bottom-center {
+        display: none;
+    }
+
+    /* Modal overlays — almost full screen so they're usable. */
+    #settings-window,
+    #shortcuts-panel,
+    #help-window,
+    #font-picker {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        max-height: 90vh !important;
+    }
+
+    /* Focus mode on mobile would zero-width the sidebar — irrelevant
+       here, the sidebar is already a slide-out. Make it a no-op. */
+    body.focus-mode #sidebar {
+        width: 280px !important;
+        min-width: 0 !important;
+        padding: revert;
+        border-right: 1px solid var(--border);
+    }
+}
+
+/* ============================================================
+   SMALL MOBILE — viewport ≤ 480px
+   ============================================================ */
+@media (max-width: 480px) {
+    #top-bar {
+        padding: 3px 6px;
+    }
+    #top-bar-title {
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }
+    #note-header .header-btn {
+        padding: 4px 6px;
+        font-size: 10px;
+    }
+    #editor-wrapper {
+        padding: 4px !important;
+    }
+    #editor {
+        padding: 12px !important;
+        font-size: 14px !important;
+    }
+    #sidebar {
+        width: 85vw !important;
+    }
+
+    /* Markdown rendered headings — smaller on tiny screens so they
+       don't dominate. Classes live inside #md-preview. */
+    #md-preview .md-h1 { font-size: 20px !important; }
+    #md-preview .md-h2 { font-size: 17px !important; }
+    #md-preview .md-h3 { font-size: 15px !important; }
+
+    /* Code blocks — smaller monospace so they fit phone width. */
+    #md-preview pre.shiki,
+    #md-preview .md-codeblock {
+        font-size: 11px !important;
+    }
+}
+
+/* ============================================================
+   TOUCH — coarse pointer, no hover (phones, most tablets)
+   Bigger tap targets for fingers.
+   ============================================================ */
+@media (hover: none) and (pointer: coarse) {
+    #button-bar button,
+    .tree-item {
+        min-height: 38px;
+    }
+    .tree-item {
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+    .hamburger-btn {
+        padding: 8px 10px;
+    }
+}
+
+/* ============================================================
    Print stylesheet — Export to PDF via browser print dialog.
    Hides UI chrome and renders just the current note's content
    on a clean white page suitable for "Save as PDF".
@@ -2812,6 +3130,7 @@ body.orientation-portrait #md-preview {
     .dialog-overlay,
     .paste-image-overlay,
     .image-viewer-overlay,
+    .sidebar-backdrop,
     #np-print-md-overlay,
     #crt-overlay,
     #matrix-canvas,
@@ -3408,3 +3727,152 @@ body.orientation-portrait #md-preview {
     display: none;
 }
 
+/* ============================================================
+   Welcome screen — fluid responsive sizing.
+
+   The welcome HTML (`.welcome-wrap` + children) is built and
+   injected at runtime by editor.js `showWelcome()`, which also
+   emits an inline <style> block with fixed pixel sizes
+   (.welcome-logo: 96px, .welcome-sub: 13px, etc.). That inline
+   <style> is appended AFTER this stylesheet, so we need
+   `!important` to win the cascade.
+
+   clamp(min, preferred, max) scales fluidly with viewport
+   width without per-breakpoint media queries: on a 375px
+   phone the logo is ~67px (18vw), on a 1920px desktop it caps
+   at 140px. The container locks to viewport width so the
+   text-shadow glow can spill out (overflow: visible) but the
+   text itself never pushes past the screen edge.
+   ============================================================ */
+.welcome-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    padding: clamp(12px, 4vw, 24px) !important;
+    text-align: center !important;
+}
+
+.welcome-logo {
+    font-size: clamp(40px, 18vw, 140px) !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0 clamp(8px, 3vw, 16px) !important;
+    line-height: 1.1 !important;
+    text-align: center !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+.welcome-sub {
+    font-size: clamp(11px, 3.5vw, 13px) !important;
+    letter-spacing: clamp(2px, 1.2vw, 6px) !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0 clamp(8px, 3vw, 16px) !important;
+    text-align: center !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+.welcome-version {
+    font-size: clamp(10px, 2.5vw, 11px) !important;
+    letter-spacing: clamp(1px, 0.6vw, 2px) !important;
+    max-width: 100% !important;
+    text-align: center !important;
+}
+
+.welcome-hint {
+    font-size: clamp(10px, 3vw, 12px) !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0 clamp(8px, 3vw, 16px) !important;
+    text-align: center !important;
+    line-height: 1.5 !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+.welcome-divider {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0 clamp(8px, 3vw, 16px) !important;
+}
+
+/* ============================================================
+   LARGE MONITORS — progressive paper-width caps.
+
+   Base values above (#editor, #md-stack) use min(Xpx, Y%) so the
+   paper grows with the viewport but never exceeds the cap. On
+   1920px+ and 2560px+ monitors we raise the cap so the paper
+   actually uses the extra real estate instead of leaving the
+   user staring at a thin column with hundreds of pixels of dead
+   space on either side.
+
+   `#editor-wrapper` already does `display: flex; justify-content:
+   center`, so the paper stays centered regardless of width.
+   Mobile rules (@media max-width: 900px) above use
+   `max-width: 100% !important` and will continue to win at that
+   size.
+   ============================================================ */
+@media (min-width: 1920px) {
+    #editor {
+        max-width: min(2000px, 90%);
+    }
+    body.orientation-portrait #editor {
+        max-width: min(1100px, 70%);
+    }
+    #md-stack {
+        max-width: min(2000px, 92%);
+    }
+    body.orientation-portrait #md-stack {
+        max-width: min(1100px, 70%);
+    }
+}
+
+@media (min-width: 2560px) {
+    #editor {
+        max-width: min(2400px, 88%);
+    }
+    body.orientation-portrait #editor {
+        max-width: min(1300px, 60%);
+    }
+    #md-stack {
+        max-width: min(2400px, 90%);
+    }
+    body.orientation-portrait #md-stack {
+        max-width: min(1300px, 60%);
+    }
+}
+
+/* ============================================================
+   MARKDOWN MODE — full-width split, orientation ignored.
+
+   Rich-text mode honours portrait/landscape orientation (the
+   "A4 paper" caps live above), but the markdown split view is
+   meant to be a working surface for source + preview side-by-
+   side: orientation has no semantic meaning there. Force
+   #md-stack to fill the wrapper regardless of body.orientation-*
+   class, on every breakpoint.
+
+   Selector is `body.editor-md-active` (the existing class
+   toggled by markdown.js — no `:has()` needed). Listed last so
+   it wins source-order against the per-breakpoint orientation
+   caps above; !important is belt-and-suspenders against future
+   per-breakpoint additions.
+
+   `#editor` itself is `display: none` in MD mode so its own
+   max-width rules don't matter here. Wrapper padding is
+   tightened slightly so two panes get more usable surface.
+   ============================================================ */
+body.editor-md-active #md-stack,
+body.editor-md-active.orientation-portrait #md-stack,
+body.editor-md-active.orientation-landscape #md-stack {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+body.editor-md-active #editor-wrapper {
+    padding: 16px 24px !important;
+}
