@@ -2765,3 +2765,511 @@ body.orientation-portrait #md-preview {
     min-width: 60px;
     text-align: center;
 }
+
+/* ============================================================
+   Print stylesheet — Export to PDF via browser print dialog.
+   Hides UI chrome and renders just the current note's content
+   on a clean white page suitable for "Save as PDF".
+   ============================================================ */
+@media print {
+    /* ===== 0) FORCE color/background printing =====
+       Browsers default "Background graphics" to OFF in the print
+       dialog, which would strip dark code-block backgrounds and
+       leave just a hollow border. print-color-adjust: exact forces
+       every element to honour its declared background — must be
+       declared FIRST so cascade resolution sees it everywhere. */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    /* ===== 1) HIDE ALL UI including BOTH matrix canvases ===== */
+    /* Matrix rain uses TWO canvases:
+       - #matrix-canvas        (static, declared in index.html)
+       - #matrix-rain-canvas   (dynamically appended to <body>
+                                by matrix-rain.js — sits OUTSIDE
+                                the #app subtree, which is why the
+                                old stylesheet missed it and a full
+                                blank page of rain ended up first
+                                in the print preview) */
+    #sidebar,
+    #top-bar,
+    #tab-bar,
+    #tag-bar,
+    #bottom-bar,
+    #button-bar,
+    #note-header,
+    #search-bar,
+    #command-bar,
+    #lock-overlay,
+    #settings-overlay,
+    #help-overlay,
+    #shortcuts-overlay,
+    #font-overlay,
+    #splash-overlay,
+    #context-menu,
+    .dialog-overlay,
+    .paste-image-overlay,
+    .image-viewer-overlay,
+    #np-print-md-overlay,
+    #crt-overlay,
+    #matrix-canvas,
+    #matrix-rain-canvas,
+    canvas,
+    #md-source {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    /* ===== 2) RESET layout — clean page, no "card" effect =====
+       Only <body> paints a background (the page itself).  Every
+       inner container is TRANSPARENT — that way the user can't see
+       a white rectangle inside another white rectangle (the cause
+       of the "double-card" / framed look in the previous preview). */
+    html,
+    body {
+        background: #fff !important;
+        color: #1a1a1a !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    #app,
+    #main,
+    #editor-panel,
+    #editor-wrapper,
+    #md-stack {
+        position: static !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        overflow: visible !important;
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
+    /* ===== 3) EDITOR / preview as clean document =====
+       Transparent — the page (body) is the only background. */
+    #editor,
+    #md-preview {
+        position: static !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 0 !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        color: #1a1a1a !important;
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+        font-size: 11pt !important;
+        line-height: 1.5 !important;
+        overflow: visible !important;
+    }
+
+    /* Strip backgrounds from every block-level markdown container —
+       headings, paragraphs, lists, quotes, empty lines. Their
+       non-print stylesheets give them `background: var(--bg-entry)`
+       indirectly, which materialises as visible white rectangles
+       in print. */
+    #md-preview .md-line,
+    #md-preview .md-empty,
+    #md-preview .md-h1,
+    #md-preview .md-h2,
+    #md-preview .md-h3,
+    #md-preview .md-list,
+    #md-preview .md-quote,
+    #editor p,
+    #editor div {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
+    /* Strip ALL glow / shadows in printed content */
+    #editor,
+    #editor *,
+    #editor *::before,
+    #editor *::after,
+    #md-preview,
+    #md-preview *,
+    #md-preview *::before,
+    #md-preview *::after {
+        text-shadow: none !important;
+        box-shadow: none !important;
+    }
+
+    /* ===== 4) MARKDOWN elements — clean black on white =====
+       Markdown classes live inside #md-preview, but mirror to
+       #editor too in case future plain-mode rendering reuses
+       them. */
+    #editor .md-h1,
+    #md-preview .md-h1 {
+        color: #000 !important;
+        font-size: 20pt !important;
+        font-weight: 700 !important;
+        margin: 12pt 0 6pt !important;
+        page-break-after: avoid !important;
+        border-bottom: none !important;
+    }
+    #editor .md-h2,
+    #md-preview .md-h2 {
+        color: #000 !important;
+        font-size: 16pt !important;
+        font-weight: 700 !important;
+        margin: 10pt 0 5pt !important;
+        page-break-after: avoid !important;
+    }
+    #editor .md-h3,
+    #md-preview .md-h3 {
+        color: #000 !important;
+        font-size: 13pt !important;
+        font-weight: 700 !important;
+        margin: 8pt 0 4pt !important;
+        page-break-after: avoid !important;
+    }
+    #editor .md-syntax,
+    #md-preview .md-syntax,
+    #md-preview .md-link-url {
+        color: #aaa !important;
+    }
+    #editor .md-quote,
+    #md-preview .md-quote {
+        color: #444 !important;
+        border-left: 3px solid #ccc !important;
+        background: transparent !important;
+        padding-left: 10pt !important;
+        margin: 6pt 0 !important;
+    }
+    #editor .md-bold,
+    #md-preview .md-bold {
+        font-weight: 700 !important;
+        color: #000 !important;
+    }
+    #editor .md-italic,
+    #md-preview .md-italic {
+        font-style: italic !important;
+        color: #000 !important;
+    }
+    #md-preview .md-strike { color: #555 !important; }
+    #md-preview .md-list,
+    #md-preview .md-line { color: #1a1a1a !important; }
+
+    /* ===== 5) CODE BLOCKS — DARK rounded, single box, no-break =====
+       Two shapes coexist in this codebase:
+         (a) Pre-Shiki / non-highlighted:  .md-codeblock           (no children styled)
+         (b) Post-Shiki / highlighted:     .md-codeblock[data-shiki-done="1"]
+                                            └── pre.shiki          (the real box)
+       For (b) the OUTER wrapper must be transparent so the Shiki
+       <pre> is the only visible box — otherwise you get a "double
+       border" effect. For (a) the wrapper IS the box. Some forks
+       use a .shiki-done class instead of the data attribute, so
+       both selectors are kept. */
+
+    /* OUTER wrapper for Shiki-rendered blocks → fully transparent,
+       no margin (margin lives on the <pre>) — otherwise the outer
+       wrapper paints a visible white "card" around the dark <pre>. */
+    #editor .md-codeblock[data-shiki-done="1"],
+    #editor .md-codeblock.shiki-done,
+    #md-preview .md-codeblock[data-shiki-done="1"],
+    #md-preview .md-codeblock.shiki-done {
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        page-break-inside: avoid !important;
+        overflow: visible !important;
+    }
+
+    /* Shiki <pre> → THE dark, rounded box. No border (the dark fill
+       contrasts enough), bigger radius so the rounding reads. */
+    #editor pre.shiki,
+    #editor .md-codeblock pre,
+    #editor .md-codeblock[data-shiki-done="1"] pre,
+    #editor .md-codeblock.shiki-done pre,
+    #md-preview pre.shiki,
+    #md-preview .md-codeblock pre,
+    #md-preview .md-codeblock[data-shiki-done="1"] pre,
+    #md-preview .md-codeblock.shiki-done pre,
+    pre.shiki {
+        background: #1e1e2e !important;
+        border: none !important;
+        border-radius: 14px !important;
+        padding: 12pt 14pt !important;
+        margin: 12pt 0 !important;
+        font-size: 9pt !important;
+        line-height: 1.45 !important;
+        color: #e0e0e0 !important;
+        page-break-inside: avoid !important;
+        overflow: hidden !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Non-Shiki code block (plain ```...```) → IS the dark box itself */
+    #editor .md-codeblock:not([data-shiki-done="1"]):not(.shiki-done),
+    #md-preview .md-codeblock:not([data-shiki-done="1"]):not(.shiki-done) {
+        background: #1e1e2e !important;
+        border: none !important;
+        border-radius: 14px !important;
+        padding: 12pt 14pt !important;
+        margin: 12pt 0 !important;
+        font-size: 9pt !important;
+        line-height: 1.45 !important;
+        color: #e0e0e0 !important;
+        page-break-inside: avoid !important;
+        overflow: hidden !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Inline code — light pill on white page */
+    #editor .md-inline-code,
+    #md-preview .md-inline-code {
+        background: #f0f0f0 !important;
+        border: 1px solid #e0e0e0 !important;
+        border-radius: 4px !important;
+        padding: 1pt 4pt !important;
+        font-size: 9pt !important;
+        color: #d63384 !important;
+    }
+
+    /* ===== 6) IMAGES — never crop across pages ===== */
+    #editor img,
+    #md-preview img {
+        max-width: 100% !important;
+        height: auto !important;
+        page-break-inside: avoid !important;
+        border-radius: 6px !important;
+        margin: 6pt 0 !important;
+    }
+
+    /* ===== 7) LINKS — show URL inline ===== */
+    #editor a,
+    #md-preview a,
+    #md-preview .md-link {
+        color: #0969da !important;
+        text-decoration: underline !important;
+    }
+    #editor a[href]::after,
+    #md-preview a[href]::after {
+        content: " (" attr(href) ")";
+        font-size: 8pt;
+        color: #666;
+    }
+    /* Don't print URLs after internal anchors or javascript: */
+    #editor a[href^="#"]::after,
+    #md-preview a[href^="#"]::after,
+    #editor a[href^="javascript:"]::after,
+    #md-preview a[href^="javascript:"]::after {
+        content: "";
+    }
+
+    /* ===== 8) PAGE SETUP ===== */
+    @page {
+        margin: 1.5cm;
+        size: A4 portrait;
+    }
+
+    /* General — avoid breaking paragraphs/divs across pages */
+    #editor p,
+    #editor div,
+    #md-preview p,
+    #md-preview div {
+        page-break-inside: avoid;
+    }
+
+    /* ===== 9) RAW MARKDOWN export mode =====
+       print.js inserts <pre id="np-print-raw"> with the textarea
+       source and adds ONE of:
+         body.np-print-raw       → LIGHT theme (black on white)
+         body.np-print-raw-dark  → DARK  theme (white on black)
+       The print stylesheet hides everything else and shows the <pre>
+       styled per the chosen theme. */
+
+    /* --- shared: hide UI while raw-printing --- */
+    body.np-print-raw #app,
+    body.np-print-raw #main,
+    body.np-print-raw #editor-panel,
+    body.np-print-raw #editor-wrapper,
+    body.np-print-raw #md-stack,
+    body.np-print-raw #editor,
+    body.np-print-raw #md-preview,
+    body.np-print-raw #md-source,
+    body.np-print-raw-dark #app,
+    body.np-print-raw-dark #main,
+    body.np-print-raw-dark #editor-panel,
+    body.np-print-raw-dark #editor-wrapper,
+    body.np-print-raw-dark #md-stack,
+    body.np-print-raw-dark #editor,
+    body.np-print-raw-dark #md-preview,
+    body.np-print-raw-dark #md-source {
+        display: none !important;
+    }
+
+    /* --- shared: <table> + <pre> layout ---
+       print.js injects `@page { margin: 0 }` (no browser headers/
+       footers) and wraps the source in a <table> with empty
+       <thead>/<tfoot> spacer rows. Browsers repeat <thead> at the
+       top of every printed page and <tfoot> at the bottom — those
+       1cm-tall spacer cells therefore provide per-page breathing
+       room despite @page margin being 0. */
+    body.np-print-raw #np-print-raw,
+    body.np-print-raw-dark #np-print-raw {
+        display: table !important;
+        position: static !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        border-collapse: collapse !important;
+        box-shadow: none !important;
+        box-sizing: border-box !important;
+    }
+    body.np-print-raw #np-print-raw td,
+    body.np-print-raw-dark #np-print-raw td {
+        padding: 0 !important;
+        border: none !important;
+        vertical-align: top !important;
+    }
+    /* Per-page breathing room — thead/tfoot repeat on every page */
+    body.np-print-raw #np-print-raw td.np-print-spacer,
+    body.np-print-raw-dark #np-print-raw td.np-print-spacer {
+        height: 1cm !important;
+        background: transparent !important;
+    }
+    /* The actual source text */
+    body.np-print-raw #np-print-raw pre.np-print-content,
+    body.np-print-raw-dark #np-print-raw pre.np-print-content {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 1.5cm !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        font-family: 'JetBrains Mono', 'Consolas', monospace !important;
+        font-size: 10.5pt !important;
+        line-height: 1.55 !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        overflow: visible !important;
+        page-break-inside: auto !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Body in raw mode is also full-bleed so its background paints
+       the whole sheet (no default 8px UA margin showing through). */
+    body.np-print-raw,
+    body.np-print-raw-dark {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Why ::before instead of `html { background: … }`:
+       Per CSS Paged Media spec the root element's bg should paint the
+       full sheet (including @page margins) — but Chrome's print
+       pipeline routinely doesn't honour that for html/body bg colors.
+       A `position: fixed; inset: 0` pseudo-element IS reliably
+       repeated on every printed page AND covers the whole sheet
+       (sheet = page area + @page margins), so it paints over the
+       margin strips that were leaking the dark theme through. */
+
+    /* --- LIGHT theme: black on white --- */
+    html.np-print-raw,
+    body.np-print-raw {
+        background: #ffffff !important;
+        color: #1a1a1a !important;
+    }
+    body.np-print-raw::before {
+        content: "" !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: #ffffff !important;
+        z-index: -1 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        pointer-events: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    body.np-print-raw #np-print-raw,
+    body.np-print-raw #np-print-raw pre.np-print-content {
+        background: transparent !important;  /* ::before paints behind */
+        color: #1a1a1a !important;
+    }
+
+    /* --- DARK theme: white on black --- */
+    html.np-print-raw-dark,
+    body.np-print-raw-dark {
+        background: #0d0d12 !important;
+        color: #f0f0f0 !important;
+    }
+    body.np-print-raw-dark::before {
+        content: "" !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: #0d0d12 !important;
+        z-index: -1 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        pointer-events: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    body.np-print-raw-dark #np-print-raw,
+    body.np-print-raw-dark #np-print-raw pre.np-print-content {
+        background: transparent !important;
+        color: #f0f0f0 !important;
+    }
+
+    /* Hide the raw <pre> when NOT in raw mode (it might exist briefly
+       during the cleanup race window). */
+    body:not(.np-print-raw):not(.np-print-raw-dark) #np-print-raw {
+        display: none !important;
+    }
+    /* (print-color-adjust: exact is already declared at the top of
+       this @media block — no need to repeat it here.) */
+}
+
+/* @page can't be scoped by a body class in plain CSS, so for BOTH
+   raw themes (which need margin: 0 so the chosen background fills
+   the page) print.js injects a small <style> tag with
+   `@page { margin: 0 }` and removes it on cleanup. See
+   ensureRawPageStyle / clearRawPageStyle in print.js. */
+
+/* Outside @media print: ensure the temporary raw <pre> and the
+   choice overlay don't render on-screen by accident. */
+#np-print-raw {
+    display: none;
+}
+
