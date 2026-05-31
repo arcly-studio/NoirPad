@@ -70,7 +70,6 @@ hiddenimports = [
     # Crypto: NoirPad's per-note encryption + argon2 password hashing
     "cryptography",
     "argon2",
-    "argon2._ffi",
     "argon2._password_hasher",
     "_cffi_backend",
     # platformdirs is used inside get_data_dir() at runtime
