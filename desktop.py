@@ -163,11 +163,22 @@ def main() -> int:
         resizable=True,
         confirm_close=False,
     )
+    # Persistent profile so the session cookie survives app restarts —
+    # otherwise "remember me (30 days)" silently fails because WebView2's
+    # default private mode wipes cookies on each launch. Storing the
+    # profile next to the user's notes keeps it co-located with the rest
+    # of NoirPad's per-user state.
+    storage_path = backend.get_data_dir() / "webview"
+    storage_path.mkdir(parents=True, exist_ok=True)
     try:
         # gui="edgechromium" forces WebView2 on Windows, which is what we
         # ship for. On other platforms pywebview picks the system default.
         gui = "edgechromium" if sys.platform == "win32" else None
-        webview.start(gui=gui)
+        webview.start(
+            gui=gui,
+            private_mode=False,
+            storage_path=str(storage_path),
+        )
     finally:
         handle.stop()
 
