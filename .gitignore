@@ -5,3 +5,7 @@ __pycache__/
 notes_data.json
 images/
 .claude/settings.local.json
+
+# PyInstaller / Inno Setup build artefacts
+build/
+dist/

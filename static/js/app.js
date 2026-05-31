@@ -465,7 +465,14 @@ window.NP = window.NP || {};
     };
 
     document.addEventListener("DOMContentLoaded", function () {
-        NP.app.init();
+        // Auth gate runs first: it pings /api/auth/me, then either calls
+        // NP.app.init() (already authed) or renders the login overlay
+        // and calls NP.app.init() after a successful login.
+        if (NP.auth && NP.auth.start) {
+            NP.auth.start();
+        } else {
+            NP.app.init();
+        }
     });
 
 })(window.NP);

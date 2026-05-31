@@ -533,6 +533,23 @@ window.NP = window.NP || {};
                     });
             });
         }
+
+        /* ---- Account ---- */
+        var accountName = document.getElementById("settings-account-name");
+        if (accountName && NP.auth && NP.auth.getUser) {
+            var name = NP.auth.getUser();
+            if (name) accountName.textContent = name;
+        }
+        var logoutBtn = document.getElementById("settings-logout-btn");
+        if (logoutBtn) {
+            logoutBtn.addEventListener("click", function () {
+                var ok = window.confirm("Log out of NoirPad?");
+                if (!ok) return;
+                if (NP.auth && NP.auth.logout) {
+                    NP.auth.logout();
+                }
+            });
+        }
     }
 
     NP.settings = {

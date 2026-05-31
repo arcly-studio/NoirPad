@@ -10,7 +10,10 @@ import json
 import logging
 import os
 import re
+import secrets
+import sys
 import threading
+import time
 import uuid
 import zipfile
 # Fix #11: removed unused `import shutil` (the .bak copy below uses
@@ -18,10 +21,12 @@ import zipfile
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError, InvalidHashError
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -32,11 +37,145 @@ log = logging.getLogger("noirpad")
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
+#
+# Two separate roots:
+#   * resource root — read-only frontend assets (static/, index.html, …).
+#     In dev that's the project directory; in a PyInstaller bundle it's
+#     sys._MEIPASS (the temp dir PyInstaller unpacks `--add-data` into).
+#   * data root — writable user data (notes_data.json + .bak/.tmp + images/).
+#     ALWAYS the platformdirs user_data_dir, both in dev and frozen, so
+#     `python NoirPad-web.py` (web mode) and the bundled NoirPad.exe share
+#     accounts and notes. A one-shot migration below seeds the AppData
+#     store from a pre-existing project-directory database the first time
+#     this code runs against an empty AppData dir.
 
-BASE_DIR = Path(__file__).resolve().parent  # project root
-DATA_FILE = BASE_DIR / "notes_data.json"
-IMAGES_DIR = BASE_DIR / "images"
-STATIC_DIR = BASE_DIR / "static"
+BASE_DIR = Path(__file__).resolve().parent  # project root in dev / _MEIPASS in frozen
+
+
+def _is_frozen() -> bool:
+    """True when running inside a PyInstaller bundle."""
+    return getattr(sys, "frozen", False)
+
+
+def resource_path(rel: str) -> Path:
+    """Resolve a path to a bundled READ-ONLY resource (frontend assets, etc.).
+
+    Frozen: sys._MEIPASS / rel. Dev: BASE_DIR / rel. Callers should treat
+    the result as read-only (no writes — _MEIPASS is wiped on exit).
+    """
+    if _is_frozen():
+        base = Path(getattr(sys, "_MEIPASS", BASE_DIR))
+        return base / rel
+    return BASE_DIR / rel
+
+
+def get_data_dir() -> Path:
+    """Return the WRITABLE user-data directory.
+
+    Always platformdirs.user_data_dir on every OS / run mode, so web and
+    desktop builds share one source of truth (no more dev vs frozen split).
+    The directory is created on demand.
+    """
+    try:
+        from platformdirs import user_data_dir
+    except ImportError as exc:  # pragma: no cover — dependency missing
+        raise RuntimeError(
+            "platformdirs is required to resolve the NoirPad data directory"
+        ) from exc
+    path = Path(user_data_dir("NoirPad", appauthor=False))
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _migrate_legacy_data_if_needed(target_dir: Path) -> None:
+    """Seed *target_dir* from a legacy project-directory database, once.
+
+    Triggers ONLY when target_dir holds no real users yet AND the project
+    directory has a notes_data.json that does. Existing AppData content is
+    snapshotted to *.pre-migration.bak before being touched. Re-running
+    after migration is a no-op (the second check finds users present).
+    """
+    target_data = target_dir / "notes_data.json"
+
+    # Bail out if AppData already has real data — never overwrite the user.
+    if target_data.exists():
+        try:
+            with open(target_data, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+            if existing.get("users"):
+                return
+        except (json.JSONDecodeError, OSError):
+            # If AppData has an unreadable file we can't safely overwrite.
+            return
+
+    legacy_data = BASE_DIR / "notes_data.json"
+    # Same dir → nothing to migrate, also avoids self-copy loops.
+    if BASE_DIR.resolve() == target_dir.resolve():
+        return
+    if not legacy_data.is_file():
+        return
+    try:
+        with open(legacy_data, "r", encoding="utf-8") as f:
+            legacy = json.load(f)
+    except (json.JSONDecodeError, OSError) as exc:
+        log.warning(
+            "Skipping legacy migration: cannot read %s (%s)", legacy_data, exc
+        )
+        return
+    if not legacy.get("users"):
+        # Pre-multi-user database or empty — nothing meaningful to migrate.
+        return
+
+    # Snapshot whatever is currently at the destination so a botched copy
+    # never silently destroys a previously working file.
+    if target_data.exists():
+        try:
+            (target_dir / "notes_data.json.pre-migration.bak").write_bytes(
+                target_data.read_bytes()
+            )
+        except OSError as exc:
+            log.warning("Pre-migration backup failed: %s", exc)
+
+    try:
+        target_data.write_bytes(legacy_data.read_bytes())
+    except OSError as exc:
+        log.error("Failed to migrate notes_data.json: %s", exc)
+        return
+
+    legacy_bak = BASE_DIR / "notes_data.json.bak"
+    if legacy_bak.is_file():
+        try:
+            (target_dir / "notes_data.json.bak").write_bytes(legacy_bak.read_bytes())
+        except OSError as exc:
+            log.warning("Could not migrate %s: %s", legacy_bak.name, exc)
+
+    legacy_images = BASE_DIR / "images"
+    target_images = target_dir / "images"
+    if legacy_images.is_dir():
+        target_images.mkdir(exist_ok=True)
+        for src in legacy_images.iterdir():
+            if not src.is_file():
+                continue
+            dst = target_images / src.name
+            if dst.exists():
+                # Refuse to clobber an AppData image of the same name (rare).
+                continue
+            try:
+                dst.write_bytes(src.read_bytes())
+            except OSError as exc:
+                log.warning("Could not migrate image %s: %s", src.name, exc)
+
+    log.warning(
+        "Migrated legacy NoirPad data from %s -> %s", BASE_DIR, target_dir
+    )
+
+
+DATA_DIR = get_data_dir()
+_migrate_legacy_data_if_needed(DATA_DIR)
+STATIC_DIR = resource_path("static")
+
+DATA_FILE = DATA_DIR / "notes_data.json"
+IMAGES_DIR = DATA_DIR / "images"
 
 # Resolved roots used for path-traversal / zip-slip checks.
 BASE_DIR_R = BASE_DIR.resolve()
@@ -47,7 +186,10 @@ DATA_BAK = DATA_FILE.parent / (DATA_FILE.name + ".bak")
 DATA_TMP = DATA_FILE.parent / (DATA_FILE.name + ".tmp")
 
 IMAGES_DIR.mkdir(exist_ok=True)
-STATIC_DIR.mkdir(exist_ok=True)
+# STATIC_DIR is read-only in frozen mode (lives under _MEIPASS); we only
+# need it to exist when running in dev so a fresh checkout doesn't crash.
+if not _is_frozen():
+    STATIC_DIR.mkdir(exist_ok=True)
 
 # Upload size limits (Fix #7).
 MAX_IMAGE_BYTES = 10 * 1024 * 1024     # 10 MB
@@ -90,6 +232,15 @@ DEFAULT_DATA: dict[str, Any] = {
     "default_encrypted": False,
     "glow_intensity": 100,  # 0-150 percent
     "custom_shortcuts": {},  # id -> "Ctrl+Shift+X" (only non-default)
+    # Multi-user auth — added in v2.1. Existing single-user installs have no
+    # `users` block until the first registration; that first registration
+    # adopts all legacy notes/folders that still carry no user_id. See
+    # `adopt_orphan_items` below.
+    # users: { user_id: {id, username, username_lower, password_hash,
+    #                    created_at} }
+    "users": {},
+    # sessions: { token: {token, user_id, created_at, expires_at} }
+    "sessions": {},
 }
 
 
@@ -387,6 +538,217 @@ def decrypt_content(stored: str, password: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Auth / sessions
+# ---------------------------------------------------------------------------
+#
+# Persistence is the same JSON file used for notes — `users` and `sessions`
+# live as top-level dicts inside notes_data.json (see DEFAULT_DATA). This
+# keeps the storage model identical to everything else; the shared file
+# lock already serialises read-modify-write cycles.
+#
+# Adoption: the very first registration claims all pre-existing tree /
+# trash items that still have no `user_id`. After that, new users start
+# with an empty workspace.
+
+# Cookie / session knobs. Secure flag is controlled by env so dev over
+# http:// works (Secure cookies are dropped by the browser there).
+SESSION_COOKIE_NAME = "noirpad_session"
+SESSION_TTL_REMEMBER = 30 * 24 * 60 * 60  # 30 days
+SESSION_TTL_SHORT = 12 * 60 * 60          # 12 hours — used for non-remember
+
+_env = (os.environ.get("NOIRPAD_ENV") or "dev").lower()
+_secure_override = os.environ.get("NOIRPAD_SECURE_COOKIES")
+if _secure_override is not None:
+    SESSION_COOKIE_SECURE = _secure_override.lower() in ("1", "true", "yes", "on")
+else:
+    SESSION_COOKIE_SECURE = _env in ("prod", "production")
+
+_password_hasher = PasswordHasher()
+
+
+def hash_password(password: str) -> str:
+    return _password_hasher.hash(password)
+
+
+def verify_password(password_hash: str, password: str) -> bool:
+    try:
+        _password_hasher.verify(password_hash, password)
+        return True
+    except (VerifyMismatchError, InvalidHashError, Exception):
+        return False
+
+
+def _now() -> int:
+    return int(time.time())
+
+
+def _new_session_token() -> str:
+    return secrets.token_urlsafe(32)
+
+
+def _find_user_by_username(data: dict, username: str) -> Optional[dict]:
+    """Case-insensitive username lookup."""
+    target = (username or "").strip().lower()
+    if not target:
+        return None
+    for user in data.get("users", {}).values():
+        if user.get("username_lower") == target:
+            return user
+    return None
+
+
+def _prune_expired_sessions(data: dict) -> None:
+    sessions: dict = data.setdefault("sessions", {})
+    now = _now()
+    expired = [t for t, s in sessions.items() if (s.get("expires_at") or 0) <= now]
+    for t in expired:
+        sessions.pop(t, None)
+
+
+def _get_session(data: dict, token: Optional[str]) -> Optional[dict]:
+    """Return a non-expired session dict, or None."""
+    if not token:
+        return None
+    sess = data.get("sessions", {}).get(token)
+    if not sess:
+        return None
+    if (sess.get("expires_at") or 0) <= _now():
+        return None
+    return sess
+
+
+def adopt_orphan_items(data: dict, user_id: str) -> None:
+    """Stamp every tree / trash item lacking `user_id` with *user_id*.
+
+    Runs exactly once: only when registering the very first user (caller's
+    job to check `len(users) == 0` BEFORE inserting the new row). Used so
+    a single-user install upgrading to the multi-user build keeps its
+    existing notes/folders visible after login.
+    """
+    def _walk(items: list) -> None:
+        for item in items:
+            if "user_id" not in item:
+                item["user_id"] = user_id
+            children = item.get("children")
+            if children:
+                _walk(children)
+    _walk(data.get("tree") or [])
+    _walk(data.get("trash", {}).get("tree") or [])
+
+
+def _user_owns_note(data: dict, user_id: str, note_id: str) -> bool:
+    """True if *note_id* lives anywhere in the user's tree or trash."""
+    def _walk(items: list) -> bool:
+        for item in items:
+            if item.get("type") == "note" and item.get("id") == note_id:
+                return item.get("user_id") == user_id
+            children = item.get("children")
+            if children and _walk(children):
+                return True
+        return False
+    if _walk(data.get("tree") or []):
+        return True
+    return _walk(data.get("trash", {}).get("tree") or [])
+
+
+def _user_owns_item(data: dict, user_id: str, item_id: str) -> bool:
+    """True if *item_id* (note OR folder) is owned by user_id (tree+trash)."""
+    def _walk(items: list) -> bool:
+        for item in items:
+            if item.get("id") == item_id:
+                return item.get("user_id") == user_id
+            children = item.get("children")
+            if children and _walk(children):
+                return True
+        return False
+    if _walk(data.get("tree") or []):
+        return True
+    return _walk(data.get("trash", {}).get("tree") or [])
+
+
+def _collect_user_note_ids(data: dict, user_id: str) -> set:
+    """Every note_id owned by *user_id* (active tree + trash)."""
+    ids: set = set()
+
+    def _walk(items: list) -> None:
+        for item in items:
+            if item.get("user_id") == user_id and item.get("type") == "note":
+                ids.add(item.get("id"))
+            children = item.get("children")
+            if children:
+                _walk(children)
+
+    _walk(data.get("tree") or [])
+    _walk(data.get("trash", {}).get("tree") or [])
+    return ids
+
+
+def _scope_view_for_user(data: dict, user_id: str) -> dict:
+    """Return a copy of *data* containing only items the user can see.
+
+    Strips: other users' tree/trash items, their notes/formats/modes/images,
+    their favorites; the global `users`/`sessions` blocks are never exposed.
+    Settings stay shared for now (see "scope" note at top of file).
+    """
+    def _filter_tree(items: list) -> list:
+        out = []
+        for item in items:
+            if item.get("user_id") != user_id:
+                continue
+            copied = copy.deepcopy(item)
+            if copied.get("type") == "folder":
+                copied["children"] = _filter_tree(item.get("children") or [])
+            out.append(copied)
+        return out
+
+    visible_tree = _filter_tree(data.get("tree") or [])
+    visible_trash_tree = _filter_tree(data.get("trash", {}).get("tree") or [])
+    visible_notes_ids = _collect_user_note_ids(data, user_id)
+
+    view = copy.deepcopy(data)
+    view.pop("users", None)
+    view.pop("sessions", None)
+    view["tree"] = visible_tree
+    view["trash"] = {
+        "tree": visible_trash_tree,
+        "notes": {
+            nid: data.get("trash", {}).get("notes", {}).get(nid)
+            for nid in visible_notes_ids
+            if nid in data.get("trash", {}).get("notes", {})
+        },
+        "note_formats": {
+            nid: data.get("trash", {}).get("note_formats", {}).get(nid)
+            for nid in visible_notes_ids
+            if nid in data.get("trash", {}).get("note_formats", {})
+        },
+    }
+    view["notes"] = {
+        nid: data.get("notes", {}).get(nid)
+        for nid in visible_notes_ids
+        if nid in data.get("notes", {})
+    }
+    view["favorites"] = [
+        nid for nid in (data.get("favorites") or []) if nid in visible_notes_ids
+    ]
+    view["note_formats"] = {
+        nid: data.get("note_formats", {}).get(nid)
+        for nid in visible_notes_ids
+        if nid in data.get("note_formats", {})
+    }
+    view["note_modes"] = {
+        nid: data.get("note_modes", {}).get(nid)
+        for nid in visible_notes_ids
+        if nid in data.get("note_modes", {})
+    }
+    view["note_images"] = {
+        nid: data.get("note_images", {}).get(nid)
+        for nid in visible_notes_ids
+        if nid in data.get("note_images", {})
+    }
+    return view
+
+
+# ---------------------------------------------------------------------------
 # Pydantic request models
 # ---------------------------------------------------------------------------
 
@@ -464,20 +826,31 @@ class SaveEncryptedReq(BaseModel):
     formats: list[Any] = []
 
 
+class RegisterReq(BaseModel):
+    username: str
+    password: str
+
+
+class LoginReq(BaseModel):
+    username: str
+    password: str
+    remember: bool = True
+
+
 # ---------------------------------------------------------------------------
 # FastAPI app
 # ---------------------------------------------------------------------------
 
 app = FastAPI(title="NoirPad Web", version="1.0.0")
 
-# Fix #3: `allow_origins=["*"]` together with `allow_credentials=True` is
-# invalid per the CORS spec (and silently breaks credentialed requests).
-# This is a local desktop-style app served from the same origin and uses no
-# cookies/credentials, so: restrict to localhost and disable credentials.
+# Same-origin app, but the frontend now sends a session cookie — so we
+# must allow credentials. Origins stay locked to loopback to keep this a
+# local desktop-style app (the cookie is HttpOnly so it can't be exfiltrated
+# from JS even if a stray browser extension MITMs the page).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -516,6 +889,52 @@ async def _read_upload_limited(file: UploadFile, max_bytes: int) -> bytes:
 
 
 # ---------------------------------------------------------------------------
+# Auth dependency
+# ---------------------------------------------------------------------------
+
+
+def get_current_user(
+    noirpad_session: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE_NAME),
+) -> dict:
+    """Resolve the request's session cookie to a user, else 401.
+
+    Reads the JSON store (no lock upgrade needed for a pure read) and
+    refuses expired sessions. Returns the user dict (id, username, ...).
+    """
+    data = _read_data()
+    sess = _get_session(data, noirpad_session)
+    if sess is None:
+        raise HTTPException(401, "Not authenticated")
+    user = data.get("users", {}).get(sess.get("user_id"))
+    if user is None:
+        # Session points at a user that was wiped — treat as unauthenticated.
+        raise HTTPException(401, "Not authenticated")
+    return user
+
+
+def _set_session_cookie(response: Response, token: str, remember: bool) -> None:
+    max_age = SESSION_TTL_REMEMBER if remember else None  # None = session cookie
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        max_age=max_age,
+        httponly=True,
+        samesite="lax",
+        secure=SESSION_COOKIE_SECURE,
+        path="/",
+    )
+
+
+def _clear_session_cookie(response: Response) -> None:
+    response.delete_cookie(
+        key=SESSION_COOKIE_NAME,
+        path="/",
+        samesite="lax",
+        secure=SESSION_COOKIE_SECURE,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
 
@@ -528,22 +947,130 @@ async def root():
     return index.read_text(encoding="utf-8")
 
 
+# ---- Auth ----
+
+
+@app.post("/api/auth/register")
+async def auth_register(req: RegisterReq, response: Response):
+    username = (req.username or "").strip()
+    password = req.password or ""
+    if not username:
+        raise HTTPException(400, "Username is required")
+    if len(username) > 64:
+        raise HTTPException(400, "Username is too long (max 64 chars)")
+    if len(password) < 8:
+        raise HTTPException(400, "Password must be at least 8 characters")
+
+    pw_hash = hash_password(password)
+    token = _new_session_token()
+    expires_at = _now() + SESSION_TTL_REMEMBER
+
+    state: dict = {}
+
+    def _mut(data: dict) -> None:
+        _prune_expired_sessions(data)
+        if _find_user_by_username(data, username) is not None:
+            raise HTTPException(409, "Username already exists")
+        users: dict = data.setdefault("users", {})
+        is_first_user = len(users) == 0
+        user_id = str(uuid.uuid4())
+        users[user_id] = {
+            "id": user_id,
+            "username": username,
+            "username_lower": username.lower(),
+            "password_hash": pw_hash,
+            "created_at": _now(),
+        }
+        if is_first_user:
+            # Adopt legacy single-user data.
+            adopt_orphan_items(data, user_id)
+        data.setdefault("sessions", {})[token] = {
+            "token": token,
+            "user_id": user_id,
+            "created_at": _now(),
+            "expires_at": expires_at,
+        }
+        state["user_id"] = user_id
+
+    _update_data(_mut)
+    # `remember=True` on registration so a fresh signup isn't logged out
+    # the moment the user closes the tab.
+    _set_session_cookie(response, token, remember=True)
+    return {"ok": True, "username": username}
+
+
+@app.post("/api/auth/login")
+async def auth_login(req: LoginReq, response: Response):
+    username = (req.username or "").strip()
+    password = req.password or ""
+    if not username or not password:
+        raise HTTPException(400, "Username and password are required")
+
+    token = _new_session_token()
+    ttl = SESSION_TTL_REMEMBER if req.remember else SESSION_TTL_SHORT
+    expires_at = _now() + ttl
+
+    user_box: dict = {}
+
+    def _mut(data: dict) -> None:
+        _prune_expired_sessions(data)
+        user = _find_user_by_username(data, username)
+        if user is None or not verify_password(user["password_hash"], password):
+            # Same error for "no such user" and "wrong password" so the
+            # endpoint can't be used to enumerate accounts.
+            raise HTTPException(401, "Invalid username or password")
+        data.setdefault("sessions", {})[token] = {
+            "token": token,
+            "user_id": user["id"],
+            "created_at": _now(),
+            "expires_at": expires_at,
+        }
+        user_box["username"] = user["username"]
+
+    _update_data(_mut)
+    _set_session_cookie(response, token, remember=req.remember)
+    return {"ok": True, "username": user_box.get("username", username)}
+
+
+@app.post("/api/auth/logout")
+async def auth_logout(
+    response: Response,
+    noirpad_session: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE_NAME),
+):
+    if noirpad_session:
+        def _mut(data: dict) -> None:
+            data.get("sessions", {}).pop(noirpad_session, None)
+
+        _update_data(_mut)
+    _clear_session_cookie(response)
+    return {"ok": True}
+
+
+@app.get("/api/auth/me")
+async def auth_me(user: dict = Depends(get_current_user)):
+    return {"username": user["username"]}
+
+
 # ---- Data ----
 
 
 @app.get("/api/data")
-async def get_data():
-    return _read_data()
+async def get_data(user: dict = Depends(get_current_user)):
+    return _scope_view_for_user(_read_data(), user["id"])
 
 
 @app.get("/api/data/version")
-async def get_data_version():
+async def get_data_version(user: dict = Depends(get_current_user)):
+    # File mtime is shared across users — fine as a "something changed" hint
+    # for the poller; per-request scoping happens on the follow-up /api/data.
     return {"version": _data_mtime()}
 
 
 @app.get("/api/storage")
-async def get_storage():
-    """Read-only: on-disk size of notes_data.json + images/."""
+async def get_storage(user: dict = Depends(get_current_user)):
+    """Storage usage. Images are shared on disk (single folder); the JSON
+    file is also shared. Surfacing on-disk totals here is fine because no
+    per-user data leaks — just a couple of byte counts."""
     notes_size = DATA_FILE.stat().st_size if DATA_FILE.exists() else 0
 
     images_size = 0
@@ -566,14 +1093,15 @@ async def get_storage():
 
 
 @app.post("/api/tree/new-note")
-async def new_note(req: NewItemReq):
+async def new_note(req: NewItemReq, user: dict = Depends(get_current_user)):
     note_id = str(uuid.uuid4())
-    item = {"id": note_id, "name": req.name, "type": "note"}
+    item = {"id": note_id, "name": req.name, "type": "note", "user_id": user["id"]}
 
     def _mut(data: dict) -> None:
         if req.parent_id:
             parent = find_item_by_id(data["tree"], req.parent_id)
-            if parent is None or parent.get("type") != "folder":
+            if (parent is None or parent.get("type") != "folder"
+                    or parent.get("user_id") != user["id"]):
                 raise HTTPException(400, "Parent folder not found")
             parent.setdefault("children", []).append(item)
         else:
@@ -585,14 +1113,18 @@ async def new_note(req: NewItemReq):
 
 
 @app.post("/api/tree/new-folder")
-async def new_folder(req: NewItemReq):
+async def new_folder(req: NewItemReq, user: dict = Depends(get_current_user)):
     folder_id = str(uuid.uuid4())
-    item = {"id": folder_id, "name": req.name, "type": "folder", "children": []}
+    item = {
+        "id": folder_id, "name": req.name, "type": "folder",
+        "children": [], "user_id": user["id"],
+    }
 
     def _mut(data: dict) -> None:
         if req.parent_id:
             parent = find_item_by_id(data["tree"], req.parent_id)
-            if parent is None or parent.get("type") != "folder":
+            if (parent is None or parent.get("type") != "folder"
+                    or parent.get("user_id") != user["id"]):
                 raise HTTPException(400, "Parent folder not found")
             parent.setdefault("children", []).append(item)
         else:
@@ -603,10 +1135,10 @@ async def new_folder(req: NewItemReq):
 
 
 @app.post("/api/tree/rename")
-async def rename_item(req: RenameReq):
+async def rename_item(req: RenameReq, user: dict = Depends(get_current_user)):
     def _mut(data: dict) -> None:
         item = find_item_by_id(data["tree"], req.id)
-        if item is None:
+        if item is None or item.get("user_id") != user["id"]:
             raise HTTPException(404, "Item not found")
         item["name"] = req.name
 
@@ -615,12 +1147,14 @@ async def rename_item(req: RenameReq):
 
 
 @app.post("/api/tree/move")
-async def move_item(req: MoveReq):
+async def move_item(req: MoveReq, user: dict = Depends(get_current_user)):
     def _mut(data: dict) -> None:
         source_list = find_parent_list(data["tree"], req.id)
         if source_list is None:
             raise HTTPException(404, "Source item not found")
         item = next(i for i in source_list if i["id"] == req.id)
+        if item.get("user_id") != user["id"]:
+            raise HTTPException(404, "Source item not found")
 
         # Fix #10: refuse to move an item into itself or its own subtree
         # (would detach the whole branch from the tree). collect_all_ids
@@ -634,12 +1168,18 @@ async def move_item(req: MoveReq):
 
         if req.position == "inside":
             target = find_item_by_id(data["tree"], req.target_id)
-            if target is None or target.get("type") != "folder":
+            if (target is None or target.get("type") != "folder"
+                    or target.get("user_id") != user["id"]):
                 raise HTTPException(400, "Target folder not found")
             target.setdefault("children", []).append(item)
         else:
             target_list = find_parent_list(data["tree"], req.target_id)
             if target_list is None:
+                raise HTTPException(404, "Target item not found")
+            target_item = next(
+                x for x in target_list if x["id"] == req.target_id
+            )
+            if target_item.get("user_id") != user["id"]:
                 raise HTTPException(404, "Target item not found")
             idx = next(
                 i for i, x in enumerate(target_list) if x["id"] == req.target_id
@@ -653,8 +1193,11 @@ async def move_item(req: MoveReq):
 
 
 @app.post("/api/tree/delete")
-async def delete_item(req: DeleteReq):
+async def delete_item(req: DeleteReq, user: dict = Depends(get_current_user)):
     def _mut(data: dict) -> None:
+        item = find_item_by_id(data["tree"], req.id)
+        if item is None or item.get("user_id") != user["id"]:
+            raise HTTPException(404, "Item not found")
         try:
             move_to_trash(data, req.id)
         except ValueError:
@@ -668,8 +1211,10 @@ async def delete_item(req: DeleteReq):
 
 
 @app.get("/api/note/{note_id}")
-async def get_note(note_id: str):
+async def get_note(note_id: str, user: dict = Depends(get_current_user)):
     data = _read_data()
+    if not _user_owns_note(data, user["id"], note_id):
+        raise HTTPException(404, "Note not found")
     content = data.get("notes", {}).get(note_id)
     if content is None:
         raise HTTPException(404, "Note not found")
@@ -679,13 +1224,12 @@ async def get_note(note_id: str):
 
 
 @app.put("/api/note/{note_id}")
-async def put_note(note_id: str, body: NoteBody):
+async def put_note(
+    note_id: str, body: NoteBody, user: dict = Depends(get_current_user)
+):
     def _mut(data: dict) -> None:
-        if note_id not in data.get("notes", {}):
-            # Allow saving even if key doesn't exist yet (new note)
-            item = find_item_by_id(data["tree"], note_id)
-            if item is None:
-                raise HTTPException(404, "Note not found in tree")
+        if not _user_owns_note(data, user["id"], note_id):
+            raise HTTPException(404, "Note not found")
         data.setdefault("notes", {})[note_id] = body.content
         if body.formats:
             data.setdefault("note_formats", {})[note_id] = body.formats
@@ -711,8 +1255,12 @@ async def put_note(note_id: str, body: NoteBody):
 
 
 @app.post("/api/favorites/toggle")
-async def toggle_favorite(req: ToggleFavReq):
+async def toggle_favorite(
+    req: ToggleFavReq, user: dict = Depends(get_current_user)
+):
     def _mut(data: dict) -> bool:
+        if not _user_owns_note(data, user["id"], req.id):
+            raise HTTPException(404, "Note not found")
         favs: list[str] = data.setdefault("favorites", [])
         if req.id in favs:
             favs.remove(req.id)
@@ -728,16 +1276,29 @@ async def toggle_favorite(req: ToggleFavReq):
 
 
 @app.get("/api/tags")
-async def list_tags():
+async def list_tags(user: dict = Depends(get_current_user)):
     data = _read_data()
-    return {"tags": get_all_tags(data)}
+    tags: set = set()
+
+    def _walk(items: list) -> None:
+        for item in items:
+            if item.get("user_id") == user["id"]:
+                for t in item.get("tags", []):
+                    tags.add(t)
+            _walk(item.get("children") or [])
+
+    _walk(data.get("tree") or [])
+    _walk(data.get("trash", {}).get("tree") or [])
+    return {"tags": sorted(tags)}
 
 
 @app.put("/api/tags/{item_id}")
-async def set_tags(item_id: str, body: TagsBody):
+async def set_tags(
+    item_id: str, body: TagsBody, user: dict = Depends(get_current_user)
+):
     def _mut(data: dict) -> None:
         item = find_item_by_id(data["tree"], item_id)
-        if item is None:
+        if item is None or item.get("user_id") != user["id"]:
             raise HTTPException(404, "Item not found")
         item["tags"] = body.tags
 
@@ -749,14 +1310,44 @@ async def set_tags(item_id: str, body: TagsBody):
 
 
 @app.get("/api/trash")
-async def get_trash():
+async def get_trash(user: dict = Depends(get_current_user)):
     data = _read_data()
-    return data.get("trash", {"tree": [], "notes": {}})
+    user_id = user["id"]
+    trash = data.get("trash", {"tree": [], "notes": {}})
+
+    def _filter(items: list) -> list:
+        out = []
+        for item in items:
+            if item.get("user_id") != user_id:
+                continue
+            copied = copy.deepcopy(item)
+            if copied.get("type") == "folder":
+                copied["children"] = _filter(item.get("children") or [])
+            out.append(copied)
+        return out
+
+    visible_tree = _filter(trash.get("tree") or [])
+    visible_ids: set = set()
+    for root_item in visible_tree:
+        visible_ids.update(collect_note_ids(root_item))
+
+    return {
+        "tree": visible_tree,
+        "notes": {
+            nid: trash.get("notes", {}).get(nid)
+            for nid in visible_ids
+            if nid in trash.get("notes", {})
+        },
+    }
 
 
 @app.post("/api/trash/restore")
-async def trash_restore(req: RestoreReq):
+async def trash_restore(req: RestoreReq, user: dict = Depends(get_current_user)):
     def _mut(data: dict) -> None:
+        trash_tree = data.get("trash", {}).get("tree") or []
+        item = find_item_by_id(trash_tree, req.id)
+        if item is None or item.get("user_id") != user["id"]:
+            raise HTTPException(404, "Item not found in trash")
         try:
             restore_from_trash(data, req.id)
         except ValueError:
@@ -767,39 +1358,48 @@ async def trash_restore(req: RestoreReq):
 
 
 @app.post("/api/trash/empty")
-async def trash_empty():
+async def trash_empty(user: dict = Depends(get_current_user)):
+    """Empty THIS user's trash only — other users' trash is preserved."""
     def _mut(data: dict) -> None:
-        trash = data.get("trash", {"tree": [], "notes": {}})
+        trash = data.setdefault("trash", {"tree": [], "notes": {}})
         note_images: dict = data.get("note_images", {})
 
-        # Every note id sitting in the trash (loose notes + notes in folders).
-        trashed_ids: set[str] = set(trash.get("notes", {}).keys())
-        for root_item in trash.get("tree", []):
+        # Find this user's top-level trash items.
+        user_root_items = [
+            i for i in (trash.get("tree") or [])
+            if i.get("user_id") == user["id"]
+        ]
+
+        trashed_ids: set[str] = set()
+        for root_item in user_root_items:
             trashed_ids.update(collect_note_ids(root_item))
 
-        # Fix #9: union of (a) the tracked image map — this is what covers
-        # ENCRYPTED notes, whose base64 content the regex can't parse — and
-        # (b) regex over plaintext content (legacy data / not-yet-tracked).
         to_delete: set[str] = set()
         for nid in trashed_ids:
             to_delete.update(note_images.get(nid, []))
-        for content in trash.get("notes", {}).values():
-            to_delete.update(_extract_image_names(content))
-
+            content = trash.get("notes", {}).get(nid)
+            if content is not None:
+                to_delete.update(_extract_image_names(content))
         _delete_images(to_delete)
 
-        # Drop image-map entries for the now-gone notes.
         for nid in trashed_ids:
+            trash.get("notes", {}).pop(nid, None)
+            trash.get("note_formats", {}).pop(nid, None)
             note_images.pop(nid, None)
 
-        data["trash"] = {"tree": [], "notes": {}}
+        trash["tree"] = [
+            i for i in (trash.get("tree") or [])
+            if i.get("user_id") != user["id"]
+        ]
 
     _update_data(_mut)  # Fix #6
     return {"ok": True}
 
 
 @app.post("/api/trash/delete")
-async def trash_delete_item(req: RestoreReq):
+async def trash_delete_item(
+    req: RestoreReq, user: dict = Depends(get_current_user)
+):
     """Permanently delete a single item from trash."""
     def _mut(data: dict) -> None:
         trash = data.get("trash", {"tree": [], "notes": {}})
@@ -812,6 +1412,8 @@ async def trash_delete_item(req: RestoreReq):
                 idx = i
                 break
         if idx is None:
+            raise HTTPException(404, "Item not found in trash")
+        if parent_list[idx].get("user_id") != user["id"]:
             raise HTTPException(404, "Item not found in trash")
         item = parent_list.pop(idx)
 
@@ -861,7 +1463,9 @@ _SETTINGS_FIELDS: tuple[str, ...] = (
 
 
 @app.put("/api/settings")
-async def update_settings(body: SettingsBody):
+async def update_settings(
+    body: SettingsBody, user: dict = Depends(get_current_user)
+):
     def _mut(data: dict) -> None:
         for field in _SETTINGS_FIELDS:
             value = getattr(body, field)
@@ -873,7 +1477,7 @@ async def update_settings(body: SettingsBody):
 
 
 @app.post("/api/settings/reset")
-async def reset_settings():
+async def reset_settings(user: dict = Depends(get_current_user)):
     """Restore every settings field to its DEFAULT_DATA value.
 
     Touches only the keys listed in _SETTINGS_FIELDS — user content (notes,
@@ -892,8 +1496,10 @@ async def reset_settings():
 
 
 @app.post("/api/encrypt")
-async def encrypt_note(req: CryptoReq):
+async def encrypt_note(req: CryptoReq, user: dict = Depends(get_current_user)):
     def _mut(data: dict) -> None:
+        if not _user_owns_note(data, user["id"], req.id):
+            raise HTTPException(404, "Note not found")
         content = data.get("notes", {}).get(req.id)
         if content is None:
             raise HTTPException(404, "Note not found")
@@ -914,8 +1520,10 @@ async def encrypt_note(req: CryptoReq):
 
 
 @app.post("/api/decrypt")
-async def decrypt_note(req: CryptoReq):
+async def decrypt_note(req: CryptoReq, user: dict = Depends(get_current_user)):
     def _mut(data: dict) -> None:
+        if not _user_owns_note(data, user["id"], req.id):
+            raise HTTPException(404, "Note not found")
         content = data.get("notes", {}).get(req.id)
         if content is None:
             raise HTTPException(404, "Note not found")
@@ -939,9 +1547,11 @@ async def decrypt_note(req: CryptoReq):
 
 
 @app.post("/api/decrypt-view")
-async def decrypt_view(req: CryptoReq):
+async def decrypt_view(req: CryptoReq, user: dict = Depends(get_current_user)):
     """Decrypt note content in memory and return it WITHOUT modifying the file."""
     data = _read_data()
+    if not _user_owns_note(data, user["id"], req.id):
+        raise HTTPException(404, "Note not found")
     content = data.get("notes", {}).get(req.id)
     if content is None:
         raise HTTPException(404, "Note not found")
@@ -955,9 +1565,13 @@ async def decrypt_view(req: CryptoReq):
 
 
 @app.post("/api/save-encrypted")
-async def save_encrypted(req: SaveEncryptedReq):
+async def save_encrypted(
+    req: SaveEncryptedReq, user: dict = Depends(get_current_user)
+):
     """Save note content by re-encrypting it with the given password."""
     def _mut(data: dict) -> None:
+        if not _user_owns_note(data, user["id"], req.id):
+            raise HTTPException(404, "Note not found")
         # Fix #9: track images referenced in the plaintext before encrypting.
         data.setdefault("note_images", {})[req.id] = _extract_image_names(
             req.content
@@ -976,7 +1590,10 @@ async def save_encrypted(req: SaveEncryptedReq):
 
 
 @app.post("/api/images/upload")
-async def upload_image(file: UploadFile = File(...)):
+async def upload_image(
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user),
+):
     contents = await _read_upload_limited(file, MAX_IMAGE_BYTES)  # Fix #7
     ext = Path(file.filename or "img.png").suffix or ".png"
     name = f"{uuid.uuid4()}{ext}"
@@ -992,11 +1609,15 @@ async def upload_image(file: UploadFile = File(...)):
 
 
 @app.get("/images/{filename:path}")
-async def get_image(filename: str):
+async def get_image(filename: str, user: dict = Depends(get_current_user)):
     # Fix #1: a request like `..%2F..%2Fnotes_data.json` must not escape
     # IMAGES_DIR. The `:path` converter lets the traversal string reach this
     # handler (instead of a generic 404 from the router) so the guard below
     # can resolve the final path and return a deterministic 400.
+    #
+    # Image filenames are random UUIDs and aren't tracked per-user in this
+    # phase (they're addressed only by uuid in the note content); requiring
+    # auth here is the minimal protection — blocks anonymous scraping.
     path = _safe_image_path(filename)
     if path is None:
         raise HTTPException(400, "Invalid filename")
@@ -1009,8 +1630,10 @@ async def get_image(filename: str):
 
 
 @app.get("/api/export/{note_id}/txt")
-async def export_txt(note_id: str):
+async def export_txt(note_id: str, user: dict = Depends(get_current_user)):
     data = _read_data()
+    if not _user_owns_note(data, user["id"], note_id):
+        raise HTTPException(404, "Note not found")
     content = data.get("notes", {}).get(note_id)
     if content is None:
         raise HTTPException(404, "Note not found")
@@ -1025,8 +1648,10 @@ async def export_txt(note_id: str):
 
 
 @app.get("/api/export/{note_id}/html")
-async def export_html(note_id: str):
+async def export_html(note_id: str, user: dict = Depends(get_current_user)):
     data = _read_data()
+    if not _user_owns_note(data, user["id"], note_id):
+        raise HTTPException(404, "Note not found")
     content = data.get("notes", {}).get(note_id)
     if content is None:
         raise HTTPException(404, "Note not found")
@@ -1136,7 +1761,7 @@ def _build_note_html(name: str, content: str, font: str, size: int) -> str:
 
 
 @app.get("/api/notes/export")
-async def export_all_notes():
+async def export_all_notes(user: dict = Depends(get_current_user)):
     """Bulk-export every plain note as readable .html inside a single zip.
 
     Folder hierarchy is reproduced as zip directories. Encrypted notes are
@@ -1149,6 +1774,10 @@ async def export_all_notes():
     notes: dict[str, str] = data.get("notes", {}) or {}
     font = data.get("font_family", "Cascadia Code")
     size = data.get("font_size", 12)
+    user_tree = [
+        i for i in (data.get("tree") or [])
+        if i.get("user_id") == user["id"]
+    ]
 
     buf = io.BytesIO()
     excluded: list[str] = []
@@ -1193,7 +1822,7 @@ async def export_all_notes():
             included += 1
 
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        visit(data.get("tree") or [], [], zf)
+        visit(user_tree, [], zf)
 
         if excluded:
             info_lines = [
@@ -1222,16 +1851,31 @@ async def export_all_notes():
 
 
 @app.get("/api/backup")
-async def backup_download():
+async def backup_download(user: dict = Depends(get_current_user)):
+    """Per-user backup. Dumps ONLY the caller's scoped view of the JSON
+    (no `users`/`sessions`/other accounts) so handing the zip to someone
+    else doesn't leak other users' notes or password hashes."""
+    data = _read_data()
+    scoped = _scope_view_for_user(data, user["id"])
+    scoped_json = json.dumps(scoped, ensure_ascii=False, indent=2).encode("utf-8")
+
+    # Only embed images actually referenced by this user's notes.
+    user_image_names: set = set()
+    for names in (scoped.get("note_images") or {}).values():
+        if names:
+            user_image_names.update(names)
+    # Also scan plaintext content (legacy notes that predate note_images).
+    for content in (scoped.get("notes") or {}).values():
+        user_image_names.update(_extract_image_names(content))
+    for content in (scoped.get("trash", {}).get("notes") or {}).values():
+        user_image_names.update(_extract_image_names(content))
+
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        with _file_lock:
-            if DATA_FILE.exists():
-                zf.write(DATA_FILE, "notes_data.json")
-        # Add images
+        zf.writestr("notes_data.json", scoped_json)
         if IMAGES_DIR.exists():
             for img in IMAGES_DIR.iterdir():
-                if img.is_file():
+                if img.is_file() and img.name in user_image_names:
                     zf.write(img, f"images/{img.name}")
     buf.seek(0)
     return StreamingResponse(
@@ -1242,7 +1886,16 @@ async def backup_download():
 
 
 @app.post("/api/backup/import")
-async def backup_import(file: UploadFile = File(...)):
+async def backup_import(
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user),
+):
+    """Restore the caller's data from a scoped backup zip.
+
+    Multi-user safe: only the current user's notes/folders/trash/etc. are
+    replaced. Other users + auth state are left intact. Any user_id stamps
+    in the imported JSON are overwritten with the caller's id.
+    """
     contents = await _read_upload_limited(file, MAX_BACKUP_BYTES)  # Fix #7
     buf = io.BytesIO(contents)
     try:
@@ -1250,25 +1903,85 @@ async def backup_import(file: UploadFile = File(...)):
             names = zf.namelist()
             if "notes_data.json" not in names:
                 raise HTTPException(400, "Invalid backup: notes_data.json missing")
-
-            # notes_data.json: we IGNORE the archive's path entirely and
-            # write to the fixed DATA_FILE under BASE_DIR, so this entry
-            # can't be used for a zip-slip write (Fix #2).
-            raw = zf.read("notes_data.json")
             try:
-                json.loads(raw)
+                imported = json.loads(zf.read("notes_data.json"))
             except json.JSONDecodeError:
                 raise HTTPException(400, "Invalid backup: corrupt notes_data.json")
 
-            with _file_lock:
-                # Snapshot + atomic replace, same as _write_data_unlocked.
-                if DATA_FILE.exists():
-                    try:
-                        DATA_BAK.write_bytes(DATA_FILE.read_bytes())
-                    except OSError as exc:
-                        log.warning("Could not back up data file: %s", exc)
-                DATA_TMP.write_bytes(raw)
-                os.replace(DATA_TMP, DATA_FILE)
+            user_id = user["id"]
+
+            def _restamp(items: list) -> list:
+                """Force every imported item to belong to *this* user."""
+                out = []
+                for item in items or []:
+                    new_item = copy.deepcopy(item)
+                    new_item["user_id"] = user_id
+                    if new_item.get("type") == "folder":
+                        new_item["children"] = _restamp(
+                            new_item.get("children") or []
+                        )
+                    out.append(new_item)
+                return out
+
+            imp_tree = _restamp(imported.get("tree") or [])
+            imp_trash_tree = _restamp(
+                (imported.get("trash") or {}).get("tree") or []
+            )
+            imp_notes = imported.get("notes") or {}
+            imp_trash_notes = (imported.get("trash") or {}).get("notes") or {}
+            imp_formats = imported.get("note_formats") or {}
+            imp_modes = imported.get("note_modes") or {}
+            imp_images = imported.get("note_images") or {}
+            imp_favorites = imported.get("favorites") or []
+
+            # Only keep notes/formats/etc that are actually referenced by
+            # the imported tree (defends against trash-stuffed payloads).
+            imp_note_ids: set = set()
+            for root_item in imp_tree + imp_trash_tree:
+                imp_note_ids.update(collect_note_ids(root_item))
+
+            def _mut(data: dict) -> None:
+                # Drop the current user's existing items + notes.
+                old_ids = _collect_user_note_ids(data, user_id)
+
+                data["tree"] = [
+                    i for i in (data.get("tree") or [])
+                    if i.get("user_id") != user_id
+                ]
+                trash = data.setdefault("trash", {"tree": [], "notes": {}})
+                trash["tree"] = [
+                    i for i in (trash.get("tree") or [])
+                    if i.get("user_id") != user_id
+                ]
+                for nid in old_ids:
+                    data.get("notes", {}).pop(nid, None)
+                    trash.get("notes", {}).pop(nid, None)
+                    trash.get("note_formats", {}).pop(nid, None)
+                    data.get("note_formats", {}).pop(nid, None)
+                    data.get("note_modes", {}).pop(nid, None)
+                    data.get("note_images", {}).pop(nid, None)
+                favorites: list = data.setdefault("favorites", [])
+                data["favorites"] = [f for f in favorites if f not in old_ids]
+
+                # Splice imported items in.
+                data["tree"].extend(imp_tree)
+                trash["tree"].extend(imp_trash_tree)
+                for nid in imp_note_ids:
+                    if nid in imp_notes:
+                        data.setdefault("notes", {})[nid] = imp_notes[nid]
+                    if nid in imp_trash_notes:
+                        trash.setdefault("notes", {})[nid] = imp_trash_notes[nid]
+                    if nid in imp_formats:
+                        data.setdefault("note_formats", {})[nid] = imp_formats[nid]
+                    if nid in imp_modes:
+                        data.setdefault("note_modes", {})[nid] = imp_modes[nid]
+                    if nid in imp_images:
+                        data.setdefault("note_images", {})[nid] = imp_images[nid]
+                for nid in imp_favorites:
+                    if nid in imp_note_ids and nid not in data["favorites"]:
+                        data["favorites"].append(nid)
+
+            _update_data(_mut)
 
             # Fix #2 (zip slip): for every image entry, resolve the target
             # and refuse anything that escapes IMAGES_DIR (e.g. an entry
