@@ -205,6 +205,9 @@ window.NP = window.NP || {};
             return request("PUT", "/api/settings", settings);
         },
 
+        /* ---- Encrypted notes ----
+           The password goes to the server only in encrypt() and unlock();
+           both return an unlock_token that every later call uses. */
         encrypt: function (id, password) {
             return request("POST", "/api/encrypt", {
                 id: id,
@@ -212,27 +215,37 @@ window.NP = window.NP || {};
             });
         },
 
-        decrypt: function (id, password) {
+        unlock: function (id, password) {
+            return request("POST", "/api/unlock", {
+                id: id,
+                password: password
+            });
+        },
+
+        /* auth: { unlock_token } or { password } */
+        decrypt: function (id, auth) {
             return request("POST", "/api/decrypt", {
                 id: id,
-                password: password
+                unlock_token: auth.unlock_token || null,
+                password: auth.password || null
             });
         },
 
-        decryptView: function (id, password) {
-            return request("POST", "/api/decrypt-view", {
-                id: id,
-                password: password
-            });
-        },
-
-        saveEncrypted: function (id, password, content, formats) {
+        saveEncrypted: function (id, unlockToken, content, formats) {
             return request("POST", "/api/save-encrypted", {
                 id: id,
-                password: password,
+                unlock_token: unlockToken,
                 content: content,
                 formats: formats || []
             });
+        },
+
+        lock: function (unlockToken) {
+            return request("POST", "/api/lock", { unlock_token: unlockToken });
+        },
+
+        lockAll: function () {
+            return request("POST", "/api/lock-all");
         },
 
         uploadImage: function (file) {

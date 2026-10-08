@@ -167,6 +167,9 @@ NoirPad is designed as a **local, single-user desktop-style app**:
 - The server only listens on **127.0.0.1** (localhost) — it is not reachable from other machines on your network.
 - **No authentication.** Anyone with access to your machine has access to the notes.
 - For sensitive content, use **per-note password encryption** (Lock button or `default_encrypted` setting). Encrypted notes use Fernet (AES-128-CBC + HMAC-SHA256) with PBKDF2HMAC key derivation; the server never stores your password.
+- **What is NOT encrypted:** only the note's text is encrypted. Its **title, tags and images** (files in the `images/` folder) are stored unencrypted.
+- **A forgotten password cannot be recovered.** The note can never be opened again.
+- The password is sent to the local backend once, when you lock or unlock a note. The backend keeps the derived key in memory only and forgets it when you leave the note, on auto-lock or when NoirPad exits; it is never written to disk.
 - Auto-lock can be enabled to re-prompt for the password after 5 / 30 / 60 minutes of inactivity.
 - File-level safety: atomic writes via `.tmp` swap, automatic `.bak` snapshot before every write, recovery from backup if the data file is corrupt.
 - Upload limits: images 10 MB, backup ZIPs 100 MB. Path-traversal and zip-slip protection are enforced on every upload.

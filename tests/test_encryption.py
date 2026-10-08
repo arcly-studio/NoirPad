@@ -1,6 +1,13 @@
-"""Per-note encryption: lock, unlock, view, wrong password, save."""
+"""Per-note encryption: lock, unlock (token), save, remove, wrong password.
+
+D2: the password is sent only to lock/unlock; saves use a short-lived
+unlock token and the derived key lives only in server memory.
+"""
 
 import json
+import time
+
+import pytest
 
 from conftest import new_note
 
@@ -11,63 +18,171 @@ def stored(np_backend, note_id):
     return np_backend._read_data()["notes"][note_id]
 
 
-def test_encrypt_then_decrypt(client, np_backend):
-    nid = new_note(client, content="tajné")
-    assert client.post("/api/encrypt", json={"id": nid, "password": PW}).status_code == 200
+def lock(client, nid, password=PW):
+    r = client.post("/api/encrypt", json={"id": nid, "password": password})
+    assert r.status_code == 200, r.text
+    return r.json()["unlock_token"]
 
+
+def unlock(client, nid, password=PW):
+    return client.post("/api/unlock", json={"id": nid, "password": password})
+
+
+def test_encrypt_keeps_note_unlocked_with_token(client, np_backend):
+    nid = new_note(client, content="tajné")
+    token = lock(client, nid)
     raw = stored(np_backend, nid)
     assert json.loads(raw)["encrypted"] is True
     assert "tajné" not in raw
+    r = client.post("/api/save-encrypted",
+                    json={"id": nid, "unlock_token": token, "content": "nové", "formats": []})
+    assert r.status_code == 200
+    assert unlock(client, nid).json()["content"] == "nové"
 
-    assert client.post("/api/decrypt", json={"id": nid, "password": PW}).status_code == 200
-    assert stored(np_backend, nid) == "tajné"
 
-
-def test_double_encrypt_is_rejected(client):
-    nid = new_note(client, content="x")
-    client.post("/api/encrypt", json={"id": nid, "password": PW})
-    assert client.post("/api/encrypt", json={"id": nid, "password": PW}).status_code == 400
+def test_unlock_returns_content_and_leaves_file_encrypted(client, np_backend):
+    nid = new_note(client, content="tajné")
+    lock(client, nid)
+    r = unlock(client, nid)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["content"] == "tajné"
+    assert body["unlock_token"]
+    assert json.loads(stored(np_backend, nid))["encrypted"] is True
 
 
 def test_wrong_password(client, np_backend):
     nid = new_note(client, content="tajné")
-    client.post("/api/encrypt", json={"id": nid, "password": PW})
+    lock(client, nid)
     before = stored(np_backend, nid)
-
-    assert client.post("/api/decrypt", json={"id": nid, "password": "nope"}).status_code == 400
-    assert client.post("/api/decrypt-view", json={"id": nid, "password": "nope"}).status_code == 400
+    assert unlock(client, nid, "nope-nope").status_code == 400
+    assert client.post("/api/decrypt", json={"id": nid, "password": "nope-nope"}).status_code == 400
     assert stored(np_backend, nid) == before
 
 
-def test_decrypt_view_leaves_file_encrypted(client, np_backend):
-    nid = new_note(client, content="tajné")
-    client.post("/api/encrypt", json={"id": nid, "password": PW})
-    r = client.post("/api/decrypt-view", json={"id": nid, "password": PW})
-    assert r.status_code == 200
-    assert r.json()["content"] == "tajné"
-    assert json.loads(stored(np_backend, nid))["encrypted"] is True
+@pytest.mark.parametrize("password", ["", "short", "1234567"])
+def test_d2_too_short_password_rejected(client, np_backend, password):
+    nid = new_note(client, content="x")
+    r = client.post("/api/encrypt", json={"id": nid, "password": password})
+    assert r.status_code == 400
+    assert stored(np_backend, nid) == "x"
 
 
-def test_save_encrypted_keeps_note_encrypted(client, np_backend):
+def test_double_encrypt_is_rejected(client):
+    nid = new_note(client, content="x")
+    lock(client, nid)
+    assert client.post("/api/encrypt", json={"id": nid, "password": PW}).status_code == 400
+
+
+# D2 – heslo se neposílá při každém autosave: save-encrypted ho ani nepřijme
+def test_d2_save_requires_token_not_password(client, np_backend):
     nid = new_note(client, content="v1")
-    client.post("/api/encrypt", json={"id": nid, "password": PW})
+    lock(client, nid)
     r = client.post("/api/save-encrypted",
                     json={"id": nid, "password": PW, "content": "v2", "formats": []})
-    assert r.status_code == 200
-    assert "v2" not in stored(np_backend, nid)
-    view = client.post("/api/decrypt-view", json={"id": nid, "password": PW}).json()
-    assert view["content"] == "v2"
+    assert r.status_code == 422
+    r = client.post("/api/save-encrypted",
+                    json={"id": nid, "unlock_token": "forged", "content": "v2", "formats": []})
+    assert r.status_code == 401
 
 
-def test_password_never_stored(client, np_backend):
+def test_d2_token_is_bound_to_its_note(client):
+    a = new_note(client, "A", content="a")
+    b = new_note(client, "B", content="b")
+    token_a = lock(client, a)
+    lock(client, b)
+    r = client.post("/api/save-encrypted",
+                    json={"id": b, "unlock_token": token_a, "content": "x", "formats": []})
+    assert r.status_code == 401
+
+
+def test_d2_lock_forgets_key(client):
+    nid = new_note(client, content="v1")
+    token = lock(client, nid)
+    assert client.post("/api/lock", json={"unlock_token": token}).status_code == 200
+    r = client.post("/api/save-encrypted",
+                    json={"id": nid, "unlock_token": token, "content": "v2", "formats": []})
+    assert r.status_code == 401
+
+
+def test_d2_lock_all_forgets_every_key(client, np_backend):
+    a = new_note(client, "A", content="a")
+    token = lock(client, a)
+    client.post("/api/lock-all")
+    assert np_backend.RUNTIME.unlocked == {}
+    r = client.post("/api/save-encrypted",
+                    json={"id": a, "unlock_token": token, "content": "x", "formats": []})
+    assert r.status_code == 401
+
+
+def test_d2_idle_token_expires(client, np_backend, monkeypatch):
+    nid = new_note(client, content="v1")
+    token = lock(client, nid)
+    real_time = time.time
+    monkeypatch.setattr(np_backend.time, "time",
+                        lambda: real_time() + np_backend.UNLOCK_IDLE_TTL + 1)
+    r = client.post("/api/save-encrypted",
+                    json={"id": nid, "unlock_token": token, "content": "x", "formats": []})
+    assert r.status_code == 401
+
+
+def test_d2_password_never_stored(client, np_backend):
     nid = new_note(client, content="x")
-    client.post("/api/encrypt", json={"id": nid, "password": PW})
-    assert PW not in np_backend.DATA_FILE.read_text(encoding="utf-8")
+    token = lock(client, nid)
+    text = np_backend.DATA_FILE.read_text(encoding="utf-8")
+    assert PW not in text and token not in text
+
+
+def test_remove_encryption_with_token(client, np_backend):
+    nid = new_note(client, content="tajné")
+    token = lock(client, nid)
+    r = client.post("/api/decrypt", json={"id": nid, "unlock_token": token})
+    assert r.status_code == 200
+    assert stored(np_backend, nid) == "tajné"
+    assert np_backend.RUNTIME.unlocked == {}
+
+
+def test_remove_encryption_with_password(client, np_backend):
+    nid = new_note(client, content="tajné")
+    lock(client, nid)
+    assert client.post("/api/decrypt", json={"id": nid, "password": PW}).status_code == 200
+    assert stored(np_backend, nid) == "tajné"
 
 
 def test_legacy_desktop_envelope_decrypts(client, np_backend):
     nid = new_note(client, content="placeholder")
     envelope = np_backend.encrypt_content("ze staré appky", PW)
     np_backend._update_data(lambda d: d["notes"].__setitem__(nid, envelope))
-    r = client.post("/api/decrypt-view", json={"id": nid, "password": PW})
-    assert r.json()["content"] == "ze staré appky"
+    assert unlock(client, nid).json()["content"] == "ze staré appky"
+
+
+def test_legacy_v2_note_is_upgraded_on_save(client, np_backend):
+    import base64
+    import hashlib
+    import os
+
+    nid = new_note(client, content="placeholder")
+    salt = os.urandom(16)
+    key = hashlib.pbkdf2_hmac("sha256", PW.encode(), salt, 100000)
+    payload = bytes(b ^ key[i % len(key)] for i, b in enumerate("stará".encode()))
+    env = json.dumps({"encrypted": True,
+                      "data": base64.b64encode(b"\x02" + salt + payload).decode()})
+    np_backend._update_data(lambda d: d["notes"].__setitem__(nid, env))
+
+    body = unlock(client, nid).json()
+    assert body["content"] == "stará"
+    client.post("/api/save-encrypted", json={"id": nid, "unlock_token": body["unlock_token"],
+                                              "content": "nová", "formats": []})
+    version = base64.b64decode(json.loads(stored(np_backend, nid))["data"])[0]
+    assert version == 1
+    assert unlock(client, nid).json()["content"] == "nová"
+
+
+def test_d2_save_with_lock_after_forgets_key(client, np_backend):
+    nid = new_note(client, content="v1")
+    token = lock(client, nid)
+    r = client.post("/api/save-encrypted", json={
+        "id": nid, "unlock_token": token, "content": "v2", "formats": [], "lock_after": True})
+    assert r.status_code == 200
+    assert np_backend.RUNTIME.unlocked == {}
+    assert unlock(client, nid).json()["content"] == "v2"

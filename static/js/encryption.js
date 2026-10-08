@@ -1,83 +1,158 @@
-/* encryption.js - NoirPad note encryption */
+/* encryption.js - NoirPad note encryption
+
+   The password is typed into NP.passwordDialog (type=password) and sent to
+   the server exactly once, to lock or unlock. The server keeps the derived
+   key in memory and answers with an unlock token for that note; the editor
+   keeps only the token (NP.editor._unlockToken) and autosaves with it.
+   Locking, auto-lock and leaving the page make the server forget the key. */
 window.NP = window.NP || {};
 
 (function (NP) {
     "use strict";
 
+    var MIN_PASSWORD = 8;   // same rule as the backend (MIN_NOTE_PASSWORD)
+
+    var LOCK_WARNING =
+        "Forgotten password = this note can never be opened again. " +
+        "There is no recovery.\n" +
+        "Only the note text is encrypted. Its title, tags and images " +
+        "stay unencrypted on disk.";
+
+    var reunlockPending = null;
+    var unlockPending = {};   // noteId -> promise of the open unlock dialog
+
+    function editor() { return NP.editor; }
+
     NP.encryption = {
+        /* STATE A → B: lock a plain note. It stays open (unlocked). */
         encrypt: function () {
             var noteId = NP.state && NP.state.currentNoteId;
             if (!noteId) {
                 alert("No note selected.");
                 return Promise.resolve();
             }
-
-            if (NP.encryption.isEncrypted(noteId)) {
+            if (NP.encryption.isEncrypted(noteId) || (editor() && editor()._currentNoteEncrypted)) {
                 alert("Note is already encrypted.");
                 return Promise.resolve();
             }
 
-            var password = prompt("Enter encryption password:");
-            if (!password) return Promise.resolve();
-
-            var passwordConfirm = prompt("Confirm encryption password:");
-            if (passwordConfirm !== password) {
-                alert("Passwords do not match.");
-                return Promise.resolve();
-            }
-
-            return NP.api.encrypt(noteId, password).then(function () {
-                /* Reload note content */
-                if (NP.editor && NP.editor.loadNote) {
-                    return NP.editor.loadNote(noteId);
-                }
+            return NP.passwordDialog.ask({
+                title: "Lock note with a password",
+                message: "Choose a password of at least " + MIN_PASSWORD + " characters.",
+                warning: LOCK_WARNING,
+                confirm: true,
+                minLength: MIN_PASSWORD,
+                okLabel: "Lock"
+            }).then(function (password) {
+                if (!password) return;
+                var ed = editor();
+                /* Save pending edits as plain text first, so what gets
+                   encrypted is what the user sees. */
+                var flush = ed && ed.save ? ed.save(true) : Promise.resolve();
+                return flush.then(function () {
+                    return NP.api.encrypt(noteId, password);
+                }).then(function (res) {
+                    if (ed && ed._currentNoteId === noteId) {
+                        ed._currentNoteEncrypted = true;
+                        ed._unlockToken = res && res.unlock_token;
+                    }
+                    return NP.state.init();
+                }).then(function () {
+                    NP.encryption.updateLockButtonState();
+                });
             }).catch(function (err) {
-                alert("Encryption failed: " + err.message);
+                alert("Encryption failed: " + (err && err.message ? err.message : err));
             });
         },
 
+        /* ":decrypt" command — remove encryption for good. */
         decrypt: function () {
             var noteId = NP.state && NP.state.currentNoteId;
             if (!noteId) {
                 alert("No note selected.");
                 return Promise.resolve();
             }
-
+            var ed = editor();
+            if (ed && ed._currentNoteId === noteId && ed._unlockToken) {
+                return NP.encryption.removeEncryption();
+            }
             if (!NP.encryption.isEncrypted(noteId)) {
                 alert("Note is not encrypted.");
                 return Promise.resolve();
             }
-
-            var password = prompt("Enter decryption password:");
-            if (!password) return Promise.resolve();
-
-            return NP.api.decrypt(noteId, password).then(function () {
-                /* Reload note content */
-                if (NP.editor && NP.editor.loadNote) {
-                    return NP.editor.loadNote(noteId);
-                }
+            return NP.passwordDialog.ask({
+                title: "Remove encryption",
+                message: "Enter the note's password. The note will be stored as plain text.",
+                okLabel: "Remove encryption"
+            }).then(function (password) {
+                if (!password) return;
+                return NP.api.decrypt(noteId, { password: password }).then(function () {
+                    if (ed && ed.loadNote) return ed.loadNote(noteId);
+                });
             }).catch(function (err) {
-                alert("Decryption failed: " + err.message);
+                alert("Decryption failed: " + (err && err.message ? err.message : err));
             });
+        },
+
+        /* Ask for the password of an encrypted note and unlock it on the
+           server. Resolves to the unlock response ({content, formats,
+           mode, unlock_token}) or null when cancelled. Wrong passwords
+           are reported inside the loop. */
+        askAndUnlock: function (noteId, message) {
+            /* One dialog per note, even if the note is opened twice. */
+            if (unlockPending[noteId]) return unlockPending[noteId];
+            var p = NP.encryption._askAndUnlock(noteId, message);
+            unlockPending[noteId] = p;
+            return p.finally(function () { delete unlockPending[noteId]; });
+        },
+
+        _askAndUnlock: function (noteId, message) {
+            return NP.passwordDialog.ask({
+                title: "Unlock note",
+                message: message || "This note is encrypted. Enter its password.",
+                okLabel: "Unlock"
+            }).then(function (password) {
+                if (!password) return null;
+                return NP.api.unlock(noteId, password).catch(function (err) {
+                    if (err && err.status === 400) {
+                        return NP.encryption._askAndUnlock(noteId, "Wrong password. Try again.");
+                    }
+                    throw err;
+                });
+            });
+        },
+
+        /* Autosave got 401 (key expired on the server, e.g. after 12 h or
+           a server restart). Ask once, even if several saves fail at the
+           same time; resolves to the new token or null. */
+        reunlock: function (noteId) {
+            if (reunlockPending) return reunlockPending;
+            reunlockPending = NP.encryption.askAndUnlock(noteId,
+                "The note was locked. Enter its password to save your changes."
+            ).then(function (res) {
+                var ed = editor();
+                var token = res && res.unlock_token;
+                if (token && ed && ed._currentNoteId === noteId) ed._unlockToken = token;
+                return token || null;
+            }).finally(function () {
+                reunlockPending = null;
+            });
+            return reunlockPending;
         },
 
         /* ----------------------------------------------------------------
            State-aware Lock button
            ----------------------------------------------------------------
-           The #btn-lock button has 3 behaviours, decided from the editor's
-           authoritative view of the open note (NP.state.data is only
-           refreshed by the 5s poll, so it lies right after encrypt/decrypt):
-
-             A  plain note                -> encrypt (prompt password)
+             A  plain note                -> encrypt (password dialog)
              B  encrypted + UNLOCKED      -> remove encryption (confirm)
-             C  encrypted + LOCKED        -> unlock to view (prompt password)
+             C  encrypted + LOCKED        -> unlock to view (password dialog)
 
-           "unlocked" == we hold the password in memory
-           (NP.editor._encryptedNotePassword) and the plaintext is shown.
+           "unlocked" == the editor holds an unlock token
+           (NP.editor._unlockToken) and the plaintext is shown.
            ---------------------------------------------------------------- */
 
         handleLockButtonClick: function () {
-            var ed = NP.editor;
+            var ed = editor();
             var id = ed && ed._currentNoteId;
             if (!id) {
                 alert("No note selected.");
@@ -85,41 +160,30 @@ window.NP = window.NP || {};
             }
 
             if (!ed._currentNoteEncrypted) {
-                /* STATE A — plain → encrypt */
                 NP.encryption.encrypt();
-            } else if (ed._encryptedNotePassword) {
-                /* STATE B — encrypted + unlocked → remove encryption */
+            } else if (ed._unlockToken) {
                 NP.encryption.removeEncryption();
             } else {
-                /* STATE C — encrypted + locked → unlock for viewing */
                 NP.encryption.unlock();
             }
         },
 
-        /* STATE C: re-run loadNote, which prompts for the password and
-           decrypts for viewing (file stays encrypted). On success the
-           note moves to STATE B. */
+        /* STATE C → B: loadNote asks for the password and shows the note
+           (the file stays encrypted). */
         unlock: function () {
-            var id = NP.editor && NP.editor._currentNoteId;
+            var id = editor() && editor()._currentNoteId;
             if (!id) return Promise.resolve();
-            if (NP.editor && NP.editor.loadNote) {
-                return NP.editor.loadNote(id);
-            }
+            if (editor().loadNote) return editor().loadNote(id);
             return Promise.resolve();
         },
 
-        /* STATE B: permanently strip encryption. The note is currently
-           unlocked, so we already hold the password in memory — no
-           re-prompt. A confirm dialog is mandatory (destructive). */
+        /* STATE B → A: permanently strip encryption using the unlock
+           token (no second password prompt). Confirm first. */
         removeEncryption: function () {
-            var ed = NP.editor;
+            var ed = editor();
             var id = ed && ed._currentNoteId;
             if (!id) return Promise.resolve();
-
-            var pw = ed._encryptedNotePassword;
-            if (!pw) {
-                /* Defensive: only reachable if the note is locked. The
-                   caller must unlock first (STATE C). */
+            if (!ed._unlockToken) {
                 alert("Unlock this note first, then remove encryption.");
                 return Promise.resolve();
             }
@@ -132,82 +196,61 @@ window.NP = window.NP || {};
             if (!ok) return Promise.resolve();
 
             /* Stop autosave up front: an encrypted autosave firing during
-               the decrypt request would immediately re-encrypt the note
-               we are trying to strip. */
+               the decrypt request would immediately re-encrypt the note. */
             if (ed.stopAutosave) ed.stopAutosave();
 
-            /* Flush the latest editor buffer (re-encrypted with pw) so any
-               unsaved edits survive the round-trip, THEN decrypt the
-               server copy permanently. */
-            var flush = (ed.save) ? ed.save(true) : Promise.resolve();
-
+            /* Flush the latest edits (encrypted), then decrypt for good. */
+            var flush = ed.save ? ed.save(true) : Promise.resolve();
             return flush.then(function () {
-                return NP.api.decrypt(id, pw);
+                return NP.api.decrypt(id, { unlock_token: ed._unlockToken });
             }).then(function () {
-                /* Server content is plaintext again. Drop the in-memory
-                   password and encrypted flag so save()/autosave won't
-                   re-encrypt, then reload to render the plain note. */
-                ed._encryptedNotePassword = null;
+                ed._unlockToken = null;
                 ed._currentNoteEncrypted = false;
-                if (ed.loadNote) {
-                    return ed.loadNote(id);
-                }
+                if (ed.loadNote) return ed.loadNote(id);
             }).catch(function (err) {
-                /* Still encrypted + still unlocked in memory — restore
-                   autosave so the user doesn't silently lose edits. */
                 if (ed.startAutosave) ed.startAutosave();
                 alert("Failed to remove encryption: " +
                     (err && err.message ? err.message : err));
             });
         },
 
-        /* Sync the #btn-lock label/title with the open note's lock
-           state. Driven by the editor's authoritative state. */
+        /* Sync the #btn-lock label/title with the open note's state. */
         updateLockButtonState: function () {
             var btn = document.getElementById("btn-lock");
             if (!btn) return;
 
-            var ed = NP.editor;
+            var ed = editor();
             var id = ed && ed._currentNoteId;
 
-            if (!id) {
+            if (!id || !ed._currentNoteEncrypted) {
                 btn.textContent = "Lock";
                 btn.title = "Encrypt this note with a password";
-                return;
-            }
-
-            if (!ed._currentNoteEncrypted) {
-                /* STATE A */
-                btn.textContent = "Lock";
-                btn.title = "Encrypt this note with a password";
-            } else if (ed._encryptedNotePassword) {
-                /* STATE B */
+            } else if (ed._unlockToken) {
                 btn.textContent = "Remove lock";
                 btn.title = "Remove encryption from this note";
             } else {
-                /* STATE C */
                 btn.textContent = "Unlock";
                 btn.title = "Enter password to view this note";
             }
         },
 
-        /* Re-lock any encrypted note that is currently decrypted in
-           memory. This app keeps at most ONE such note: the open note in
-           the editor, held only by NP.editor._encryptedNotePassword (the
-           file + NP.state.data stay encrypted strings — decryptView never
-           writes). Locking = stop autosave, drop the password, and wipe
-           the decrypted DOM via the lock screen. Returns true if it
-           actually locked something. */
+        /* Auto-lock: hide the unlocked note and make the server forget
+           every key. Returns true if a note was actually locked. */
         lockAll: function () {
-            if (!NP.editor) return false;
-            var id = NP.editor._currentNoteId;
-            if (!id || !NP.editor._encryptedNotePassword) return false;
-            if (!NP.encryption.isEncrypted(id)) return false;
+            var ed = editor();
+            var open = !!(ed && ed._currentNoteId && ed._unlockToken);
+            /* save() reads the editor and the token synchronously, so the
+               flush still works after both are cleared below. Autosave may
+               be switched off in Settings. */
+            var flush = open && ed.save ? ed.save(true) : Promise.resolve();
+            flush.then(function () {
+                return NP.api.lockAll();
+            }).catch(function () { /* server restart forgets keys anyway */ });
+            if (!open) return false;
 
-            if (NP.editor.stopAutosave) NP.editor.stopAutosave();
-            NP.editor._encryptedNotePassword = null;
-            if (NP.editor._showLockScreen) NP.editor._showLockScreen();
-            /* B -> C: reflect the now-locked state on the button. */
+            if (ed.stopAutosave) ed.stopAutosave();
+            ed._unlockToken = null;
+            if (ed._showLockScreen) ed._showLockScreen();
             NP.encryption.updateLockButtonState();
             return true;
         },

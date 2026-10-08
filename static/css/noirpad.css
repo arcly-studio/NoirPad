@@ -4128,3 +4128,23 @@ body.auth-active #matrix-canvas {
     }
     .auth-ascii { font-size: 8px; }
 }
+
+/* ---- Password dialog (password-dialog.js) ---- */
+.np-password-dialog {
+    z-index: 400;
+}
+.np-password-dialog .dialog-input {
+    display: block;
+    margin-bottom: 10px;
+}
+.np-password-dialog .np-password-warning {
+    color: #ffb000;
+    border-left: 3px solid #ffb000;
+    padding-left: 10px;
+    white-space: pre-line;
+}
+.np-password-dialog .np-password-error {
+    color: #ff5555;
+    min-height: 1.6em;
+    margin-bottom: 8px;
+}

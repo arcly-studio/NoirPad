@@ -167,6 +167,9 @@ NoirPad je navržen jako **lokální single-user desktop-style aplikace**:
 - Server poslouchá jen na **127.0.0.1** (localhost) — není dostupný z jiných strojů v síti.
 - **Žádná autentizace.** Kdokoli s přístupem ke tvému stroji má přístup k poznámkám.
 - Pro citlivý obsah použij **per-note password encryption** (Lock tlačítko nebo `default_encrypted` nastavení). Šifrované poznámky používají Fernet (AES-128-CBC + HMAC-SHA256) s PBKDF2HMAC odvozením klíče; server tvoje heslo nikdy neukládá.
+- **Co šifrované NENÍ:** šifruje se jen text poznámky. **Název, tagy a obrázky** (soubory ve složce `images/`) zůstávají na disku nešifrované.
+- **Zapomenuté heslo nejde obnovit.** Poznámku už nikdy neotevřeš.
+- Heslo jde do lokálního backendu jen jednou, při zamčení nebo odemčení. Backend drží odvozený klíč jen v paměti a zapomene ho, když poznámku opustíš, při auto-locku nebo při ukončení NoirPadu; na disk se nikdy nezapisuje.
 - Auto-lock lze zapnout — po 5 / 30 / 60 minutách nečinnosti se heslo opět vyžádá.
 - File-level safety: atomické writes přes `.tmp` swap, automatický `.bak` snapshot před každým write, recovery z backupu pokud je data soubor corrupt.
 - Limity uploadu: obrázky 10 MB, backup ZIPy 100 MB. Path-traversal a zip-slip ochrana je aplikována na každý upload.

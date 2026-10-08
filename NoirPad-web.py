@@ -530,50 +530,69 @@ def restore_from_trash(data: dict, item_id: str) -> None:
 # ---------------------------------------------------------------------------
 
 
+# Envelope (same as the old desktop app): {"encrypted": true, "data":
+# base64(version(1) + salt(16) + payload)}. Version 1 = Fernet with a
+# PBKDF2-SHA256 key; version 2 = legacy XOR, decrypt-only.
+PBKDF2_ITERATIONS = 480_000
+MIN_NOTE_PASSWORD = 8
+MAX_NOTE_PASSWORD = 1024
+
+
+def _derive_key(password: str, salt: bytes) -> bytes:
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt,
+                     iterations=PBKDF2_ITERATIONS)
+    return base64.urlsafe_b64encode(kdf.derive(password.encode()))
+
+
+def _encrypt_with_key(content: str, key: bytes, salt: bytes) -> str:
+    """Version-1 envelope from an already derived key (no KDF cost)."""
+    combined = b"\x01" + salt + Fernet(key).encrypt(content.encode("utf-8"))
+    return json.dumps({"encrypted": True, "data": base64.b64encode(combined).decode("ascii")})
+
+
+def _parse_envelope(stored: str) -> tuple[int, bytes, bytes]:
+    obj = json.loads(stored)  # json.JSONDecodeError is a subclass of ValueError
+    if not isinstance(obj, dict) or not obj.get("encrypted"):
+        raise ValueError("Content is not encrypted")
+    combined = base64.b64decode(obj["data"])
+    return combined[0], combined[1:17], combined[17:]
+
+
 def encrypt_content(content: str, password: str) -> str:
-    """Encrypt using the same format as desktop app: version(1) + salt(16) + fernet_data."""
+    """Encrypt with a fresh random salt (version 1)."""
     salt = os.urandom(16)
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(), length=32, salt=salt, iterations=480000
-    )
-    key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
-    f = Fernet(key)
-    encrypted = f.encrypt(content.encode("utf-8"))
-
-    # Combine: version byte 0x01 + salt + encrypted
-    combined = b'\x01' + salt + encrypted
-    data_b64 = base64.b64encode(combined).decode("ascii")
-    return json.dumps({"encrypted": True, "data": data_b64})
+    return _encrypt_with_key(content, _derive_key(password, salt), salt)
 
 
-def decrypt_content(stored: str, password: str) -> str:
-    """Decrypt using the same format as desktop app.
+def unlock_content(stored: str, password: str) -> tuple[str, bytes, bytes]:
+    """Decrypt *stored* → (plaintext, key, salt) for later re-encryption.
 
     Raises ValueError for structurally-bad / not-encrypted / unknown-version
     input, and cryptography's InvalidToken for a wrong password. Both are
-    treated as a 400 by the callers (Fix #5).
+    treated as a 400 by the callers (Fix #5). A legacy version-2 note gets
+    a fresh salt + version-1 key, so its next save upgrades it.
     """
-    obj = json.loads(stored)  # json.JSONDecodeError is a subclass of ValueError
-    if not obj.get("encrypted"):
-        raise ValueError("Content is not encrypted")
-    combined = base64.b64decode(obj["data"])
-    version = combined[0]
-    salt = combined[1:17]
-    encrypted = combined[17:]
-
+    version, salt, payload = _parse_envelope(stored)
     if version == 1:
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(), length=32, salt=salt, iterations=480000
-        )
-        key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
-        f = Fernet(key)
-        return f.decrypt(encrypted).decode("utf-8")
-    elif version == 2:
-        key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100000)
-        decrypted = bytes(b ^ key[i % len(key)] for i, b in enumerate(encrypted))
-        return decrypted.decode("utf-8")
-    else:
+        key = _derive_key(password, salt)
+        return Fernet(key).decrypt(payload).decode("utf-8"), key, salt
+    if version == 2:
+        xor_key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100000)
+        text = bytes(b ^ xor_key[i % len(xor_key)] for i, b in enumerate(payload)).decode("utf-8")
+        new_salt = os.urandom(16)
+        return text, _derive_key(password, new_salt), new_salt
+    raise ValueError("Unknown encryption version")
+
+
+def decrypt_content(stored: str, password: str) -> str:
+    return unlock_content(stored, password)[0]
+
+
+def _decrypt_with_key(stored: str, key: bytes) -> str:
+    version, _salt, payload = _parse_envelope(stored)
+    if version != 1:
         raise ValueError("Unknown encryption version")
+    return Fernet(key).decrypt(payload).decode("utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -711,6 +730,9 @@ class _Runtime:
     password: Optional[str] = os.environ.get("NOIRPAD_PASSWORD") or None
     desktop_token: Optional[str] = None
     data_notice: Optional[str] = None        # shown once in the UI (D8)
+    # Unlocked encrypted notes: token -> {note_id, key, salt, created, used}.
+    # Keys live only here, never on disk; lost on lock, expiry or exit.
+    unlocked: dict[str, dict] = {}
     allowed_hosts: set[str] = set(LOOPBACK_HOSTS) | _env_allowed_hosts()
     sessions: dict[str, float] = {}       # token -> expires_at (epoch secs)
     login_failures: list[float] = []
@@ -737,6 +759,7 @@ def configure(*, mode: Optional[str] = None, password: Any = ...,
         RUNTIME.allowed_hosts |= _env_allowed_hosts()
     RUNTIME.sessions.clear()
     RUNTIME.login_failures.clear()
+    RUNTIME.unlocked.clear()
 
 
 # Data paths need RUNTIME (corrupt-file notices), so they are set up here.
@@ -861,16 +884,27 @@ class SettingsBody(BaseModel):
     custom_shortcuts: Optional[dict] = None
 
 
-class CryptoReq(BaseModel):
+class PasswordReq(BaseModel):
     id: str
-    password: str
+    password: Annotated[str, Field(max_length=MAX_NOTE_PASSWORD)]
+
+
+class DecryptReq(BaseModel):
+    id: str
+    unlock_token: Optional[str] = None
+    password: Optional[Annotated[str, Field(max_length=MAX_NOTE_PASSWORD)]] = None
+
+
+class LockReq(BaseModel):
+    unlock_token: str
 
 
 class SaveEncryptedReq(BaseModel):
     id: str
-    password: str
+    unlock_token: str
     content: NoteText
     formats: Formats = []
+    lock_after: bool = False   # leaving the page: save, then forget the key
 
 
 class LoginReq(BaseModel):
@@ -1461,96 +1495,161 @@ async def reset_settings():
 
 
 # ---- Encryption ----
+#
+# The password is sent once: to lock (/api/encrypt) or unlock (/api/unlock).
+# The server derives the key, keeps it in memory and hands back a short-
+# lived unlock token for that one note. Autosave sends the token, never the
+# password. /api/lock, /api/lock-all, idle expiry and process exit forget
+# the key. PBKDF2 runs outside the data-file lock.
+
+UNLOCK_IDLE_TTL = 30 * 60        # forget a key after 30 min without use
+UNLOCK_MAX_TTL = 12 * 60 * 60    # … and after 12 h no matter what
+
+
+def _check_new_password(password: str) -> None:
+    if len(password) < MIN_NOTE_PASSWORD:
+        raise HTTPException(400, f"Password must be at least {MIN_NOTE_PASSWORD} characters")
+    if len(password) > MAX_NOTE_PASSWORD:
+        raise HTTPException(400, "Password is too long")
+
+
+def _remember_key(note_id: str, key: bytes, salt: bytes) -> str:
+    now = time.time()
+    for tok, entry in list(RUNTIME.unlocked.items()):   # drop expired keys
+        if now - entry["used"] > UNLOCK_IDLE_TTL or now - entry["created"] > UNLOCK_MAX_TTL:
+            RUNTIME.unlocked.pop(tok, None)
+    token = secrets.token_urlsafe(32)
+    RUNTIME.unlocked[token] = {"note_id": note_id, "key": key, "salt": salt,
+                               "created": now, "used": now}
+    return token
+
+
+def _key_for(token: Optional[str], note_id: str) -> dict:
+    entry = RUNTIME.unlocked.get(token or "")
+    now = time.time()
+    if (entry is None or entry["note_id"] != note_id
+            or now - entry["used"] > UNLOCK_IDLE_TTL
+            or now - entry["created"] > UNLOCK_MAX_TTL):
+        RUNTIME.unlocked.pop(token or "", None)
+        raise HTTPException(401, "Note is locked")
+    entry["used"] = now
+    return entry
+
+
+def _forget_note_keys(note_id: str) -> None:
+    for tok, entry in list(RUNTIME.unlocked.items()):
+        if entry["note_id"] == note_id:
+            RUNTIME.unlocked.pop(tok, None)
+
+
+def _stored_note(data: dict, note_id: str) -> str:
+    content = data.get("notes", {}).get(note_id)
+    if content is None or not _note_exists(data, note_id):
+        raise HTTPException(404, "Note not found")
+    return content
 
 
 @app.post("/api/encrypt")
-async def encrypt_note(req: CryptoReq):
+async def encrypt_note(req: PasswordReq):
+    """Lock a plain note. Returns an unlock token so it stays open."""
+    _check_new_password(req.password)
+    salt = os.urandom(16)
+    key = _derive_key(req.password, salt)
+
     def _mut(data: dict) -> None:
-        if not _note_exists(data, req.id):
-            raise HTTPException(404, "Note not found")
-        content = data.get("notes", {}).get(req.id)
-        if content is None:
-            raise HTTPException(404, "Note not found")
-        # Prevent double-encryption
-        try:
-            obj = json.loads(content)
-            if isinstance(obj, dict) and obj.get("encrypted"):
-                raise HTTPException(400, "Note is already encrypted")
-        except (json.JSONDecodeError, TypeError):
-            pass
+        content = _stored_note(data, req.id)
+        if _is_encrypted_content(content):
+            raise HTTPException(400, "Note is already encrypted")
         # Fix #9: capture image filenames from the PLAINTEXT before it is
         # encrypted, so the trash cleanup can still find them later.
         data.setdefault("note_images", {})[req.id] = _extract_image_names(content)
-        data["notes"][req.id] = encrypt_content(content, req.password)
+        data["notes"][req.id] = _encrypt_with_key(content, key, salt)
 
     _update_data(_mut)  # Fix #6
-    return {"ok": True}
+    return {"ok": True, "unlock_token": _remember_key(req.id, key, salt)}
 
 
-@app.post("/api/decrypt")
-async def decrypt_note(req: CryptoReq):
-    def _mut(data: dict) -> None:
-        if not _note_exists(data, req.id):
-            raise HTTPException(404, "Note not found")
-        content = data.get("notes", {}).get(req.id)
-        if content is None:
-            raise HTTPException(404, "Note not found")
-        try:
-            decrypted = decrypt_content(content, req.password)
-        except (InvalidToken, ValueError):
-            # Fix #5: only swallow the *expected* failures (wrong password /
-            # not-encrypted / unknown version / bad JSON|base64). Any other
-            # exception is a real bug and is allowed to propagate as a 500.
-            raise HTTPException(
-                400, "Wrong password or content is not encrypted"
-            )
-        data["notes"][req.id] = decrypted
-        # Content is plaintext again — refresh the tracked image list.
-        data.setdefault("note_images", {})[req.id] = _extract_image_names(
-            decrypted
-        )
+@app.post("/api/unlock")
+async def unlock_note(req: PasswordReq):
+    """Check the password and return the plaintext + an unlock token.
 
-    _update_data(_mut)  # Fix #6
-    return {"ok": True}
-
-
-@app.post("/api/decrypt-view")
-async def decrypt_view(req: CryptoReq):
-    """Decrypt note content in memory and return it WITHOUT modifying the file."""
+    The file stays encrypted.
+    """
     data = _read_data()
-    if not _note_exists(data, req.id):
-        raise HTTPException(404, "Note not found")
-    content = data.get("notes", {}).get(req.id)
-    if content is None:
-        raise HTTPException(404, "Note not found")
+    stored = _stored_note(data, req.id)
     try:
-        decrypted = decrypt_content(content, req.password)
+        text, key, salt = unlock_content(stored, req.password)
     except (InvalidToken, ValueError):  # Fix #5
         raise HTTPException(400, "Wrong password")
-    formats = data.get("note_formats", {}).get(req.id, [])
-    mode = data.get("note_modes", {}).get(req.id, "rich-text")
-    return {"content": decrypted, "formats": formats, "mode": mode}
+    return {
+        "content": text,
+        "formats": data.get("note_formats", {}).get(req.id, []),
+        "mode": data.get("note_modes", {}).get(req.id, "rich-text"),
+        "unlock_token": _remember_key(req.id, key, salt),
+    }
 
 
 @app.post("/api/save-encrypted")
-async def save_encrypted(
-    req: SaveEncryptedReq
-):
-    """Save note content by re-encrypting it with the given password."""
+async def save_encrypted(req: SaveEncryptedReq):
+    """Autosave of an unlocked note: re-encrypt with the remembered key."""
+    entry = _key_for(req.unlock_token, req.id)
+
     def _mut(data: dict) -> None:
-        if not _note_exists(data, req.id):
-            raise HTTPException(404, "Note not found")
+        _stored_note(data, req.id)
         # Fix #9: track images referenced in the plaintext before encrypting.
-        data.setdefault("note_images", {})[req.id] = _extract_image_names(
-            req.content
-        )
-        data.setdefault("notes", {})[req.id] = encrypt_content(
-            req.content, req.password
-        )
+        data.setdefault("note_images", {})[req.id] = _extract_image_names(req.content)
+        data["notes"][req.id] = _encrypt_with_key(req.content, entry["key"], entry["salt"])
         if req.formats:
             data.setdefault("note_formats", {})[req.id] = req.formats
 
     _update_data(_mut)  # Fix #6
+    if req.lock_after:
+        RUNTIME.unlocked.pop(req.unlock_token, None)
+    return {"ok": True}
+
+
+@app.post("/api/decrypt")
+async def decrypt_note(req: DecryptReq):
+    """Remove encryption for good (unlock token, or the password)."""
+    entry = _key_for(req.unlock_token, req.id) if req.unlock_token else None
+    if entry is None and not req.password:
+        raise HTTPException(400, "Password or unlock token required")
+    stored_before = _read_data().get("notes", {}).get(req.id)
+    key = entry["key"] if entry else None
+    if key is None and stored_before is not None:
+        try:
+            unlock_content(stored_before, req.password)   # KDF outside the lock
+        except (InvalidToken, ValueError):
+            raise HTTPException(400, "Wrong password or content is not encrypted")
+
+    def _mut(data: dict) -> None:
+        stored = _stored_note(data, req.id)
+        try:
+            text = (_decrypt_with_key(stored, key) if key is not None
+                    else decrypt_content(stored, req.password))
+        except (InvalidToken, ValueError):
+            # Fix #5: only the expected failures become a 400.
+            raise HTTPException(400, "Wrong password or content is not encrypted")
+        data["notes"][req.id] = text
+        # Content is plaintext again — refresh the tracked image list.
+        data.setdefault("note_images", {})[req.id] = _extract_image_names(text)
+
+    _update_data(_mut)  # Fix #6
+    _forget_note_keys(req.id)
+    return {"ok": True}
+
+
+@app.post("/api/lock")
+async def lock_note(req: LockReq):
+    """Forget the key behind one unlock token (lock button, closing a tab)."""
+    RUNTIME.unlocked.pop(req.unlock_token, None)
+    return {"ok": True}
+
+
+@app.post("/api/lock-all")
+async def lock_all():
+    """Forget every remembered key (auto-lock, leaving the page)."""
+    RUNTIME.unlocked.clear()
     return {"ok": True}
 
 

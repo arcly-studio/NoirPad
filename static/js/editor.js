@@ -38,9 +38,25 @@ window.NP = window.NP || {};
            encrypted on the server. Derived from the FRESHLY fetched
            content in loadNote (NP.state.data is only refreshed by the
            5s poll, so it can't be trusted right after encrypt/decrypt).
-           Combined with _encryptedNotePassword this gives the 3 lock
+           Combined with _unlockToken this gives the 3 lock
            states: plain / encrypted+unlocked / encrypted+locked. */
         _currentNoteEncrypted: false,
+
+        /* Unlock token of the open encrypted note (see encryption.js).
+           The password itself is never kept in the page. */
+        _unlockToken: null,
+        _lastSave: null,
+
+        /* Leaving an unlocked note: tell the server to forget its key —
+           after the last save, so the save doesn't race the lock. */
+        _forgetUnlock: function () {
+            var token = NP.editor._unlockToken;
+            if (!token) return;
+            NP.editor._unlockToken = null;
+            Promise.resolve(NP.editor._lastSave).catch(function () {}).then(function () {
+                return NP.api.lock(token);
+            }).catch(function () { /* key expires on its own */ });
+        },
 
         /* Re-sync the #btn-lock label/title with the current note's
            lock state. Safe to call before encryption.js is wired. */
@@ -79,16 +95,17 @@ window.NP = window.NP || {};
             }
 
             /* Flush the in-flight note on tab close / navigation.
-               pagehide fires reliably on mobile + desktop; the
-               sendBeacon path keeps the request alive after unload. */
+               pagehide fires reliably on mobile + desktop; keepalive
+               keeps the request alive after unload. Leaving the page
+               also makes the server forget an unlocked note's key. */
             window.addEventListener("pagehide", function () {
-                NP.editor._flushBeacon();
+                NP.editor._flushBeacon(true);
             });
             /* visibilitychange → hidden also catches mobile background
                switches where pagehide may be delayed. */
             document.addEventListener("visibilitychange", function () {
                 if (document.visibilityState === "hidden") {
-                    NP.editor._flushBeacon();
+                    NP.editor._flushBeacon(false);
                 }
             });
 
@@ -98,19 +115,18 @@ window.NP = window.NP || {};
             /* Paste-to-upload is handled in images.js. */
         },
 
-        /* Best-effort persist on unload. Skips encrypted notes — the
-           re-encryption path requires async crypto + a password we may
-           not have, and a botched save would corrupt the file.
+        /* Best-effort persist on unload. An unlocked encrypted note is
+           saved with its unlock token (lock_after when the page is going
+           away); a locked one is never written.
 
            Uses fetch(..., {keepalive:true}) instead of sendBeacon
-           because the backend's save endpoint is PUT /api/note/{id};
-           sendBeacon is hardcoded to POST in the spec and would 405.
-           keepalive is the modern equivalent (Chrome 66+, FF 116+,
-           Safari 13+) — same ~64KB body limit, but any HTTP method. */
-        _flushBeacon: function () {
+           because sendBeacon can't send the API headers and is POST-only.
+           keepalive has the same ~64KB body limit. */
+        _flushBeacon: function (leaving) {
             var id = NP.editor._currentNoteId;
             if (!id) return;
-            if (NP.editor._encryptedNotePassword) return;
+            var token = NP.editor._unlockToken;
+            if (NP.editor._currentNoteEncrypted && !token) return;
             var mdActive = NP.markdown && NP.markdown.isActive &&
                 NP.markdown.isActive();
             var text;
@@ -126,13 +142,20 @@ window.NP = window.NP || {};
                 formats = NP.editor._extractFormats();
             }
             try {
-                var body = JSON.stringify({
-                    content: text, formats: formats
-                });
-                NP.api.fetch("/api/note/" + encodeURIComponent(id), {
-                    method: "PUT",
+                var url = "/api/note/" + encodeURIComponent(id);
+                var method = "PUT";
+                var payload = { content: text, formats: formats };
+                if (NP.editor._currentNoteEncrypted) {
+                    url = "/api/save-encrypted";
+                    method = "POST";
+                    payload = { id: id, unlock_token: token, content: text,
+                        formats: formats, lock_after: !!leaving };
+                    if (leaving) NP.editor._unlockToken = null;
+                }
+                NP.api.fetch(url, {
+                    method: method,
                     headers: { "Content-Type": "application/json" },
-                    body: body,
+                    body: JSON.stringify(payload),
                     keepalive: true
                 }).catch(function () {
                     /* unload — request may or may not have left;
@@ -149,6 +172,7 @@ window.NP = window.NP || {};
                before the fetch resolves would save the previous
                note's textarea content under the NEW note's id. */
             NP.editor.stopAutosave();
+            NP.editor._forgetUnlock();
 
             NP.editor._currentNoteId = id;
             NP.state.currentNoteId = id;
@@ -201,20 +225,20 @@ window.NP = window.NP || {};
 
                 if (isEncrypted) {
                     NP.editor.stopAutosave();
-                    NP.editor._encryptedNotePassword = null;
-                    /* Prompt for password immediately */
-                    var password = prompt("🔒 Enter password to unlock this note:");
-                    if (!password) {
-                        /* User cancelled — show lock screen (STATE C) */
-                        NP.editor._showLockScreen();
-                        NP.editor._refreshLockButton();
-                        return;
-                    }
-                    /* Decrypt for viewing only (file stays encrypted) */
-                    return NP.api.decryptView(id, password).then(function (decData) {
-                        if (!NP.editor.el) return;
-                        /* Store password for re-encryption on save */
-                        NP.editor._encryptedNotePassword = password;
+                    /* Show the lock screen while the password dialog is
+                       up, so the previous note never stays visible. */
+                    NP.editor._showLockScreen();
+                    NP.editor._refreshLockButton();
+                    /* Unlock for viewing (file stays encrypted). The page
+                       keeps only the unlock token, never the password. */
+                    return NP.encryption.askAndUnlock(id).then(function (decData) {
+                        if (!decData) return;  /* cancelled — STATE C */
+                        if (!NP.editor.el || NP.editor._currentNoteId !== id) {
+                            /* User moved on meanwhile: don't keep the key. */
+                            NP.api.lock(decData.unlock_token).catch(function () {});
+                            return;
+                        }
+                        NP.editor._unlockToken = decData.unlock_token;
 
                         var decContent = decData.content || "";
                         var decFormats = decData.formats || [];
@@ -232,14 +256,14 @@ window.NP = window.NP || {};
                             NP.markdown.applyForLoadedNote(id, decContent);
                         }
                     }).catch(function (err) {
-                        alert("Wrong password.");
+                        alert("Could not unlock the note: " +
+                            (err && err.message ? err.message : err));
                         NP.editor._showLockScreen();
                         /* STATE C: encrypted + locked */
                         NP.editor._refreshLockButton();
                     });
                 }
 
-                NP.editor._encryptedNotePassword = null;
                 NP.editor.el.contentEditable = "true";
                 NP.editor.el.style.opacity = "1";
 
@@ -295,7 +319,7 @@ window.NP = window.NP || {};
 
             NP.editor.stopAutosave();
             NP.editor._currentNoteId = null;
-            NP.editor._encryptedNotePassword = null;
+            NP.editor._forgetUnlock();
             NP.editor._currentNoteEncrypted = false;
             NP.editor.el.contentEditable = "false";
             NP.editor._refreshLockButton();
@@ -348,7 +372,7 @@ window.NP = window.NP || {};
 
             NP.editor.stopAutosave();
             NP.editor._currentNoteId = null;
-            NP.editor._encryptedNotePassword = null;
+            NP.editor._forgetUnlock();
             NP.editor._currentNoteEncrypted = false;
             NP.editor.el.contentEditable = "false";
             NP.editor._refreshLockButton();
@@ -741,12 +765,23 @@ window.NP = window.NP || {};
             }
 
             var savePromise;
-            if (NP.editor._encryptedNotePassword) {
-                /* Note is encrypted — re-encrypt on save */
-                savePromise = NP.api.saveEncrypted(id, NP.editor._encryptedNotePassword, text, formats);
+            if (NP.editor._currentNoteEncrypted) {
+                var token = NP.editor._unlockToken;
+                if (!token) return Promise.resolve();  /* locked: nothing editable */
+                /* Re-encrypt on the server with the remembered key. A 401
+                   means the key expired: ask for the password and retry,
+                   so the user's edits are not lost. */
+                savePromise = NP.api.saveEncrypted(id, token, text, formats).catch(function (err) {
+                    if (!(err && err.status === 401 && NP.encryption && NP.encryption.reunlock)) throw err;
+                    return NP.encryption.reunlock(id).then(function (newToken) {
+                        if (!newToken) throw new Error("Note is locked; changes were not saved.");
+                        return NP.api.saveEncrypted(id, newToken, text, formats);
+                    });
+                });
             } else {
                 savePromise = NP.api.saveNote(id, text, formats);
             }
+            NP.editor._lastSave = savePromise;
 
             return savePromise.then(function () {
                 if (!silent) {

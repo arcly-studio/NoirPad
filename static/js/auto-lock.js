@@ -3,7 +3,7 @@
  * Setting: idle_lock_minutes ("off" | "5" | "30" | "60"). When on, any
  * user activity resets an idle timer; on expiry every currently-unlocked
  * encrypted note is re-locked via NP.encryption.lockAll() (in this app
- * that's the single open note guarded by editor._encryptedNotePassword).
+ * that's the single open note, unlocked via editor._unlockToken).
  */
 window.NP = window.NP || {};
 

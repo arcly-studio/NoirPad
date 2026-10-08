@@ -138,7 +138,7 @@ window.NP = window.NP || {};
         if (!id) return false;
         if (!NP.encryption || !NP.encryption.isEncrypted) return false;
         if (!NP.encryption.isEncrypted(id)) return false;
-        return !(NP.editor && NP.editor._encryptedNotePassword);
+        return !(NP.editor && NP.editor._unlockToken);
     }
 
     function isMarkdownMode() {
