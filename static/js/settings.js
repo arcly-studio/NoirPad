@@ -534,11 +534,10 @@ window.NP = window.NP || {};
             });
         }
 
-        /* ---- Account ---- */
-        var accountName = document.getElementById("settings-account-name");
-        if (accountName && NP.auth && NP.auth.getUser) {
-            var name = NP.auth.getUser();
-            if (name) accountName.textContent = name;
+        /* ---- Session (only for a password-protected server) ---- */
+        var sessionSection = document.getElementById("settings-session-section");
+        if (sessionSection && NP.auth && NP.auth.passwordRequired) {
+            sessionSection.hidden = !NP.auth.passwordRequired();
         }
         var logoutBtn = document.getElementById("settings-logout-btn");
         if (logoutBtn) {

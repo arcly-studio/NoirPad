@@ -8,7 +8,6 @@ window.NP = window.NP || {};
         var opts = {
             method: method,
             headers: {},
-            // Session cookie carries auth — must be sent on every request.
             credentials: "same-origin"
         };
         if (body instanceof FormData) {
@@ -18,14 +17,6 @@ window.NP = window.NP || {};
             opts.body = JSON.stringify(body);
         }
         return fetch(url, opts).then(function (res) {
-            if (res.status === 401) {
-                // Session lost / never authed. Surface a typed error so
-                // the app shell can drop back to the auth screen instead
-                // of trying to render half a UI.
-                var err = new Error("Not authenticated");
-                err.unauthorized = true;
-                throw err;
-            }
             if (!res.ok) {
                 return res.text().then(function (txt) {
                     var msg = txt;
@@ -35,6 +26,8 @@ window.NP = window.NP || {};
                     } catch (e) { /* not json — keep raw */ }
                     var e = new Error(msg || ("API " + res.status));
                     e.status = res.status;
+                    // 401 = server password session missing/expired.
+                    e.unauthorized = res.status === 401;
                     throw e;
                 });
             }
@@ -201,28 +194,20 @@ window.NP = window.NP || {};
             return request("POST", "/api/backup/import", fd);
         },
 
-        /* ---- Auth ---- */
-        authMe: function () {
-            return request("GET", "/api/auth/me");
+        /* ---- Session (password-protected server mode) ---- */
+        session: function () {
+            return request("GET", "/api/session");
         },
 
-        authRegister: function (username, password) {
-            return request("POST", "/api/auth/register", {
-                username: username,
-                password: password
-            });
-        },
-
-        authLogin: function (username, password, remember) {
-            return request("POST", "/api/auth/login", {
-                username: username,
+        login: function (password, remember) {
+            return request("POST", "/api/login", {
                 password: password,
                 remember: !!remember
             });
         },
 
-        authLogout: function () {
-            return request("POST", "/api/auth/logout");
+        logout: function () {
+            return request("POST", "/api/logout");
         }
     };
 

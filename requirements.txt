@@ -3,7 +3,6 @@ uvicorn
 pydantic
 cryptography
 python-multipart
-argon2-cffi
 # Desktop launcher (pywebview window around the FastAPI app) + writable
 # data directory under %APPDATA%/Local on Windows. Optional for plain web
 # usage; required if you run desktop.py or the PyInstaller bundle.

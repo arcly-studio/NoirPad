@@ -67,10 +67,8 @@ hiddenimports = [
     # File uploads
     "multipart",
     "python_multipart",
-    # Crypto: NoirPad's per-note encryption + argon2 password hashing
+    # Crypto: NoirPad's per-note encryption
     "cryptography",
-    "argon2",
-    "argon2._password_hasher",
     "_cffi_backend",
     # platformdirs is used inside get_data_dir() at runtime
     "platformdirs",
@@ -80,15 +78,15 @@ hiddenimports = [
     "clr_loader",
 ]
 
-# Pull in uvicorn / argon2 / cryptography / fastapi sub-modules wholesale —
+# Pull in uvicorn / cryptography / fastapi sub-modules wholesale —
 # they all use dynamic / conditional imports that the static analyser misses.
-for pkg in ("uvicorn", "fastapi", "starlette", "argon2", "cryptography",
+for pkg in ("uvicorn", "fastapi", "starlette", "cryptography",
             "anyio", "h11"):
     hiddenimports += collect_submodules(pkg)
 
 # Some packages ship data files (e.g. .pyi stubs, JSON tables); add them too
 # so we don't get FileNotFoundError surprises at runtime.
-for pkg in ("uvicorn", "fastapi", "starlette", "argon2", "cryptography"):
+for pkg in ("uvicorn", "fastapi", "starlette", "cryptography"):
     datas += collect_data_files(pkg)
 
 

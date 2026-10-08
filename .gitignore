@@ -9,3 +9,7 @@ images/
 # PyInstaller / Inno Setup build artefacts
 build/
 dist/
+
+# Local dev environments
+.venv/
+node_modules/
