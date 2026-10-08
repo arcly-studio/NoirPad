@@ -221,8 +221,7 @@ window.NP = window.NP || {};
 
                         NP.editor.el.contentEditable = "true";
                         NP.editor.el.style.opacity = "1";
-                        var html = NP.editor._textToHtmlWithImages(decContent, decFormats);
-                        NP.editor.el.innerHTML = html;
+                        NP.editor.renderContent(NP.editor.el, decContent, decFormats);
                         NP.editor.el.focus();
                         NP.editor.updateCharCount();
                         NP.editor.startAutosave();
@@ -244,8 +243,7 @@ window.NP = window.NP || {};
                 NP.editor.el.contentEditable = "true";
                 NP.editor.el.style.opacity = "1";
 
-                var html = NP.editor._textToHtmlWithImages(content, formats);
-                NP.editor.el.innerHTML = html;
+                NP.editor.renderContent(NP.editor.el, content, formats);
                 NP.editor.el.focus();
                 NP.editor.updateCharCount();
                 NP.editor.startAutosave();
@@ -379,6 +377,11 @@ window.NP = window.NP || {};
         },
 
         /* ---- Content conversion ---- */
+
+        /* Render stored note content (rich-text mode) into *el*. */
+        renderContent: function (el, text, formats) {
+            el.innerHTML = NP.editor._textToHtmlWithImages(text, formats);
+        },
 
         contentToHtml: function (text, formats) {
             if (!text) return "";
@@ -605,7 +608,7 @@ window.NP = window.NP || {};
             var processed = text.replace(codeRe, function (full, lang, code) {
                 var idx = codeBlocks.length;
                 codeBlocks.push({ lang: lang.trim(), code: code });
-                return " CODE" + idx + " ";
+                return "\u0000CODE" + idx + "\u0000";
             });
 
             /* Step 2: IMG split + format application on processed text.
@@ -639,7 +642,7 @@ window.NP = window.NP || {};
             }
 
             /* Step 3: swap placeholders for code-block HTML */
-            html = html.replace(/ CODE(\d+) /g, function (_, idx) {
+            html = html.replace(/\u0000CODE(\d+)\u0000/g, function (_, idx) {
                 var blk = codeBlocks[parseInt(idx, 10)];
                 return NP.editor._renderCodeBlock(blk.code, blk.lang);
             });

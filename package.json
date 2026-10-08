@@ -1,0 +1,13 @@
+{
+  "name": "noirpad-dev",
+  "private": true,
+  "description": "Dev-only tooling (JS tests). The app itself has no build step: static/ is served as-is.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "jsdom": "29.1.1",
+    "vitest": "5.0.3"
+  }
+}

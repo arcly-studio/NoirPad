@@ -1,13 +1,38 @@
-fastapi
-uvicorn
-pydantic
-cryptography
-python-multipart
-# Desktop launcher (pywebview window around the FastAPI app) + writable
-# data directory under %APPDATA%/Local on Windows. Optional for plain web
-# usage; required if you run desktop.py or the PyInstaller bundle.
-pywebview
-platformdirs
-# Build-only — kept in this file so `pip install -r requirements.txt`
-# gets you a ready-to-build environment.
-pyinstaller
+# NoirPad runtime dependencies — exact versions, tested together.
+# Supported Python: 3.14 (see .python-version). Other versions are untested.
+#
+#   py -3.14 -m venv .venv
+#   .venv\Scripts\pip install -r requirements.txt          (run the app)
+#   .venv\Scripts\pip install -r requirements-dev.txt      (tests + build)
+
+# Web backend
+fastapi==0.136.0
+starlette==1.0.0
+uvicorn==0.45.0
+pydantic==2.13.3
+pydantic_core==2.46.3
+python-multipart==0.0.26
+anyio==4.13.0
+h11==0.16.0
+click==8.3.2
+colorama==0.4.6
+idna==3.12
+annotated-doc==0.0.4
+annotated-types==0.7.0
+typing_extensions==4.15.0
+typing-inspection==0.4.2
+
+# Per-note encryption
+cryptography==46.0.7
+cffi==2.0.0
+pycparser==3.0
+
+# Data directory (%LOCALAPPDATA%\NoirPad)
+platformdirs==4.9.6
+
+# Desktop window (desktop.py / NoirPad.exe) — WebView2 via pythonnet
+pywebview==6.2.1
+bottle==0.13.4
+proxy_tools==0.1.0
+pythonnet==3.1.0
+clr_loader==0.3.1

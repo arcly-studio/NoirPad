@@ -198,7 +198,7 @@ window.NP = window.NP || {};
             if (!els.ta || !els.preview) return;
             var src = els.ta.value;
             if (src === lastRendered) return;
-            els.preview.innerHTML = renderPreview(src);
+            NP.markdown.renderInto(els.preview, src);
             lastRendered = src;
             /* Decoupled hook for syntax-highlight.js (and any other
                post-render consumer). Pure visual: the textarea is
@@ -219,6 +219,11 @@ window.NP = window.NP || {};
     /* ---- Public API ---- */
 
     NP.markdown = {
+
+        /* Render markdown source *src* as the preview inside *el*. */
+        renderInto: function (el, src) {
+            el.innerHTML = renderPreview(src);
+        },
 
         /* Switch to MD mode for the currently open note. Copies the
            editor's plain text into the textarea, renders the preview,
@@ -244,7 +249,7 @@ window.NP = window.NP || {};
             lastRendered = null;
             document.body.classList.add("editor-md-active");
             updateMdButtonState();
-            els.preview.innerHTML = renderPreview(src);
+            NP.markdown.renderInto(els.preview, src);
             lastRendered = src;
             els.preview.dispatchEvent(new CustomEvent(
                 "np-md-rendered", { bubbles: true }
