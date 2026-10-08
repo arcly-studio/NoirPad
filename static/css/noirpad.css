@@ -2292,10 +2292,6 @@ body.crt-on #crt-overlay {
     color: var(--fg);
 }
 
-.np-code .tok-kw  { color: var(--fg-bright); font-weight: bold; }
-.np-code .tok-str { color: color-mix(in srgb, var(--accent) 70%, #ffaa00); }
-.np-code .tok-num { color: color-mix(in srgb, var(--accent) 50%, #88ddff); }
-.np-code .tok-com { color: var(--fg-dim); font-style: italic; }
 .np-code .tok-lang {
     display: block;
     font-size: 10px;
@@ -2442,62 +2438,36 @@ body.editor-md-active #editor { display: none; }
     font-family: var(--font-mono);
 }
 
-/* Once Shiki has painted a block, its <pre> brings its own theme
-   background + token colors via INLINE styles on <pre>/<code>/<span>.
-   The cascade for #md-preview sets color/text-shadow/etc that — even
-   though inline beats descendant rules without !important — turns
-   the highlighted tokens visually flat once a parent rule wins on
-   a property the inline style doesn't set (e.g. text-shadow glow
-   smears the per-token color into the neon accent). The rules below
-   nuke EVERYTHING that #md-preview cascade contributes inside the
-   highlighted block, then re-paint a minimal frame. */
-#md-preview .md-codeblock[data-shiki-done="1"] {
-    /* Drop our placeholder background/padding — Shiki's <pre> is
-       the actual frame now. `color: revert` undoes the orange
-       inherited from .md-codeblock so children aren't inheriting
-       a wrong text color. */
-    background: transparent !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    overflow: visible !important;
-    color: revert !important;
+/* ---- Code highlighting (highlight.js, shared by both editors) ----
+   Token colours follow the active theme instead of a fixed palette. */
+.np-code .hljs-keyword, .np-code .hljs-built_in, .np-code .hljs-literal,
+.np-code .hljs-type, .np-code .hljs-selector-tag, .np-code .hljs-meta,
+#md-preview .hljs-keyword, #md-preview .hljs-built_in, #md-preview .hljs-literal,
+#md-preview .hljs-type, #md-preview .hljs-selector-tag, #md-preview .hljs-meta {
+    color: var(--fg-bright);
+    font-weight: bold;
 }
-
-/* Drop the loose `>` child combinator — Shiki's wrapper structure
-   should not be assumed. Any pre.shiki anywhere inside the block
-   gets the frame styling. */
-#md-preview .md-codeblock[data-shiki-done="1"] pre.shiki {
-    margin: 10px 0 !important;
-    padding: 10px 14px !important;
-    border-radius: 4px !important;
-    overflow-x: auto !important;
-    font-family: var(--font-mono);
-    font-size: 13px !important;
-    line-height: 1.5 !important;
-    border: 1px solid var(--border);
-    /* Strip glow + any inherited color/decoration so the inline
-       Shiki style on <pre> is the only thing painting tokens. */
-    text-shadow: none !important;
-    filter: none !important;
-    text-decoration: none !important;
-    -webkit-text-fill-color: currentColor !important;
+.np-code .hljs-string, .np-code .hljs-regexp, .np-code .hljs-template-string,
+#md-preview .hljs-string, #md-preview .hljs-regexp, #md-preview .hljs-template-string {
+    color: color-mix(in srgb, var(--accent) 70%, #ffaa00);
 }
-
-/* THE critical rule: every token <span> inside the highlighted
-   block must use ONLY its own inline style. `all: revert` undoes
-   every inherited property (color, text-shadow, font-weight,
-   filter, blend-mode, …); the inline style="color:#xxx" Shiki put
-   on the span then wins because revert sets the cascaded value
-   back to the user-agent default (no color), letting the inline
-   one apply unopposed. */
-#md-preview .md-codeblock[data-shiki-done="1"] pre.shiki code,
-#md-preview .md-codeblock[data-shiki-done="1"] pre.shiki .line,
-#md-preview .md-codeblock[data-shiki-done="1"] pre.shiki span {
-    text-shadow: none !important;
-    filter: none !important;
-    -webkit-text-fill-color: currentColor !important;
-    background: transparent !important;
-    font-family: var(--font-mono) !important;
+.np-code .hljs-number, .np-code .hljs-symbol, .np-code .hljs-bullet,
+#md-preview .hljs-number, #md-preview .hljs-symbol, #md-preview .hljs-bullet {
+    color: color-mix(in srgb, var(--accent) 50%, #88ddff);
+}
+.np-code .hljs-comment, .np-code .hljs-quote,
+#md-preview .hljs-comment, #md-preview .hljs-quote {
+    color: var(--fg-dim);
+    font-style: italic;
+}
+.np-code .hljs-title, .np-code .hljs-attr, .np-code .hljs-attribute,
+.np-code .hljs-variable, .np-code .hljs-name, .np-code .hljs-property,
+#md-preview .hljs-title, #md-preview .hljs-attr, #md-preview .hljs-attribute,
+#md-preview .hljs-variable, #md-preview .hljs-name, #md-preview .hljs-property {
+    color: var(--accent);
+}
+#md-preview .md-codeblock.hljs {
+    color: var(--fg);
 }
 
 /* markdown-it emits real <h1>/<p>/<ul>/<blockquote>; reset UA margins

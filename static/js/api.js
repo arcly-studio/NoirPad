@@ -4,33 +4,66 @@ window.NP = window.NP || {};
 (function (NP) {
     "use strict";
 
+    /* Desktop app: desktop.py opens the window at /#token=<random>. Keep
+       the token for this window (sessionStorage survives a reload) and
+       drop it from the address bar. Web/server mode has no token. */
+    var TOKEN_KEY = "noirpad_token";
+    var token = null;
+    try {
+        var m = /[#&]token=([^&]+)/.exec(window.location.hash || "");
+        if (m) {
+            token = decodeURIComponent(m[1]);
+            sessionStorage.setItem(TOKEN_KEY, token);
+            history.replaceState(null, "", window.location.pathname + window.location.search);
+        } else {
+            token = sessionStorage.getItem(TOKEN_KEY);
+        }
+    } catch (e) { /* storage unavailable — web mode needs no token */ }
+
+    /* Headers every /api/ call carries: the CSRF marker (server mode)
+       and the per-launch token (desktop). */
+    function apiHeaders(extra) {
+        var h = { "X-NoirPad-Request": "1" };
+        if (token) h["X-NoirPad-Token"] = token;
+        if (extra) {
+            Object.keys(extra).forEach(function (k) { h[k] = extra[k]; });
+        }
+        return h;
+    }
+
+    /* fetch() with the API headers added. */
+    function apiFetch(url, opts) {
+        opts = opts || {};
+        opts.headers = apiHeaders(opts.headers);
+        opts.credentials = "same-origin";
+        return fetch(url, opts);
+    }
+
+    function errorFrom(res) {
+        return res.text().then(function (txt) {
+            var msg = txt;
+            try {
+                var obj = JSON.parse(txt);
+                if (obj && obj.detail) msg = obj.detail;
+            } catch (e) { /* not json — keep raw */ }
+            var e = new Error(msg || ("API " + res.status));
+            e.status = res.status;
+            // 401 = server password session missing/expired.
+            e.unauthorized = res.status === 401;
+            throw e;
+        });
+    }
+
     function request(method, url, body) {
-        var opts = {
-            method: method,
-            headers: {},
-            credentials: "same-origin"
-        };
+        var opts = { method: method, headers: {} };
         if (body instanceof FormData) {
             opts.body = body;
         } else if (body !== undefined) {
             opts.headers["Content-Type"] = "application/json";
             opts.body = JSON.stringify(body);
         }
-        return fetch(url, opts).then(function (res) {
-            if (!res.ok) {
-                return res.text().then(function (txt) {
-                    var msg = txt;
-                    try {
-                        var obj = JSON.parse(txt);
-                        if (obj && obj.detail) msg = obj.detail;
-                    } catch (e) { /* not json — keep raw */ }
-                    var e = new Error(msg || ("API " + res.status));
-                    e.status = res.status;
-                    // 401 = server password session missing/expired.
-                    e.unauthorized = res.status === 401;
-                    throw e;
-                });
-            }
+        return apiFetch(url, opts).then(function (res) {
+            if (!res.ok) return errorFrom(res);
             var ct = res.headers.get("content-type") || "";
             if (ct.indexOf("application/json") !== -1) {
                 return res.json();
@@ -39,17 +72,43 @@ window.NP = window.NP || {};
         });
     }
 
-    function triggerDownload(url) {
-        var a = document.createElement("a");
-        a.href = url;
-        a.download = "";
-        a.style.display = "none";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+    /* "attachment; filename=\"x.txt\"; filename*=UTF-8''%C5%99.txt" → name */
+    function filenameFrom(disposition) {
+        var star = /filename\*=UTF-8''([^;]+)/i.exec(disposition || "");
+        if (star) {
+            try { return decodeURIComponent(star[1]); } catch (e) { /* fall through */ }
+        }
+        var plain = /filename="([^"]*)"/i.exec(disposition || "");
+        return plain ? plain[1] : "";
+    }
+
+    /* Downloads go through fetch (so they carry the API headers) and a
+       blob: link with `download` (allowed by links.js). */
+    function download(url) {
+        return apiFetch(url).then(function (res) {
+            if (!res.ok) return errorFrom(res);
+            var name = filenameFrom(res.headers.get("content-disposition"));
+            return res.blob().then(function (blob) {
+                var href = URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                a.href = href;
+                a.download = name || "download";
+                a.style.display = "none";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(function () { URL.revokeObjectURL(href); }, 10000);
+            });
+        }).catch(function (err) {
+            alert("Download failed: " + (err && err.message ? err.message : err));
+        });
     }
 
     NP.api = {
+        fetch: apiFetch,
+        download: download,
+        hasToken: function () { return !!token; },
+
         getData: function () {
             return request("GET", "/api/data");
         },
@@ -178,15 +237,15 @@ window.NP = window.NP || {};
         },
 
         exportTxt: function (id) {
-            triggerDownload("/api/export/" + encodeURIComponent(id) + "/txt");
+            download("/api/export/" + encodeURIComponent(id) + "/txt");
         },
 
         exportHtml: function (id) {
-            triggerDownload("/api/export/" + encodeURIComponent(id) + "/html");
+            download("/api/export/" + encodeURIComponent(id) + "/html");
         },
 
         downloadBackup: function () {
-            triggerDownload("/api/backup");
+            download("/api/backup");
         },
 
         importBackup: function (file) {
@@ -209,6 +268,11 @@ window.NP = window.NP || {};
 
         logout: function () {
             return request("POST", "/api/logout");
+        },
+
+        /* Desktop: lets <img src="/images/…"> through (cookie). */
+        bindSession: function () {
+            return request("POST", "/api/session/bind");
         }
     };
 

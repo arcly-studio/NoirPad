@@ -5,11 +5,12 @@ let win, preview;
 
 function render(src) {
     win.NP.markdown.renderInto(preview, src);
+    preview.dispatchEvent(new win.CustomEvent("np-md-rendered", { bubbles: true }));
     return preview;
 }
 
 beforeEach(() => {
-    win = loadApp(["vendor/markdown-it/markdown-it.min.js", "vendor/dompurify/purify.min.js", "js/utils.js", "js/markdown.js"]);
+    win = loadApp(["vendor/markdown-it/markdown-it.min.js", "vendor/dompurify/purify.min.js", "vendor/highlight/highlight.min.js", "js/utils.js", "js/syntax-highlight.js", "js/markdown.js"]);
     preview = win.document.getElementById("md-preview");
 });
 
@@ -29,6 +30,14 @@ describe("markdown preview", () => {
         expect(block.getAttribute("data-lang")).toBe("python");
         expect(block.textContent).toContain("print('<b>')");
         expect(block.querySelector("b")).toBeNull();
+    });
+
+    it("highlights code blocks with highlight.js", () => {
+        render("```python\ndef f():\n    return 'x'\n```");
+        const block = preview.querySelector(".md-codeblock");
+        expect(block.classList.contains("hljs")).toBe(true);
+        expect(block.querySelector(".hljs-keyword").textContent).toBe("def");
+        expect(dangers(preview)).toEqual([]);
     });
 
     it("renders safe links and images", () => {

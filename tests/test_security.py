@@ -55,7 +55,6 @@ EXPECTED_CSP = {
 
 
 # K6 – žádná CSP ani bezpečnostní hlavičky
-@pending("K6", "C")
 def test_k6_security_headers(client):
     r = client.get("/")
     csp = dict(
@@ -72,7 +71,6 @@ def test_k6_security_headers(client):
 
 
 # K6 / D10 – index.html bez inline skriptů, handlerů a externích zdrojů
-@pending("K6", "C")
 def test_k6_index_has_no_inline_script_or_cdn():
     html = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
     assert not re.search(r"<script(?![^>]*\bsrc=)[^>]*>", html), "inline <script>"
@@ -84,13 +82,11 @@ def test_k6_index_has_no_inline_script_or_cdn():
 
 
 # D4 – bez validace hlavičky Host → DNS rebinding
-@pending("D4", "C")
 def test_d4_foreign_host_rejected(client):
     assert client.get("/api/data", headers={"host": "evil.example"}).status_code == 400
     assert client.get("/api/data", headers={"host": "localhost:8000"}).status_code == 200
 
 
-@pending("D4", "C")
 def test_d4_allowed_hosts_from_env(np_backend, monkeypatch):
     monkeypatch.setenv("NOIRPAD_ALLOWED_HOSTS", "notes.example.org")
     np_backend.configure(mode="server")
@@ -100,7 +96,6 @@ def test_d4_allowed_hosts_from_env(np_backend, monkeypatch):
 
 
 # D4 – desktop: náhodný token per spuštění
-@pending("D4", "C")
 def test_d4_desktop_requires_token(np_backend):
     np_backend.configure(mode="desktop", desktop_token="tok-123")
     c = raw_client(np_backend)
@@ -111,7 +106,6 @@ def test_d4_desktop_requires_token(np_backend):
     assert c.get("/").status_code == 200
 
 
-@pending("D4", "C")
 def test_d4_desktop_images_need_token_or_cookie(np_backend):
     np_backend.configure(mode="desktop", desktop_token="tok-123")
     c = raw_client(np_backend)
@@ -126,7 +120,6 @@ def test_d4_desktop_images_need_token_or_cookie(np_backend):
 
 
 # D5 – form-post bez vlastní hlavičky projde
-@pending("D5", "C")
 def test_d5_unsafe_method_needs_custom_header(np_backend):
     c = raw_client(np_backend)
     r = c.post("/api/settings/reset",
@@ -135,7 +128,6 @@ def test_d5_unsafe_method_needs_custom_header(np_backend):
     assert c.get("/api/data").status_code == 200  # reads stay simple
 
 
-@pending("D5", "C")
 def test_d5_foreign_origin_rejected(client):
     r = client.post("/api/settings/reset", headers={"origin": "http://127.0.0.1:9999"})
     assert r.status_code == 403
@@ -143,7 +135,6 @@ def test_d5_foreign_origin_rejected(client):
     assert r.status_code == 200
 
 
-@pending("D5", "C")
 def test_d5_no_cors_for_foreign_origins(client):
     r = client.options("/api/settings/reset", headers={
         "origin": "http://localhost:8000",
@@ -156,7 +147,20 @@ def test_d5_no_cors_for_foreign_origins(client):
 # ---- drobné: /docs, /openapi.json -----------------------------------------
 
 
-@pending("drobné/backend", "C")
 def test_docs_disabled(client):
     for path in ("/docs", "/redoc", "/openapi.json"):
         assert client.get(path).status_code == 404, path
+
+
+def test_d4_bind_needs_token(np_backend):
+    np_backend.configure(mode="desktop", desktop_token="tok-123")
+    c = raw_client(np_backend)
+    assert c.post("/api/session/bind").status_code == 403
+    assert "set-cookie" not in c.post("/api/session/bind").headers
+
+
+def test_d4_desktop_token_cookie_is_not_enough_for_api(np_backend):
+    np_backend.configure(mode="desktop", desktop_token="tok-123")
+    c = raw_client(np_backend)
+    c.cookies.set("noirpad_desktop", "tok-123")
+    assert c.get("/api/data").status_code == 403

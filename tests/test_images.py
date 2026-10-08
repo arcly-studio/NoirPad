@@ -54,7 +54,6 @@ def test_upload_size_limit(client, np_backend, monkeypatch):
 
 
 # K5 – upload „obrázku" přijme libovolnou příponu a servíruje ji z originu appky
-@pending("K5", "C")
 @pytest.mark.parametrize("name,data", [
     ("evil.html", b"<script>alert(1)</script>"),
     ("evil.svg", b'<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>'),
@@ -68,7 +67,6 @@ def test_k5_non_images_rejected(client, np_backend, name, data):
 
 
 # K5 – přípona se odvozuje z obsahu, ne z názvu souboru
-@pending("K5", "C")
 def test_k5_extension_follows_content(client):
     r = upload(client, "photo.gif", make_png())
     assert r.status_code == 200
@@ -76,7 +74,6 @@ def test_k5_extension_follows_content(client):
 
 
 # K5 – servírování s nosniff + CSP sandbox
-@pending("K5", "C")
 def test_k5_image_response_headers(client):
     name = upload(client, "a.png", make_png()).json()["filename"]
     r = client.get(f"/images/{name}")
@@ -85,7 +82,6 @@ def test_k5_image_response_headers(client):
 
 
 # K5 – i soubor, který na disk propašovala stará verze, se nesmí servírovat jako HTML
-@pending("K5", "C")
 def test_k5_legacy_html_file_not_served(client, np_backend):
     (np_backend.IMAGES_DIR / "payload.html").write_text("<script>alert(1)</script>")
     r = client.get("/images/payload.html")

@@ -11,7 +11,7 @@ function render(text, formats = []) {
 }
 
 beforeEach(() => {
-    win = loadApp(["js/utils.js", "js/editor.js"]);
+    win = loadApp(["vendor/dompurify/purify.min.js", "vendor/highlight/highlight.min.js", "js/utils.js", "js/syntax-highlight.js", "js/editor.js"]);
     editor = win.document.getElementById("editor");
     win.NP.editor.el = editor;
 });
@@ -45,6 +45,7 @@ describe("rich-text render", () => {
         expect(pre.getAttribute("data-lang")).toBe("js");
         expect(pre.getAttribute("contenteditable")).toBe("false");
         expect(pre.textContent).toContain("const a = 1 < 2;");
+        expect(pre.querySelector(".hljs-keyword").textContent).toBe("const");
     });
 
     // N2 (nový nález, není v auditu) – každé načtení + uložení přidá do bloku

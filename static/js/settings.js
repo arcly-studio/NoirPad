@@ -165,7 +165,7 @@ window.NP = window.NP || {};
         if (NP.api && NP.api.saveSettings) {
             NP.api.saveSettings(patch);
         } else {
-            fetch("/api/settings", {
+            NP.api.fetch("/api/settings", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(patch)
@@ -231,7 +231,7 @@ window.NP = window.NP || {};
         var el = document.getElementById("setting-storage-used");
         if (!el) return;
         el.textContent = "Loading...";
-        fetch("/api/storage")
+        NP.api.fetch("/api/storage")
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 el.textContent = formatBytes(data.total_size) + " / ∞";
@@ -465,28 +465,7 @@ window.NP = window.NP || {};
                 exportAll.textContent = "Exporting...";
                 exportAll.disabled = true;
 
-                fetch("/api/notes/export")
-                    .then(function (r) {
-                        if (!r.ok) {
-                            throw new Error("Export failed: " + r.status);
-                        }
-                        return r.blob();
-                    })
-                    .then(function (blob) {
-                        var url = URL.createObjectURL(blob);
-                        var a = document.createElement("a");
-                        a.href = url;
-                        var today = new Date().toISOString().slice(0, 10);
-                        a.download = "noirpad-notes-" + today + ".zip";
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    })
-                    .catch(function (err) {
-                        alert("Export failed: " +
-                            (err && err.message ? err.message : err));
-                    })
+                NP.api.download("/api/notes/export")
                     .finally(function () {
                         exportAll.textContent = originalText;
                         exportAll.disabled = false;
@@ -513,7 +492,7 @@ window.NP = window.NP || {};
                 );
                 if (!ok) return;
 
-                fetch("/api/settings/reset", { method: "POST" })
+                NP.api.fetch("/api/settings/reset", { method: "POST" })
                     .then(function (r) {
                         if (!r.ok) {
                             throw new Error("Server error " + r.status);
@@ -634,7 +613,7 @@ window.NP = window.NP || {};
                         if (NP.api && NP.api.saveSettings) {
                             NP.api.saveSettings({ ui_font: e.detail.value });
                         } else {
-                            fetch("/api/settings", {
+                            NP.api.fetch("/api/settings", {
                                 method: "PUT",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ ui_font: e.detail.value })

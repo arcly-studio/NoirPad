@@ -29,7 +29,6 @@ from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -151,6 +150,38 @@ def set_data_dir(path: Path) -> None:
 # Upload size limits (Fix #7).
 MAX_IMAGE_BYTES = 10 * 1024 * 1024     # 10 MB
 MAX_BACKUP_BYTES = 100 * 1024 * 1024   # 100 MB
+
+# Images: raster formats only (never SVG/HTML). Stored as <uuid4>.<ext>,
+# with the extension taken from the file's magic bytes, not its name.
+IMAGE_MEDIA_TYPES = {
+    "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+    "gif": "image/gif", "webp": "image/webp",
+}
+IMAGE_NAME_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    r"\.(png|jpe?g|gif|webp)$", re.IGNORECASE)
+
+
+def _sniff_image(data: bytes) -> Optional[str]:
+    """Image type from magic bytes ('png'/'jpg'/'gif'/'webp') or None."""
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "jpg"
+    if data[:6] in (b"GIF87a", b"GIF89a"):
+        return "gif"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "webp"
+    return None
+
+
+def _image_ext_ok(name: str, data: bytes) -> bool:
+    """Stored image name + content agree and are an allowed format."""
+    if not IMAGE_NAME_RE.match(name):
+        return False
+    ext = name.rsplit(".", 1)[1].lower()
+    kind = _sniff_image(data)
+    return kind is not None and (kind == ext or (kind == "jpg" and ext == "jpeg"))
 
 # ---------------------------------------------------------------------------
 # Thread-safe file I/O
@@ -549,9 +580,20 @@ set_data_dir(get_data_dir())
 #   * "server"  — `python NoirPad-web.py`. Optional password from the
 #                 NOIRPAD_PASSWORD env var; required when binding to
 #                 anything but loopback. Sessions live in memory only.
-#   * "desktop" — desktop.py; see `configure()`.
+#   * "desktop" — desktop.py. A random token per launch must accompany
+#                 every /api/ request (X-NoirPad-Token) and authorises
+#                 /images/ through a cookie set by /api/session/bind.
+#
+# In both modes the Host header must be loopback (or listed in
+# NOIRPAD_ALLOWED_HOSTS for a self-hosted server — DNS rebinding), and
+# state-changing requests must carry a custom header and a same-origin
+# Origin (CSRF).
 
 SESSION_COOKIE_NAME = "noirpad_session"
+DESKTOP_COOKIE_NAME = "noirpad_desktop"
+TOKEN_HEADER = "x-noirpad-token"
+CSRF_HEADER = "x-noirpad-request"
+LOOPBACK_HOSTS = ("127.0.0.1", "localhost")
 SESSION_TTL_REMEMBER = 30 * 24 * 60 * 60  # 30 days
 SESSION_TTL_SHORT = 12 * 60 * 60          # 12 hours
 
@@ -562,9 +604,16 @@ LOGIN_MAX_FAILURES = 10      # per LOGIN_WINDOW seconds, across all clients
 LOGIN_WINDOW = 60
 
 
+def _env_allowed_hosts() -> set[str]:
+    raw = os.environ.get("NOIRPAD_ALLOWED_HOSTS") or ""
+    return {h.strip().lower() for h in raw.split(",") if h.strip()}
+
+
 class _Runtime:
     mode: str = "server"
     password: Optional[str] = os.environ.get("NOIRPAD_PASSWORD") or None
+    desktop_token: Optional[str] = None
+    allowed_hosts: set[str] = set(LOOPBACK_HOSTS) | _env_allowed_hosts()
     sessions: dict[str, float] = {}       # token -> expires_at (epoch secs)
     login_failures: list[float] = []
 
@@ -572,12 +621,22 @@ class _Runtime:
 RUNTIME = _Runtime()
 
 
-def configure(*, mode: Optional[str] = None, password: Any = ...) -> None:
-    """Set the run mode / server password (used by desktop.py and tests)."""
+def configure(*, mode: Optional[str] = None, password: Any = ...,
+              desktop_token: Any = ...) -> None:
+    """Set the run mode, server password and desktop token.
+
+    Used by desktop.py and the tests. Re-reads NOIRPAD_ALLOWED_HOSTS
+    (server mode only; the desktop app only ever talks to loopback).
+    """
     if mode is not None:
         RUNTIME.mode = mode
     if password is not ...:
         RUNTIME.password = password or None
+    if desktop_token is not ...:
+        RUNTIME.desktop_token = desktop_token or None
+    RUNTIME.allowed_hosts = set(LOOPBACK_HOSTS)
+    if RUNTIME.mode == "server":
+        RUNTIME.allowed_hosts |= _env_allowed_hosts()
     RUNTIME.sessions.clear()
     RUNTIME.login_failures.clear()
 
@@ -606,6 +665,20 @@ def _is_authenticated(request) -> bool:
     if RUNTIME.mode == "server" and RUNTIME.password:
         return _session_valid(request.cookies.get(SESSION_COOKIE_NAME))
     return True
+
+
+def _token_ok(candidate: Optional[str]) -> bool:
+    expected = RUNTIME.desktop_token
+    return bool(expected and candidate) and hmac.compare_digest(
+        candidate.encode("utf-8"), expected.encode("utf-8"))
+
+
+def _host_of(value: str) -> str:
+    """'Host' header / URL authority → lower-case host without port."""
+    value = (value or "").strip().lower()
+    if value.startswith("["):                      # [::1]:8000
+        return value[1:value.find("]")] if "]" in value else value
+    return value.rsplit(":", 1)[0] if value.count(":") == 1 else value
 
 
 # ---------------------------------------------------------------------------
@@ -695,33 +768,15 @@ class LoginReq(BaseModel):
 # FastAPI app
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="NoirPad Web", version="1.0.0")
+# No interactive API docs: this is a local app, not a public API.
+app = FastAPI(title="NoirPad Web", version="1.0.0",
+              docs_url=None, redoc_url=None, openapi_url=None)
 
-# Same-origin app, but the frontend now sends a session cookie — so we
-# must allow credentials. Origins stay locked to loopback to keep this a
-# local desktop-style app (the cookie is HttpOnly so it can't be exfiltrated
-# from JS even if a stray browser extension MITMs the page).
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# No CORSMiddleware on purpose: the frontend is same-origin, and no other
+# origin may call the API.
 
 # Static files (CSS, JS, assets)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-
-
-@app.middleware("http")
-async def _no_cache(request, call_next):
-    """Local dev tool: never let the browser cache assets, so edits to
-    JS/CSS/HTML always show up on a normal reload."""
-    response = await call_next(request)
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    return response
 
 
 async def _read_upload_limited(file: UploadFile, max_bytes: int) -> bytes:
@@ -748,15 +803,72 @@ async def _read_upload_limited(file: UploadFile, max_bytes: int) -> bytes:
 
 # Endpoints reachable before login (server mode with a password).
 _PUBLIC_API = {("GET", "/api/session"), ("POST", "/api/login"), ("POST", "/api/logout")}
+_UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+CONTENT_SECURITY_POLICY = "; ".join([
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "connect-src 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+])
+# Uploaded files are only ever images; even if one were misinterpreted it
+# gets no script, no origin and no same-origin access.
+IMAGE_CSP = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox"
+
+
+def _deny(status: int, detail: str) -> JSONResponse:
+    return JSONResponse({"detail": detail}, status_code=status)
+
+
+def _check_request(request: Request) -> Optional[JSONResponse]:
+    """Host, CSRF, desktop token and password checks. None = allowed."""
+    if _host_of(request.headers.get("host", "")) not in RUNTIME.allowed_hosts:
+        return _deny(400, "Invalid host header")
+
+    path = request.url.path
+    is_api = path.startswith("/api/")
+    if not (is_api or path.startswith("/images/")):
+        return None
+
+    if request.method in _UNSAFE_METHODS:
+        origin = request.headers.get("origin")
+        if origin is not None:
+            authority = origin.split("://", 1)[-1]
+            if authority.lower() != request.headers.get("host", "").lower():
+                return _deny(403, "Cross-origin request refused")
+        if RUNTIME.mode == "server" and request.headers.get(CSRF_HEADER) != "1":
+            return _deny(403, "Missing X-NoirPad-Request header")
+
+    if RUNTIME.mode == "desktop":
+        token = request.headers.get(TOKEN_HEADER)
+        if not is_api:  # <img> can't send headers → cookie from /api/session/bind
+            token = token or request.cookies.get(DESKTOP_COOKIE_NAME)
+        if not _token_ok(token):
+            return _deny(403, "Missing or wrong NoirPad token")
+
+    if (request.method, path) not in _PUBLIC_API and not _is_authenticated(request):
+        return _deny(401, "Not authenticated")
+    return None
 
 
 @app.middleware("http")
-async def _access_guard(request: Request, call_next):
-    path = request.url.path
-    if path.startswith("/api/") or path.startswith("/images/"):
-        if (request.method, path) not in _PUBLIC_API and not _is_authenticated(request):
-            return JSONResponse({"detail": "Not authenticated"}, status_code=401)
-    return await call_next(request)
+async def _http_guard(request: Request, call_next):
+    response = _check_request(request) or await call_next(request)
+    headers = response.headers
+    headers["X-Content-Type-Options"] = "nosniff"
+    headers["Referrer-Policy"] = "no-referrer"
+    headers["X-Frame-Options"] = "DENY"
+    headers["Content-Security-Policy"] = (
+        IMAGE_CSP if request.url.path.startswith("/images/") else CONTENT_SECURITY_POLICY)
+    # Local app: never cache, so JS/CSS edits always show up on reload.
+    headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    headers["Pragma"] = "no-cache"
+    headers["Expires"] = "0"
+    return response
 
 
 def _set_session_cookie(response: Response, token: str, remember: bool) -> None:
@@ -796,6 +908,20 @@ async def session_info(request: Request):
         "password_required": password_required,
         "authenticated": _is_authenticated(request),
     }
+
+
+@app.post("/api/session/bind")
+async def session_bind(response: Response):
+    """Desktop: turn the header token into a cookie for <img> requests.
+
+    Only reachable with a valid X-NoirPad-Token (see _check_request).
+    """
+    if RUNTIME.mode == "desktop" and RUNTIME.desktop_token:
+        response.set_cookie(
+            key=DESKTOP_COOKIE_NAME, value=RUNTIME.desktop_token,
+            httponly=True, samesite="strict", path="/images/",
+        )
+    return {"ok": True}
 
 
 @app.post("/api/login")
@@ -1313,13 +1439,12 @@ async def save_encrypted(
 @app.post("/api/images/upload")
 async def upload_image(file: UploadFile = File(...)):
     contents = await _read_upload_limited(file, MAX_IMAGE_BYTES)  # Fix #7
-    ext = Path(file.filename or "img.png").suffix or ".png"
-    name = f"{uuid.uuid4()}{ext}"
-    # uuid + ext is generated server-side, but resolve-check anyway in case
-    # `ext` ever carries a separator (Fix #1 defense-in-depth).
+    client_ext = Path(file.filename or "").suffix.lower().lstrip(".")
+    kind = _sniff_image(contents)
+    if kind is None or (client_ext and client_ext not in IMAGE_MEDIA_TYPES):
+        raise HTTPException(415, "Only PNG, JPEG, GIF and WebP images are allowed")
+    name = f"{uuid.uuid4()}.{kind}"
     dest = _safe_image_path(name)
-    if dest is None:
-        raise HTTPException(400, "Invalid filename")
     with _file_lock:
         with open(dest, "wb") as f:
             f.write(contents)
@@ -1328,20 +1453,17 @@ async def upload_image(file: UploadFile = File(...)):
 
 @app.get("/images/{filename:path}")
 async def get_image(filename: str):
-    # Fix #1: a request like `..%2F..%2Fnotes_data.json` must not escape
-    # IMAGES_DIR. The `:path` converter lets the traversal string reach this
-    # handler (instead of a generic 404 from the router) so the guard below
-    # can resolve the final path and return a deterministic 400.
-    #
-    # Image filenames are random UUIDs and aren't tracked per-user in this
-    # phase (they're addressed only by uuid in the note content); requiring
-    # auth here is the minimal protection — blocks anonymous scraping.
-    path = _safe_image_path(filename)
-    if path is None:
-        raise HTTPException(400, "Invalid filename")
-    if not path.is_file():
+    # Fix #1: `..%2F..%2Fnotes_data.json` reaches this handler through the
+    # :path converter and must not escape IMAGES_DIR. Only names the upload
+    # endpoint can produce are served — anything else (e.g. an .html file
+    # an old version accepted) is a 404.
+    if not IMAGE_NAME_RE.match(filename):
         raise HTTPException(404, "Image not found")
-    return FileResponse(path)
+    path = _safe_image_path(filename)
+    if path is None or not path.is_file():
+        raise HTTPException(404, "Image not found")
+    media_type = IMAGE_MEDIA_TYPES[filename.rsplit(".", 1)[1].lower()]
+    return FileResponse(path, media_type=media_type)
 
 
 # ---- Export ----
@@ -1614,6 +1736,18 @@ async def backup_import(file: UploadFile = File(...)):
             except json.JSONDecodeError:
                 raise HTTPException(400, "Invalid backup: corrupt notes_data.json")
 
+            # K5: every images/ entry must be a real image under a name the
+            # upload endpoint could have produced. Checked before anything
+            # is changed, so a bad archive leaves the profile untouched.
+            image_entries = [n for n in names
+                             if n.startswith("images/") and not n.endswith("/")]
+            for name in image_entries:
+                rel = name.split("/", 1)[1]
+                if _safe_image_path(rel) is None:
+                    raise HTTPException(400, f"Unsafe path in backup archive: {name!r}")
+                if not _image_ext_ok(rel, zf.read(name)[:16]):
+                    raise HTTPException(415, f"Backup contains a non-image file: {name!r}")
+
             imp_tree = _strip_user_ids(copy.deepcopy(imported.get("tree") or []))
             imp_trash_tree = _strip_user_ids(
                 copy.deepcopy((imported.get("trash") or {}).get("tree") or [])
@@ -1652,19 +1786,8 @@ async def backup_import(file: UploadFile = File(...)):
 
             _update_data(_mut)
 
-            # Fix #2 (zip slip): for every image entry, resolve the target
-            # and refuse anything that escapes IMAGES_DIR (e.g. an entry
-            # named `images/../../evil`).
-            for name in names:
-                if not name.startswith("images/") or name.endswith("/"):
-                    continue
-                rel = name.split("/", 1)[1]
-                dest = _safe_image_path(rel)
-                if dest is None:
-                    raise HTTPException(
-                        400, f"Unsafe path in backup archive: {name!r}"
-                    )
-                dest.parent.mkdir(parents=True, exist_ok=True)
+            for name in image_entries:
+                dest = _safe_image_path(name.split("/", 1)[1])
                 with _file_lock:
                     with open(dest, "wb") as f:
                         f.write(zf.read(name))

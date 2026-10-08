@@ -151,7 +151,11 @@ window.NP = window.NP || {};
             });
         },
         start: function () {
-            return NP.api.session().then(function (res) {
+            /* Desktop: get the image cookie before anything renders. */
+            var ready = NP.api.hasToken() ? NP.api.bindSession() : Promise.resolve();
+            return ready.then(function () {
+                return NP.api.session();
+            }).then(function (res) {
                 session = res || {};
                 if (session.password_required && !session.authenticated) {
                     show();

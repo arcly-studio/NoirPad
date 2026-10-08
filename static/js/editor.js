@@ -129,7 +129,7 @@ window.NP = window.NP || {};
                 var body = JSON.stringify({
                     content: text, formats: formats
                 });
-                fetch("/api/note/" + encodeURIComponent(id), {
+                NP.api.fetch("/api/note/" + encodeURIComponent(id), {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: body,
@@ -648,81 +648,11 @@ window.NP = window.NP || {};
                 tag.textContent = langSafe;
                 pre.appendChild(tag);
             }
-            NP.editor._codeTokens(code).forEach(function (tok) {
-                if (!tok[0]) {
-                    pre.appendChild(document.createTextNode(tok[1]));
-                    return;
-                }
-                var span = document.createElement("span");
-                span.className = "tok-" + tok[0];
-                span.textContent = tok[1];
-                pre.appendChild(span);
-            });
+            var body = document.createElement("code");
+            if (NP.highlight) NP.highlight.into(body, code, langSafe);
+            else body.textContent = code;
+            pre.appendChild(body);
             return pre;
-        },
-
-        /* Tiny language-agnostic tokenizer → [[type|null, text], …]. */
-        _codeTokens: function (code) {
-            var KW = {
-                "function": 1, "def": 1, "return": 1, "if": 1, "else": 1, "elif": 1,
-                "for": 1, "while": 1, "do": 1, "switch": 1, "case": 1, "break": 1,
-                "continue": 1, "default": 1, "var": 1, "let": 1, "const": 1,
-                "class": 1, "import": 1, "from": 1, "as": 1, "export": 1, "new": 1,
-                "null": 1, "None": 1, "true": 1, "false": 1, "True": 1, "False": 1,
-                "async": 1, "await": 1, "yield": 1, "try": 1, "catch": 1, "except": 1,
-                "finally": 1, "throw": 1, "raise": 1, "in": 1, "of": 1, "is": 1,
-                "not": 1, "and": 1, "or": 1, "with": 1, "this": 1, "self": 1,
-                "struct": 1, "func": 1, "package": 1, "interface": 1, "type": 1,
-                "public": 1, "private": 1, "protected": 1, "static": 1, "void": 1,
-                "int": 1, "float": 1, "string": 1, "bool": 1, "lambda": 1,
-                "pass": 1, "global": 1, "nonlocal": 1
-            };
-            var IDENT = /[A-Za-z0-9_]/;
-            var IDENT_START = /[A-Za-z_]/;
-            var n = code.length;
-            var i = 0;
-            var out = [];
-            function push(type, str) {
-                var last = out[out.length - 1];
-                if (!type && last && !last[0]) last[1] += str;
-                else out.push([type, str]);
-            }
-
-            while (i < n) {
-                var ch = code.charAt(i);
-                var ch2 = code.substr(i, 2);
-                var j;
-                if (ch2 === "/*") {                       /* block comment */
-                    j = code.indexOf("*/", i + 2);
-                    j = j === -1 ? n : j + 2;
-                    push("com", code.substring(i, j));
-                } else if (ch2 === "//" || ch === "#") {  /* line comment */
-                    j = code.indexOf("\n", i);
-                    if (j === -1) j = n;
-                    push("com", code.substring(i, j));
-                } else if (ch === '"' || ch === "'" || ch === "`") {
-                    j = i + 1;
-                    while (j < n && code.charAt(j) !== ch) {
-                        j += code.charAt(j) === "\\" ? 2 : 1;
-                    }
-                    if (j < n) j++;
-                    push("str", code.substring(i, Math.min(j, n)));
-                } else if (ch >= "0" && ch <= "9") {
-                    j = i;
-                    while (j < n && /[0-9.]/.test(code.charAt(j))) j++;
-                    push("num", code.substring(i, j));
-                } else if (IDENT_START.test(ch)) {
-                    j = i;
-                    while (j < n && IDENT.test(code.charAt(j))) j++;
-                    var word = code.substring(i, j);
-                    push(KW.hasOwnProperty(word) ? "kw" : null, word);
-                } else {
-                    j = i + 1;
-                    push(null, ch);
-                }
-                i = Math.min(j, n);
-            }
-            return out;
         },
 
         _htmlToTextWithImages: function () {

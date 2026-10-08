@@ -79,7 +79,6 @@ def test_import_zip_slip(client, np_backend):
 
 
 # K5 – import zálohy zapsal images/payload.html z cizího zipu
-@pending("K5", "C")
 def test_k5_import_rejects_non_images(client, np_backend):
     new_note(client, "Zůstane", content="x")
     blob = backup_with([], {}, {"payload.html": b"<script>alert(1)</script>"})

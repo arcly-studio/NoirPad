@@ -19,8 +19,8 @@ if sys.stderr is None:
     sys.stderr = open(os.devnull, "w")
 
 import importlib.util
+import secrets
 import socket
-import sys
 import threading
 import time
 from pathlib import Path
@@ -134,7 +134,10 @@ WINDOW_INITIAL_HEIGHT = 800
 
 def main() -> int:
     backend = _load_backend()
-    backend.configure(mode="desktop", password=None)
+    # Random per-launch token: every /api/ request must carry it, so other
+    # local processes (or web pages) that find the port can't use the API.
+    token = secrets.token_urlsafe(32)
+    backend.configure(mode="desktop", password=None, desktop_token=token)
     port = _pick_free_port()
     handle = _ServerHandle(backend.app, port)
     handle.start()
@@ -150,14 +153,21 @@ def main() -> int:
 
     url = f"http://127.0.0.1:{port}"
     print(f"NoirPad desktop: backend ready at {url}", flush=True)
+    # The fragment never reaches the server or its logs; api.js reads it
+    # and removes it from the address bar.
+    window_url = f"{url}/#token={token}"
 
     # Import pywebview lazily so the FastAPI process can boot even on a
     # machine where pywebview install is broken — useful for diagnostics.
     import webview
 
+    # links.js opens external links with window.open(); pywebview must hand
+    # those to the system browser, never load them in the app window.
+    webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
+
     webview.create_window(
         WINDOW_TITLE,
-        url=url,
+        url=window_url,
         width=WINDOW_INITIAL_WIDTH,
         height=WINDOW_INITIAL_HEIGHT,
         min_size=(WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT),
