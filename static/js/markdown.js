@@ -18,160 +18,92 @@ window.NP = window.NP || {};
     var renderTimer = null;
     var lastRendered = null;
 
-    function escapeHtml(s) {
-        return s.replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
-    }
+    /* Markdown → HTML via the vendored markdown-it (raw HTML disabled),
+       then DOMPurify (NP.sanitizeHtml). Tokens get the md-* classes the
+       preview CSS styles; fenced code keeps the .md-codeblock[data-lang]
+       contract syntax-highlight.js relies on. */
+    var md = null;
 
-    /* Inline markdown — code → image → link → bold → italic →
-       strikethrough. Order matters: code claims its content first,
-       image precedes link so `!` is part of the image match, bold
-       precedes italic so `*` inside `**…**` is consumed by bold.
-       Syntax markers (#, **, etc.) are wrapped in .md-syntax which
-       the preview hides via CSS. */
-    function processInline(text) {
-        var html = escapeHtml(text);
+    var BLOCK_CLASSES = {
+        h1: "md-h1", h2: "md-h2", h3: "md-h3", h4: "md-h3", h5: "md-h3", h6: "md-h3",
+        blockquote_open: "md-quote",
+        paragraph_open: "md-line",
+        bullet_list_open: "md-list",
+        ordered_list_open: "md-list"
+    };
+    var INLINE_CLASSES = {
+        strong_open: "md-bold",
+        em_open: "md-italic",
+        s_open: "md-strike"
+    };
 
-        html = html.replace(/`([^`\n]+)`/g, function (_m, code) {
-            return '<span class="md-inline-code">' +
-                '<span class="md-syntax">`</span>' + code +
-                '<span class="md-syntax">`</span></span>';
-        });
-
-        /* Image MUST be processed before the link regex below — without
-           that order, `![alt](url)` would match the link pattern (the `!`
-           prefix is not part of the link grammar) and render as text.
-           Emit a real <img> so the preview actually displays the image
-           instead of a styled "source view" with the URL hidden by CSS.
-           escapeHtml already escaped &/</>, but not quotes — guard the
-           attributes against URL/alt containing a literal ". */
-        html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
-            function (_m, alt, url) {
-                var safeUrl = url.replace(/"/g, "&quot;");
-                var safeAlt = alt.replace(/"/g, "&quot;");
-                return '<img class="md-image" src="' + safeUrl +
-                    '" alt="' + safeAlt + '" draggable="false">';
-            });
-
-        /* Real <a href> so the global click handler in images.js can
-           read the URL — /images/* opens the in-app viewer, external
-           URLs open in a new tab. The inner .md-syntax / .md-link-url
-           spans are kept (and hidden by CSS) so the preview still
-           collapses to just the visible link text. */
-        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
-            function (_m, txt, url) {
-                var safeUrl = url.replace(/"/g, "&quot;");
-                return '<a href="' + safeUrl + '" class="md-link">' +
-                    '<span class="md-syntax">[</span>' + txt +
-                    '<span class="md-syntax">](</span>' +
-                    '<span class="md-link-url">' + url + '</span>' +
-                    '<span class="md-syntax">)</span></a>';
-            });
-
-        html = html.replace(/\*\*([^*\n]+)\*\*/g, function (_m, txt) {
-            return '<span class="md-bold">' +
-                '<span class="md-syntax">**</span>' + txt +
-                '<span class="md-syntax">**</span></span>';
-        });
-
-        html = html.replace(/(^|\s)\*([^*\n]+)\*(?=\s|$|[.,!?;:])/g,
-            function (_m, before, txt) {
-                return before + '<span class="md-italic">' +
-                    '<span class="md-syntax">*</span>' + txt +
-                    '<span class="md-syntax">*</span></span>';
-            });
-
-        html = html.replace(/~~([^~\n]+)~~/g, function (_m, txt) {
-            return '<span class="md-strike">' +
-                '<span class="md-syntax">~~</span>' + txt +
-                '<span class="md-syntax">~~</span></span>';
-        });
-
-        return html;
-    }
-
-    /* Compose the preview HTML — real block-level elements (display:
-       block via CSS) so headings can use arbitrary font sizes. */
-    function renderPreview(rawText) {
-        var lines = rawText.split("\n");
+    /* Disallowed links lose their <a> (the text stays); disallowed
+       images are shown as their markdown source. */
+    function fixInline(children) {
         var out = [];
-        var inCode = false;
-        var codeLines = [];
-        /* Captured from the OPENING fence (```python → "python").
-           Forwarded to .md-codeblock as data-lang so the syntax
-           highlighter doesn't have to re-detect what the user
-           already told us. */
-        var codeLang = "";
-
-        function flushCode() {
-            var langAttr = codeLang
-                ? ' data-lang="' + escapeHtml(codeLang) + '"'
-                : "";
-            out.push('<div class="md-codeblock"' + langAttr + '>' +
-                escapeHtml(codeLines.join("\n")) + "</div>");
-            codeLines = [];
-            codeLang = "";
-        }
-
-        for (var i = 0; i < lines.length; i++) {
-            var line = lines[i];
-            var fence = line.match(/^```(.*)$/);
-            if (fence) {
-                if (inCode) {
-                    flushCode();
-                    inCode = false;
+        var dropped = [];
+        for (var i = 0; i < children.length; i++) {
+            var t = children[i];
+            if (t.type === "link_open") {
+                var ok = !!NP.linkKind(t.attrGet("href"));
+                dropped.push(!ok);
+                if (!ok) continue;
+                t.attrJoin("class", "md-link");
+            } else if (t.type === "link_close") {
+                if (dropped.pop()) continue;
+            } else if (t.type === "image") {
+                var src = t.attrGet("src");
+                if (!NP.isImageSrc(src)) {
+                    t.type = "text";
+                    t.tag = "";
+                    t.content = "![" + t.content + "](" + src + ")";
+                    t.children = null;
                 } else {
-                    inCode = true;
-                    /* Hint after the opening fence, if any.
-                       Allow letters/digits/+/-/# (covers `c++`,
-                       `c#`, `objective-c`); strip anything else
-                       defensively. */
-                    codeLang = (fence[1] || "")
-                        .trim()
-                        .replace(/[^A-Za-z0-9+\-#]/g, "")
-                        .slice(0, 32);
+                    t.attrJoin("class", "md-image");
                 }
-                continue;
+            } else if (INLINE_CLASSES[t.type]) {
+                t.attrJoin("class", INLINE_CLASSES[t.type]);
             }
-            if (inCode) {
-                codeLines.push(line);
-                continue;
-            }
-            var m;
-            m = line.match(/^(###)\s+(.*)$/);
-            if (m) {
-                out.push('<div class="md-h3">' + processInline(m[2]) + "</div>");
-                continue;
-            }
-            m = line.match(/^(##)\s+(.*)$/);
-            if (m) {
-                out.push('<div class="md-h2">' + processInline(m[2]) + "</div>");
-                continue;
-            }
-            m = line.match(/^(#)\s+(.*)$/);
-            if (m) {
-                out.push('<div class="md-h1">' + processInline(m[2]) + "</div>");
-                continue;
-            }
-            m = line.match(/^(>)\s+(.*)$/);
-            if (m) {
-                out.push('<div class="md-quote">' + processInline(m[2]) + "</div>");
-                continue;
-            }
-            m = line.match(/^([-*+])\s+(.*)$/);
-            if (m) {
-                out.push('<div class="md-list">• ' + processInline(m[2]) + "</div>");
-                continue;
-            }
-            if (line === "") {
-                out.push('<div class="md-empty"></div>');
-                continue;
-            }
-            out.push('<div class="md-line">' + processInline(line) + "</div>");
+            out.push(t);
         }
-        if (inCode) flushCode();
-        return out.join("");
+        children.length = 0;
+        Array.prototype.push.apply(children, out);
+    }
+
+    function getMd() {
+        if (md || !window.markdownit) return md;
+        md = window.markdownit({ html: false, linkify: true, breaks: true });
+        /* Let every URL through the parser; fixInline + DOMPurify decide. */
+        md.validateLink = function () { return true; };
+
+        md.core.ruler.push("noirpad_classes", function (state) {
+            state.tokens.forEach(function (tok) {
+                var cls = BLOCK_CLASSES[tok.type === "heading_open" ? tok.tag : tok.type];
+                if (cls) tok.attrJoin("class", cls);
+                if (tok.type === "inline" && tok.children) fixInline(tok.children);
+            });
+        });
+
+        md.renderer.rules.code_inline = function (tokens, idx) {
+            return '<code class="md-inline-code">' + NP.escapeHtml(tokens[idx].content) + "</code>";
+        };
+        function codeBlock(tokens, idx) {
+            var tok = tokens[idx];
+            var lang = (tok.info || "").trim().split(/\s+/)[0]
+                .replace(/[^A-Za-z0-9+\-#]/g, "").slice(0, 32);
+            return '<div class="md-codeblock"' +
+                (lang ? ' data-lang="' + NP.escapeHtml(lang) + '"' : "") + ">" +
+                NP.escapeHtml(tok.content.replace(/\n$/, "")) + "</div>";
+        }
+        md.renderer.rules.fence = codeBlock;
+        md.renderer.rules.code_block = codeBlock;
+        return md;
+    }
+
+    function renderPreview(rawText) {
+        var parser = getMd();
+        if (!parser) return NP.escapeHtml(rawText);  // vendor script failed to load
+        return NP.sanitizeHtml(parser.render(rawText || ""));
     }
 
     /* ---- DOM helpers ---- */

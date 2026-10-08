@@ -17,7 +17,7 @@ function anchor(href) {
 }
 
 beforeEach(() => {
-    win = loadApp(["js/utils.js", "js/markdown.js", "js/images.js"]);
+    win = loadApp(["vendor/markdown-it/markdown-it.min.js", "vendor/dompurify/purify.min.js", "js/utils.js", "js/links.js", "js/markdown.js", "js/images.js"]);
     preview = win.document.getElementById("md-preview");
     opened = vi.fn();
     win.open = opened;
@@ -39,9 +39,23 @@ describe("link clicks", () => {
     });
 });
 
+describe("app downloads", () => {
+    it("lets the app's own download anchors through", () => {
+        const a = anchor("/api/backup");
+        a.setAttribute("download", "");
+        expect(click(win, a).defaultPrevented).toBe(false);
+    });
+
+    it("does not exempt download anchors pointing elsewhere", () => {
+        const a = anchor("https://example.com/x.zip");
+        a.setAttribute("download", "");
+        expect(click(win, a).defaultPrevented).toBe(true);
+    });
+});
+
 describe("audit regressions", () => {
     // K4 – klik na javascript:/relativní/data:/file: odkaz nesmí nic spustit ani navigovat
-    it.fails.each([
+    it.each([
         "javascript:alert(1)",
         "data:text/html,<script>alert(1)</script>",
         "file:///C:/Windows/win.ini",
@@ -54,7 +68,7 @@ describe("audit regressions", () => {
     });
 
     // K4 – Ctrl/Shift-klik přenaviguje celé okno appky
-    it.fails.each([
+    it.each([
         ["Ctrl", { ctrlKey: true }],
         ["Shift", { shiftKey: true }],
         ["Meta", { metaKey: true }],
@@ -65,14 +79,14 @@ describe("audit regressions", () => {
     });
 
     // K4 – prostřední tlačítko
-    it.fails("K4: middle-click on an external link is intercepted", () => {
+    it("K4: middle-click on an external link is intercepted", () => {
         const ev = click(win, anchor("https://example.com/"), { button: 1 });
         expect(ev.defaultPrevented).toBe(true);
         expect(opened).toHaveBeenCalledWith("https://example.com/", "_blank", expect.stringContaining("noopener"));
     });
 
     // K4 – odkaz mimo náhled (kdekoli v dokumentu) taky nesmí odnavigovat okno
-    it.fails("K4: links outside the editor are guarded too", () => {
+    it("K4: links outside the editor are guarded too", () => {
         const a = win.document.createElement("a");
         a.setAttribute("href", "https://example.com/");
         win.document.body.appendChild(a);

@@ -42,6 +42,7 @@ window.NP = window.NP || {};
     function triggerDownload(url) {
         var a = document.createElement("a");
         a.href = url;
+        a.download = "";
         a.style.display = "none";
         document.body.appendChild(a);
         a.click();

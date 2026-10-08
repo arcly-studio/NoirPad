@@ -32,12 +32,6 @@ window.NP = window.NP || {};
         }
     }
 
-    function escapeHtml(s) {
-        var d = document.createElement("div");
-        d.textContent = s;
-        return d.innerHTML;
-    }
-
     function makeSnippet(content, idx, queryLen) {
         var start = Math.max(0, idx - SNIPPET_RADIUS);
         var end = Math.min(content.length, idx + queryLen + SNIPPET_RADIUS);
@@ -46,9 +40,9 @@ window.NP = window.NP || {};
         var before = content.substring(start, idx);
         var match = content.substring(idx, idx + queryLen);
         var after = content.substring(idx + queryLen, end);
-        return prefix + escapeHtml(before) +
-            "<mark>" + escapeHtml(match) + "</mark>" +
-            escapeHtml(after) + suffix;
+        return prefix + NP.escapeHtml(before) +
+            "<mark>" + NP.escapeHtml(match) + "</mark>" +
+            NP.escapeHtml(after) + suffix;
     }
 
     NP.findAll = {
@@ -139,7 +133,7 @@ window.NP = window.NP || {};
                     var item = document.createElement("div");
                     item.className = "np-findall-result";
                     item.innerHTML =
-                        '<div class="np-findall-result-name">' + escapeHtml(hit.name) + '</div>' +
+                        '<div class="np-findall-result-name">' + NP.escapeHtml(hit.name) + '</div>' +
                         '<div class="np-findall-result-snippet">' + hit.snippet + '</div>';
                     item.addEventListener("click", function () {
                         NP.findAll.close();

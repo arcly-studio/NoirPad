@@ -80,7 +80,7 @@ window.NP = window.NP || {};
     /* Wrap the saved selection in a <span> carrying font-family + size.
        _extractFormats() (editor.js) picks the span up as a
        {font,size,start,end} range, so it persists in the note and is
-       re-emitted by _applyFormats() on reload — full round-trip. */
+       re-emitted by NP.editor.renderContent() on reload — full round-trip. */
     function applyFontToSelection(fontFamily, sizePx) {
         var editor = document.getElementById("editor");
         if (!editor || !savedRange || savedRange.collapsed) return false;
@@ -123,12 +123,6 @@ window.NP = window.NP || {};
     /* Note: the old canvas-based isFontAvailable()/getAvailableFonts()
        were removed — the picker now shows the full curated list and
        relies on the browser's per-category fallback for missing fonts. */
-
-    function escapeHTML(str) {
-        var div = document.createElement("div");
-        div.textContent = str;
-        return div.innerHTML;
-    }
 
     NP.fontPicker = {
 

@@ -378,15 +378,10 @@ window.NP = window.NP || {};
 
         /* ---- Content conversion ---- */
 
-        /* Render stored note content (rich-text mode) into *el*. */
+        /* Render stored note content (rich-text mode) into *el*. Built
+           with DOM APIs only — note text never goes through innerHTML. */
         renderContent: function (el, text, formats) {
-            el.innerHTML = NP.editor._textToHtmlWithImages(text, formats);
-        },
-
-        contentToHtml: function (text, formats) {
-            if (!text) return "";
-            var html = NP.editor._applyFormats(text, formats);
-            return html;
+            el.replaceChildren(NP.editor._buildRichContent(text || "", formats));
         },
 
         htmlToContent: function () {
@@ -397,82 +392,6 @@ window.NP = window.NP || {};
             var formats = NP.editor._extractFormats();
 
             return { text: text, formats: formats };
-        },
-
-        _applyFormats: function (text, formats) {
-            if (!formats || formats.length === 0) {
-                return NP.escapeHtml(text).replace(/\n/g, "<br>");
-            }
-
-            /* Convert format ranges to offset-based marks */
-            var marks = [];
-            for (var i = 0; i < formats.length; i++) {
-                var fmt = formats[i];
-                var start, end;
-                if (typeof fmt.start === "string" && fmt.start.indexOf(".") !== -1) {
-                    start = NP.lineColToOffset(text, fmt.start);
-                    end = NP.lineColToOffset(text, fmt.end);
-                } else {
-                    start = fmt.start;
-                    end = fmt.end;
-                }
-                marks.push({ start: start, end: end, fmt: fmt });
-            }
-
-            /* Sort by start position */
-            marks.sort(function (a, b) { return a.start - b.start; });
-
-            /* Build HTML by walking through text */
-            var html = "";
-            var pos = 0;
-
-            for (var m = 0; m < marks.length; m++) {
-                var mark = marks[m];
-                /* Text before this mark */
-                if (mark.start > pos) {
-                    html += NP.escapeHtml(text.substring(pos, mark.start)).replace(/\n/g, "<br>");
-                }
-
-                /* Formatted text */
-                var styledText = NP.escapeHtml(text.substring(mark.start, mark.end)).replace(/\n/g, "<br>");
-                var styleAttr = "";
-                var tags = { open: "", close: "" };
-
-                if (mark.fmt.style === "italic" || mark.fmt.italic) {
-                    tags.open += "<em>";
-                    tags.close = "</em>" + tags.close;
-                }
-                if (mark.fmt.style === "underline" || mark.fmt.underline) {
-                    tags.open += "<u>";
-                    tags.close = "</u>" + tags.close;
-                }
-                if (mark.fmt.font) {
-                    styleAttr += "font-family:" + mark.fmt.font + ";";
-                }
-                if (mark.fmt.size) {
-                    styleAttr += "font-size:" + mark.fmt.size + "px;";
-                }
-                if (mark.fmt.color) {
-                    styleAttr += "color:" + mark.fmt.color + ";";
-                }
-
-                if (styleAttr) {
-                    html += "<span style='" + styleAttr + "'>" + tags.open + styledText + tags.close + "</span>";
-                } else if (tags.open) {
-                    html += tags.open + styledText + tags.close;
-                } else {
-                    html += styledText;
-                }
-
-                pos = mark.end;
-            }
-
-            /* Remaining text */
-            if (pos < text.length) {
-                html += NP.escapeHtml(text.substring(pos)).replace(/\n/g, "<br>");
-            }
-
-            return html;
         },
 
         _extractFormats: function () {
@@ -596,75 +515,154 @@ window.NP = window.NP || {};
             return w ? "|w=" + w : "";
         },
 
-        _textToHtmlWithImages: function (text, formats) {
-            if (!text) return "";
-
-            /*
-             * Step 1: Extract triple-backtick code blocks to placeholders so
-             * format/image rendering can't touch their content.
-             */
-            var codeBlocks = [];
-            var codeRe = /```([^\n`]*)\n([\s\S]*?)```/g;
-            var processed = text.replace(codeRe, function (full, lang, code) {
-                var idx = codeBlocks.length;
-                codeBlocks.push({ lang: lang.trim(), code: code });
-                return "\u0000CODE" + idx + "\u0000";
-            });
-
-            /* Step 2: IMG split + format application on processed text.
-               Regex has 2 capture groups (filename, optional width), so
-               split yields tuples of (text, fname, width, text, fname, …). */
-            var parts = processed.split(IMG_MARKER_RE);
-            var html;
-            if (parts.length === 1) {
-                html = NP.editor._applyFormats(processed, formats);
-            } else {
-                html = "";
-                for (var i = 0; i < parts.length; i += 3) {
-                    if (parts[i]) html += NP.editor._applyFormats(parts[i], formats);
-                    if (i + 1 < parts.length) {
-                        var filename = parts[i + 1];
-                        var width = parts[i + 2];
-                        var widthStyle = "";
-                        var widthAttr = "";
-                        if (width) {
-                            widthStyle = "width:" + width + "px;max-width:" + width + "px;";
-                            widthAttr = " data-w='" + NP.escapeHtml(width) + "'";
-                        } else {
-                            widthStyle = "max-width:100%;";
-                        }
-                        html += "<img src='/images/" + NP.escapeHtml(filename) +
-                            "' data-filename='" + NP.escapeHtml(filename) + "'" +
-                            widthAttr +
-                            " style='" + widthStyle + "display:block;margin:8px 0;'>";
-                    }
+        /* Stored rich-text content → DocumentFragment.
+             ```lang\n…```           → <pre class="np-code"> (read-only)
+             <<IMG:name|w=NNN>>      → <img>, only for valid uuid names;
+                                       anything else stays visible text
+             formats [{start,end,…}] → <span style> / <em> / <u>
+           Format offsets are positions in the full stored text (that is
+           how _extractFormats records them). */
+        _buildRichContent: function (text, formats) {
+            var frag = document.createDocumentFragment();
+            var marks = NP.editor._formatMarks(text, formats);
+            var re = /```([^\n`]*)\n([\s\S]*?)```|<<IMG:([^|>\n]*)(?:\|w=(\d+))?>>/g;
+            var pos = 0;
+            var m;
+            while ((m = re.exec(text)) !== null) {
+                NP.editor._appendFormatted(frag, text, pos, m.index, marks);
+                if (m[2] !== undefined) {
+                    /* The newline before the closing fence belongs to the
+                       fence, not the code (N2: it used to pile up). */
+                    frag.appendChild(NP.editor._renderCodeBlock(
+                        m[2].replace(/\n$/, ""), m[1].trim()));
+                } else if (NP.isImageName(m[3])) {
+                    frag.appendChild(NP.editor._makeImage(m[3], m[4]));
+                } else {
+                    NP.editor._appendFormatted(frag, text, m.index, re.lastIndex, marks);
                 }
+                pos = re.lastIndex;
             }
+            NP.editor._appendFormatted(frag, text, pos, text.length, marks);
+            return frag;
+        },
 
-            /* Step 3: swap placeholders for code-block HTML */
-            html = html.replace(/\u0000CODE(\d+)\u0000/g, function (_, idx) {
-                var blk = codeBlocks[parseInt(idx, 10)];
-                return NP.editor._renderCodeBlock(blk.code, blk.lang);
+        /* formats → [{start, end, fmt}] in absolute offsets, sorted. */
+        _formatMarks: function (text, formats) {
+            var marks = [];
+            (formats || []).forEach(function (fmt) {
+                if (!fmt || typeof fmt !== "object") return;
+                var start = fmt.start, end = fmt.end;
+                if (typeof start === "string" && start.indexOf(".") !== -1) {
+                    start = NP.lineColToOffset(text, start);
+                    end = NP.lineColToOffset(text, String(end));
+                }
+                start = Number(start);
+                end = Number(end);
+                if (isFinite(start) && isFinite(end) && end > start) {
+                    marks.push({ start: start, end: end, fmt: fmt });
+                }
+            });
+            marks.sort(function (a, b) { return a.start - b.start; });
+            return marks;
+        },
+
+        /* Append text[start:end) to *parent*, splitting at format
+           boundaries and turning \n into <br>. */
+        _appendFormatted: function (parent, text, start, end, marks) {
+            if (end <= start) return;
+            var cuts = [start, end];
+            marks.forEach(function (mk) {
+                if (mk.start > start && mk.start < end) cuts.push(mk.start);
+                if (mk.end > start && mk.end < end) cuts.push(mk.end);
+            });
+            cuts.sort(function (a, b) { return a - b; });
+            for (var i = 0; i < cuts.length - 1; i++) {
+                var a = cuts[i], b = cuts[i + 1];
+                if (b <= a) continue;
+                var active = marks.filter(function (mk) { return mk.start <= a && mk.end >= b; });
+                parent.appendChild(NP.editor._styledRun(text.substring(a, b), active));
+            }
+        },
+
+        _styledRun: function (str, active) {
+            var leaf = document.createDocumentFragment();
+            str.split("\n").forEach(function (line, i) {
+                if (i > 0) leaf.appendChild(document.createElement("br"));
+                if (line) leaf.appendChild(document.createTextNode(line));
+            });
+            if (!active.length) return leaf;
+
+            var italic = false, underline = false, font = null, size = null, color = null;
+            active.forEach(function (mk) {
+                var f = mk.fmt;
+                if (f.style === "italic" || f.italic) italic = true;
+                if (f.style === "underline" || f.underline) underline = true;
+                if (typeof f.font === "string" && f.font) font = f.font;
+                if (f.size !== undefined && f.size !== null) size = parseInt(f.size, 10);
+                if (typeof f.color === "string" && f.color) color = f.color;
             });
 
-            return html;
+            var node = leaf;
+            if (underline) { var u = document.createElement("u"); u.appendChild(node); node = u; }
+            if (italic) { var em = document.createElement("em"); em.appendChild(node); node = em; }
+            if (font || size || color) {
+                var span = document.createElement("span");
+                /* setProperty drops values that aren't valid CSS for that
+                   property, so nothing can leak into other declarations. */
+                if (font) span.style.setProperty("font-family", font);
+                if (size && size >= 6 && size <= 200) span.style.setProperty("font-size", size + "px");
+                if (color) span.style.setProperty("color", color);
+                span.appendChild(node);
+                node = span;
+            }
+            return node;
+        },
+
+        _makeImage: function (filename, width) {
+            var img = document.createElement("img");
+            img.setAttribute("src", "/images/" + filename);
+            img.setAttribute("data-filename", filename);
+            var w = width ? parseInt(width, 10) : 0;
+            if (w) {
+                img.setAttribute("data-w", String(w));
+                img.style.width = w + "px";
+                img.style.maxWidth = w + "px";
+            } else {
+                img.style.maxWidth = "100%";
+            }
+            img.style.display = "block";
+            img.style.margin = "8px 0";
+            return img;
         },
 
         _renderCodeBlock: function (code, lang) {
             var langSafe = (lang || "").replace(/[^a-zA-Z0-9_+\-]/g, "");
-            var dataCode = encodeURIComponent(code);
-            var inner = "";
+            var pre = document.createElement("pre");
+            pre.className = "np-code";
+            pre.setAttribute("contenteditable", "false");
+            pre.setAttribute("data-code", encodeURIComponent(code));
+            pre.setAttribute("data-lang", langSafe);
             if (langSafe) {
-                inner += "<span class='tok-lang'>" + NP.escapeHtml(langSafe) + "</span>";
+                var tag = document.createElement("span");
+                tag.className = "tok-lang";
+                tag.textContent = langSafe;
+                pre.appendChild(tag);
             }
-            inner += NP.editor._highlightCode(code);
-            return "<pre class='np-code' contenteditable='false'" +
-                " data-code='" + dataCode + "'" +
-                " data-lang='" + NP.escapeHtml(langSafe) + "'>" +
-                inner + "</pre>";
+            NP.editor._codeTokens(code).forEach(function (tok) {
+                if (!tok[0]) {
+                    pre.appendChild(document.createTextNode(tok[1]));
+                    return;
+                }
+                var span = document.createElement("span");
+                span.className = "tok-" + tok[0];
+                span.textContent = tok[1];
+                pre.appendChild(span);
+            });
+            return pre;
         },
 
-        _highlightCode: function (code) {
+        /* Tiny language-agnostic tokenizer → [[type|null, text], …]. */
+        _codeTokens: function (code) {
             var KW = {
                 "function": 1, "def": 1, "return": 1, "if": 1, "else": 1, "elif": 1,
                 "for": 1, "while": 1, "do": 1, "switch": 1, "case": 1, "break": 1,
@@ -679,71 +677,50 @@ window.NP = window.NP || {};
                 "int": 1, "float": 1, "string": 1, "bool": 1, "lambda": 1,
                 "pass": 1, "global": 1, "nonlocal": 1
             };
-
-            var n = code.length;
-            var i = 0;
-            var out = "";
             var IDENT = /[A-Za-z0-9_]/;
             var IDENT_START = /[A-Za-z_]/;
-
-            function tok(type, text) {
-                return "<span class='tok-" + type + "'>" + NP.escapeHtml(text) + "</span>";
+            var n = code.length;
+            var i = 0;
+            var out = [];
+            function push(type, str) {
+                var last = out[out.length - 1];
+                if (!type && last && !last[0]) last[1] += str;
+                else out.push([type, str]);
             }
 
             while (i < n) {
                 var ch = code.charAt(i);
                 var ch2 = code.substr(i, 2);
-
-                /* Block comment */
-                if (ch2 === "/*") {
-                    var end = code.indexOf("*/", i + 2);
-                    if (end === -1) end = n; else end += 2;
-                    out += tok("com", code.substring(i, end));
-                    i = end;
-                    continue;
-                }
-                /* Line comment (// or #) */
-                if (ch2 === "//" || ch === "#") {
-                    var nl = code.indexOf("\n", i);
-                    if (nl === -1) nl = n;
-                    out += tok("com", code.substring(i, nl));
-                    i = nl;
-                    continue;
-                }
-                /* String literals */
-                if (ch === '"' || ch === "'" || ch === "`") {
-                    var quote = ch;
-                    var j = i + 1;
-                    while (j < n && code.charAt(j) !== quote) {
-                        if (code.charAt(j) === "\\") j += 2;
-                        else j++;
+                var j;
+                if (ch2 === "/*") {                       /* block comment */
+                    j = code.indexOf("*/", i + 2);
+                    j = j === -1 ? n : j + 2;
+                    push("com", code.substring(i, j));
+                } else if (ch2 === "//" || ch === "#") {  /* line comment */
+                    j = code.indexOf("\n", i);
+                    if (j === -1) j = n;
+                    push("com", code.substring(i, j));
+                } else if (ch === '"' || ch === "'" || ch === "`") {
+                    j = i + 1;
+                    while (j < n && code.charAt(j) !== ch) {
+                        j += code.charAt(j) === "\\" ? 2 : 1;
                     }
                     if (j < n) j++;
-                    out += tok("str", code.substring(i, j));
-                    i = j;
-                    continue;
+                    push("str", code.substring(i, Math.min(j, n)));
+                } else if (ch >= "0" && ch <= "9") {
+                    j = i;
+                    while (j < n && /[0-9.]/.test(code.charAt(j))) j++;
+                    push("num", code.substring(i, j));
+                } else if (IDENT_START.test(ch)) {
+                    j = i;
+                    while (j < n && IDENT.test(code.charAt(j))) j++;
+                    var word = code.substring(i, j);
+                    push(KW.hasOwnProperty(word) ? "kw" : null, word);
+                } else {
+                    j = i + 1;
+                    push(null, ch);
                 }
-                /* Numbers */
-                if (ch >= "0" && ch <= "9") {
-                    var k = i;
-                    while (k < n && /[0-9.]/.test(code.charAt(k))) k++;
-                    out += tok("num", code.substring(i, k));
-                    i = k;
-                    continue;
-                }
-                /* Identifier / keyword */
-                if (IDENT_START.test(ch)) {
-                    var w = i;
-                    while (w < n && IDENT.test(code.charAt(w))) w++;
-                    var word = code.substring(i, w);
-                    if (KW[word]) out += tok("kw", word);
-                    else out += NP.escapeHtml(word);
-                    i = w;
-                    continue;
-                }
-                /* Anything else: plain */
-                out += NP.escapeHtml(ch);
-                i++;
+                i = Math.min(j, n);
             }
             return out;
         },

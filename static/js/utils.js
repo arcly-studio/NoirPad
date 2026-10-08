@@ -35,11 +35,68 @@ window.NP = window.NP || {};
         return document.querySelectorAll(sel);
     };
 
-    /* ---- Escape HTML ---- */
+    /* ---- Escape HTML ----
+       The one escaper for building HTML strings: text AND attribute
+       values (quotes included). Prefer textContent / setAttribute when
+       building DOM directly. */
+    var HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
     NP.escapeHtml = function (str) {
-        var div = document.createElement("div");
-        div.appendChild(document.createTextNode(str));
-        return div.innerHTML;
+        return String(str == null ? "" : str).replace(/[&<>"']/g, function (c) {
+            return HTML_ESCAPES[c];
+        });
+    };
+
+    /* ---- Images and links ---- */
+
+    /* Image files the backend stores: uuid4 + an allowed raster extension. */
+    NP.IMAGE_NAME_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(png|jpe?g|gif|webp)$/i;
+
+    NP.isImageName = function (name) {
+        return typeof name === "string" && NP.IMAGE_NAME_RE.test(name);
+    };
+
+    /* Classify a link target. Only these may ever become clickable:
+         "external" — http(s): and mailto:, opened outside the app window
+         "image"    — /images/<valid name>, shown in the in-app viewer
+       Anything else (javascript:, data:, file:, relative, //host) → null. */
+    NP.linkKind = function (href) {
+        if (typeof href !== "string") return null;
+        href = href.trim();
+        if (/^(https?:\/\/|mailto:)/i.test(href)) return "external";
+        if (href.indexOf("/images/") === 0 && NP.isImageName(href.slice(8))) return "image";
+        return null;
+    };
+
+    /* Image sources allowed in rendered notes (the CSP blocks remote ones). */
+    NP.isImageSrc = function (src) {
+        return NP.linkKind(src) === "image" ||
+            /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(src || "");
+    };
+
+    /* Sanitize an HTML string before it touches innerHTML. Falls back to
+       plain text when DOMPurify failed to load. */
+    var SANITIZE_CONFIG = {
+        ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|\/images\/|data:image\/(?:png|jpe?g|gif|webp);base64,)/i,
+        FORBID_TAGS: ["style", "form", "input", "button", "textarea", "select", "option"],
+        FORBID_ATTR: ["style"]
+    };
+    var purifyHooked = false;
+
+    NP.sanitizeHtml = function (html) {
+        var purify = window.DOMPurify;
+        if (!purify || !purify.sanitize) return NP.escapeHtml(html);
+        if (!purifyHooked) {
+            purifyHooked = true;
+            purify.addHook("afterSanitizeAttributes", function (node) {
+                if (node.tagName === "A" && !NP.linkKind(node.getAttribute("href"))) {
+                    node.removeAttribute("href");
+                }
+                if (node.tagName === "IMG" && !NP.isImageSrc(node.getAttribute("src"))) {
+                    node.removeAttribute("src");
+                }
+            });
+        }
+        return purify.sanitize(html, SANITIZE_CONFIG);
     };
 
     /* ---- Color helpers ---- */

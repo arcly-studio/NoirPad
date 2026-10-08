@@ -9,7 +9,7 @@ function render(src) {
 }
 
 beforeEach(() => {
-    win = loadApp(["js/utils.js", "js/markdown.js"]);
+    win = loadApp(["vendor/markdown-it/markdown-it.min.js", "vendor/dompurify/purify.min.js", "js/utils.js", "js/markdown.js"]);
     preview = win.document.getElementById("md-preview");
 });
 
@@ -38,6 +38,12 @@ describe("markdown preview", () => {
             .toBe("/images/0f8e1c2a-1111-4222-8333-444455556666.png");
     });
 
+    it("shows remote images as text (the CSP would block them anyway)", () => {
+        render("![logo](https://example.com/logo.png)");
+        expect(preview.querySelector("img")).toBeNull();
+        expect(preview.textContent).toContain("![logo](https://example.com/logo.png)");
+    });
+
     it("escapes raw HTML", () => {
         render('<img src=x onerror=alert(1)>\n<script>alert(1)</script>\n<svg onload=alert(1)>');
         expect(dangers(preview)).toEqual([]);
@@ -46,7 +52,7 @@ describe("markdown preview", () => {
 
 describe("audit regressions", () => {
     // K3 – stored XSS v markdown náhledu: regexy běží nad hotovým HTML
-    it.fails("K3: nested image/link payload does not create event handlers", () => {
+    it("K3: nested image/link payload does not create event handlers", () => {
         render("![a]([z](onerror=onerror=alert;throw-1 x) y)");
         expect(dangers(preview)).toEqual([]);
         expect(preview.querySelectorAll("img").length).toBeLessThanOrEqual(1);
@@ -56,7 +62,7 @@ describe("audit regressions", () => {
     });
 
     // K4 – javascript:/data:/file: odkazy se nesmí vykreslit jako odkaz
-    it.fails.each([
+    it.each([
         "[x](javascript:alert(1))",
         "[x](JaVaScRiPt:alert(1))",
         "[x](data:text/html,<script>alert(1)</script>)",

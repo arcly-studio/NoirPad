@@ -327,27 +327,13 @@ window.NP = window.NP || {};
 
         _onHostClick: function (e) {
             /* Modifier-clicks reserved: Ctrl/Cmd for zoom-grip, Shift for
-               cursor placement / text selection by the user. */
+               cursor placement / text selection by the user. Links are
+               handled globally by links.js. */
             if (e.ctrlKey || e.metaKey || e.shiftKey) return;
 
             if (e.target && e.target.tagName === "IMG") {
                 e.preventDefault();
                 NP.images._openViewer(e.target.src);
-                return;
-            }
-
-            var a = e.target && e.target.closest ? e.target.closest("a") : null;
-            if (!a) return;
-            var href = a.getAttribute("href") || "";
-            if (!href) return;
-
-            if (href.indexOf("/images/") === 0 ||
-                /\.(png|jpe?g|gif|webp|svg|bmp)(\?|#|$)/i.test(href)) {
-                e.preventDefault();
-                NP.images._openViewer(href);
-            } else if (/^(https?:|\/\/|mailto:)/i.test(href)) {
-                e.preventDefault();
-                window.open(href, "_blank", "noopener,noreferrer");
             }
         },
 

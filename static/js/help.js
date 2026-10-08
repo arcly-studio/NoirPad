@@ -234,7 +234,7 @@ window.NP = window.NP || {};
             html += '<div class="help-nav-item" data-idx="' + i + '" style="padding:6px 16px;cursor:pointer;' +
                 'font-size:12px;color:var(--fg-dim, #00bf30);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' +
                 'transition:background 0.15s ease, color 0.15s ease;">' +
-                escapeHTML(HELP_SECTIONS[i].title) + '</div>';
+                NP.escapeHtml(HELP_SECTIONS[i].title) + '</div>';
         }
         html += '</div>';
 
@@ -267,23 +267,23 @@ window.NP = window.NP || {};
         if (!section) return "";
 
         var html = '<h2 style="margin:0 0 12px 0;font-size:16px;color:var(--fg-bright, #4cff7a);' +
-            'text-shadow:0 0 4px var(--glow, #00ff41);">' + escapeHTML(section.title) + '</h2>';
+            'text-shadow:0 0 4px var(--glow, #00ff41);">' + NP.escapeHtml(section.title) + '</h2>';
 
         for (var i = 0; i < section.content.length; i++) {
             var block = section.content[i];
             switch (block.type) {
                 case "text":
-                    html += '<p style="margin:0 0 10px 0;">' + escapeHTML(block.value) + '</p>';
+                    html += '<p style="margin:0 0 10px 0;">' + NP.escapeHtml(block.value) + '</p>';
                     break;
                 case "header":
                     html += '<h3 style="margin:16px 0 8px 0;font-size:13px;color:var(--fg-bright, #4cff7a);">' +
-                        escapeHTML(block.value) + '</h3>';
+                        NP.escapeHtml(block.value) + '</h3>';
                     break;
                 case "bullets":
                     html += '<ul style="margin:0 0 10px 0;padding-left:20px;">';
                     for (var b = 0; b < block.value.length; b++) {
                         html += '<li style="margin:2px 0;color:var(--fg, #00ff41);">' +
-                            escapeHTML(block.value[b]) + '</li>';
+                            NP.escapeHtml(block.value[b]) + '</li>';
                     }
                     html += '</ul>';
                     break;
@@ -295,43 +295,43 @@ window.NP = window.NP || {};
                         html += '<tr>';
                         html += '<td style="padding:3px 12px 3px 0;white-space:nowrap;color:var(--fg-bright, #4cff7a);' +
                             'font-weight:bold;font-size:12px;border-bottom:1px solid var(--border, #1a2e1a);">' +
-                            escapeHTML(row[0]) + '</td>';
+                            NP.escapeHtml(row[0]) + '</td>';
                         html += '<td style="padding:3px 0;color:var(--fg-dim, #00bf30);font-size:12px;' +
                             'border-bottom:1px solid var(--border, #1a2e1a);">' +
-                            escapeHTML(row[1]) + '</td>';
+                            NP.escapeHtml(row[1]) + '</td>';
                         html += '</tr>';
                     }
                     html += '</table>';
                     break;
                 case "md-intro":
-                    html += '<p class="help-section-intro">' + escapeHTML(block.value) + '</p>';
+                    html += '<p class="help-section-intro">' + NP.escapeHtml(block.value) + '</p>';
                     break;
                 case "md-category":
                     html += '<div class="md-help-category">';
-                    html += '<h3 class="md-help-cat-title">' + escapeHTML(block.title) + '</h3>';
+                    html += '<h3 class="md-help-cat-title">' + NP.escapeHtml(block.title) + '</h3>';
                     html += '<div class="md-help-grid">';
                     for (var mi = 0; mi < block.items.length; mi++) {
                         var it = block.items[mi];
-                        html += '<div class="md-help-item" data-snippet="' + escapeAttr(it.snippet) + '">' +
-                            '<code class="md-help-syntax">' + escapeHTML(it.syntax) + '</code>' +
-                            '<span class="md-help-desc">' + escapeHTML(it.desc) + '</span>' +
+                        html += '<div class="md-help-item" data-snippet="' + NP.escapeHtml(it.snippet) + '">' +
+                            '<code class="md-help-syntax">' + NP.escapeHtml(it.syntax) + '</code>' +
+                            '<span class="md-help-desc">' + NP.escapeHtml(it.desc) + '</span>' +
                             '</div>';
                     }
                     html += '</div></div>';
                     break;
                 case "md-note":
-                    html += '<p class="md-help-note">' + escapeHTML(block.value) + '</p>';
+                    html += '<p class="md-help-note">' + NP.escapeHtml(block.value) + '</p>';
                     break;
                 case "md-shortcuts":
                     html += '<div class="md-help-category">';
-                    html += '<h3 class="md-help-cat-title">' + escapeHTML(block.title) + '</h3>';
+                    html += '<h3 class="md-help-cat-title">' + NP.escapeHtml(block.title) + '</h3>';
                     html += '<div class="md-help-shortcuts">';
                     for (var sr = 0; sr < block.items.length; sr++) {
                         var row2 = block.items[sr];
                         /* row2[1] is trusted static HTML (contains <code>) so
                            it's inserted verbatim, unlike user-derived content. */
                         html += '<div class="md-help-shortcut-row">' +
-                            '<kbd class="md-help-kbd">' + escapeHTML(row2[0]) + '</kbd>' +
+                            '<kbd class="md-help-kbd">' + NP.escapeHtml(row2[0]) + '</kbd>' +
                             '<span>' + row2[1] + '</span>' +
                             '</div>';
                     }
@@ -341,24 +341,6 @@ window.NP = window.NP || {};
         }
 
         return html;
-    }
-
-    function escapeHTML(str) {
-        var div = document.createElement("div");
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
-    /* HTML attribute escaping — escapeHTML leaves quotes intact, which is
-       unsafe inside data-snippet="…". Also encodes newlines so multi-line
-       snippets survive the attribute round-trip. */
-    function escapeAttr(s) {
-        return String(s)
-            .replace(/&/g, "&amp;")
-            .replace(/"/g, "&quot;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/\n/g, "&#10;");
     }
 
     function copySnippet(text, sourceEl) {

@@ -14,12 +14,6 @@ window.NP = window.NP || {};
     function getOverlay() { return document.getElementById("shortcuts-overlay"); }
     function getBody() { return document.getElementById("shortcuts-body"); }
 
-    function esc(s) {
-        var d = document.createElement("div");
-        d.textContent = s == null ? "" : String(s);
-        return d.innerHTML;
-    }
-
     function renderList() {
         var body = getBody();
         if (!body || !NP.shortcuts || !NP.shortcuts.getAll) return;
@@ -52,16 +46,16 @@ window.NP = window.NP || {};
         var html = "";
         for (var c = 0; c < order.length; c++) {
             var cat = order[c];
-            html += '<div class="shortcuts-category">' + esc(cat) + "</div>";
+            html += '<div class="shortcuts-category">' + NP.escapeHtml(cat) + "</div>";
             byCategory[cat].forEach(function (entry) {
                 html += '<div class="shortcuts-row" data-shortcut-id="' +
-                    esc(entry.id) + '">' +
+                    NP.escapeHtml(entry.id) + '">' +
                     '<span class="shortcuts-row-label">' +
-                    esc(entry.info.label) + "</span>" +
+                    NP.escapeHtml(entry.info.label) + "</span>" +
                     '<span class="shortcuts-row-key' +
                     (entry.isCustom ? " custom" : "") +
                     '" data-role="display">' +
-                    esc(entry.info.current || "—") + "</span>" +
+                    NP.escapeHtml(entry.info.current || "—") + "</span>" +
                     '<button class="shortcuts-row-btn" data-role="record">' +
                     "Record</button>" +
                     '<button class="shortcuts-row-btn reset-mini' +

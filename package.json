@@ -4,10 +4,13 @@
   "description": "Dev-only tooling (JS tests). The app itself has no build step: static/ is served as-is.",
   "type": "module",
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "vendor": "node tools/vendor.mjs"
   },
   "devDependencies": {
+    "dompurify": "3.4.16",
     "jsdom": "29.1.1",
+    "markdown-it": "15.0.2",
     "vitest": "5.0.3"
   }
 }
