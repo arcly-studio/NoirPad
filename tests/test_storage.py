@@ -19,7 +19,6 @@ def _corrupt(np_backend, payload: bytes):
 
 
 # D8 – nevalidní UTF-8 → každý request 500
-@pending("D8", "D")
 @pytest.mark.parametrize("payload", [b"{\"tree\": [\xff\xfe", b"{not json"])
 def test_d8_corrupt_file_recovers_from_backup(client, np_backend, payload):
     nid = new_note(client, "Zachráněná", content="obsah")
@@ -38,7 +37,6 @@ def test_d8_corrupt_file_recovers_from_backup(client, np_backend, payload):
     assert notice and "corrupt" in notice.lower()
 
 
-@pending("D8", "D")
 def test_d8_corrupt_file_without_backup_is_kept(client, np_backend):
     _corrupt(np_backend, b"\xff\xfe garbage")
     r = client.get("/api/data")
@@ -51,17 +49,57 @@ def test_d8_corrupt_file_without_backup_is_kept(client, np_backend):
 
 
 # D8 – zálohy: rotující, ne jeden .bak přepisovaný při každém uložení
-@pending("D8", "D")
 def test_d8_backups_are_throttled(client, np_backend):
     for i in range(5):
         new_note(client, f"N{i}")
     assert len(list((np_backend.DATA_DIR / "backups").glob("notes_data-*.json"))) == 1
 
 
-@pending("D8", "D")
 def test_d8_backups_rotate(client, np_backend, monkeypatch):
     monkeypatch.setattr(np_backend, "BACKUP_MIN_INTERVAL", 0)
     for i in range(12):
         new_note(client, f"N{i}")
     backups = list((np_backend.DATA_DIR / "backups").glob("notes_data-*.json"))
     assert len(backups) == np_backend.BACKUP_KEEP == 7
+
+
+# D7 – dvě instance nad stejnými daty = ztráta dat
+def test_d7_single_instance_lock(np_backend):
+    first = np_backend.acquire_instance_lock()
+    assert first is not None
+    try:
+        assert np_backend.acquire_instance_lock() is None
+    finally:
+        first.close()
+    again = np_backend.acquire_instance_lock()
+    assert again is not None
+    again.close()
+
+
+def test_d8_notice_can_be_dismissed(client, np_backend):
+    new_note(client, "x")
+    np_backend.make_backup(force=True)
+    np_backend.DATA_FILE.write_bytes(b"{broken")
+    client.get("/api/data")
+    assert client.get("/api/session").json()["data_notice"]
+    client.post("/api/session/dismiss-notice")
+    assert client.get("/api/session").json()["data_notice"] is None
+
+
+def test_d8_write_is_fsynced_and_leaves_no_bak(client, np_backend):
+    new_note(client, "a")
+    new_note(client, "b")
+    assert not np_backend.DATA_BAK.exists()
+
+
+# D8 – poškozený soubor nalezený už při startu (set_data_dir) musí taky dát hlášku
+def test_d8_corrupt_at_startup_sets_notice(np_backend, tmp_path):
+    d = tmp_path / "startup"
+    (d / "backups").mkdir(parents=True)
+    (d / "backups" / "notes_data-20260101-000000-000000.json").write_text(
+        '{"tree": [{"id": "a", "name": "A", "type": "note"}], "notes": {"a": ""}}',
+        encoding="utf-8")
+    (d / "notes_data.json").write_bytes(b"\xff\xfe")
+    np_backend.set_data_dir(d)
+    assert np_backend.RUNTIME.data_notice
+    assert np_backend._read_data()["tree"][0]["name"] == "A"

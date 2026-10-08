@@ -88,7 +88,6 @@ def test_k5_import_rejects_non_images(client, np_backend):
 
 
 # D15 – před importem automatická záloha stávajícího stavu
-@pending("D15", "D")
 def test_d15_import_makes_safety_backup(client, np_backend):
     new_note(client, "Před importem", content="důležité")
     import_zip(client, backup_with([], {}))
@@ -99,7 +98,6 @@ def test_d15_import_makes_safety_backup(client, np_backend):
 
 
 # D15 – limit rozbalené velikosti (zip bomb)
-@pending("D15", "D")
 def test_d15_uncompressed_size_limit(client, np_backend, monkeypatch):
     monkeypatch.setattr(np_backend, "MAX_BACKUP_UNCOMPRESSED", 10_000)
     new_note(client, "Zůstane")
@@ -109,7 +107,6 @@ def test_d15_uncompressed_size_limit(client, np_backend, monkeypatch):
 
 
 # D15 – limit počtu souborů
-@pending("D15", "D")
 def test_d15_file_count_limit(client, np_backend, monkeypatch):
     monkeypatch.setattr(np_backend, "MAX_BACKUP_FILES", 5)
     images = {f"{i:08d}-0000-0000-0000-000000000000.png": make_png() for i in range(10)}
@@ -117,7 +114,6 @@ def test_d15_file_count_limit(client, np_backend, monkeypatch):
 
 
 # D15 – obrázek ze zálohy nesmí přepsat existující se stejným jménem
-@pending("D15", "D")
 def test_d15_existing_image_not_overwritten(client, np_backend):
     name = upload_png(client)
     original = (np_backend.IMAGES_DIR / name).read_bytes()

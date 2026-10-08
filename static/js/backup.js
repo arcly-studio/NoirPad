@@ -18,6 +18,16 @@ window.NP = window.NP || {};
             input.addEventListener("change", function () {
                 var file = input.files && input.files[0];
                 if (!file) return;
+                var ok = window.confirm(
+                    "Import \"" + file.name + "\"?\n\n" +
+                    "This REPLACES ALL your notes, folders and trash with the " +
+                    "contents of the backup. Your current notes are saved first " +
+                    "to the backups folder (pre-import-….zip) in the NoirPad " +
+                    "data directory.\n\nSettings are not changed.");
+                if (!ok) {
+                    document.body.removeChild(input);
+                    return;
+                }
 
                 NP.api.importBackup(file).then(function () {
                     /* Reload everything */

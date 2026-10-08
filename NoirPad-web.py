@@ -9,6 +9,7 @@ import base64
 import copy
 import hashlib
 import hmac
+import html as html_lib
 import io
 import json
 import logging
@@ -18,12 +19,14 @@ import secrets
 import sys
 import threading
 import time
+import unicodedata
 import uuid
 import zipfile
 # Fix #11: removed unused `import shutil` (the .bak copy below uses
 # Path.read_bytes()/write_bytes() instead, so shutil is genuinely unused).
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import IO, Annotated, Any, Callable, Optional
+from urllib.parse import quote
 
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
@@ -31,7 +34,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 log = logging.getLogger("noirpad")
 
@@ -143,6 +146,7 @@ def set_data_dir(path: Path) -> None:
     IMAGES_DIR = DATA_DIR / "images"
     IMAGES_DIR.mkdir(exist_ok=True)
     IMAGES_DIR_R = IMAGES_DIR.resolve()
+    RUNTIME.data_notice = None
     _migrate_legacy_data_if_needed(DATA_DIR)
     _migrate_to_single_profile()
 
@@ -223,48 +227,120 @@ DEFAULT_DATA: dict[str, Any] = {
 }
 
 
+# Rotating snapshots of notes_data.json live in DATA_DIR/backups/: at most
+# one per BACKUP_MIN_INTERVAL seconds, the newest BACKUP_KEEP are kept.
+# (Replaces the single .bak that every save used to overwrite.)
+BACKUP_MIN_INTERVAL = 10 * 60
+BACKUP_KEEP = 7
+
+
+def _backups_dir() -> Path:
+    return DATA_DIR / "backups"
+
+
+def _stamp() -> str:
+    """Sortable timestamp, unique enough for several files per second."""
+    now = time.time()
+    return time.strftime("%Y%m%d-%H%M%S", time.localtime(now)) + f"-{int(now * 1e6) % 1_000_000:06d}"
+
+
+def _rotate(pattern: str, keep: int) -> None:
+    for old in sorted(_backups_dir().glob(pattern))[:-keep]:
+        try:
+            old.unlink()
+        except OSError as exc:
+            log.warning("Could not remove old backup %s: %s", old.name, exc)
+
+
+def make_backup(force: bool = False) -> Optional[Path]:
+    """Snapshot the current notes_data.json into backups/ (throttled).
+
+    Callers writing the data file hold _file_lock; the file being copied
+    was just read successfully, so a snapshot is always a valid file.
+    """
+    if not DATA_FILE.exists():
+        return None
+    bdir = _backups_dir()
+    bdir.mkdir(exist_ok=True)
+    existing = sorted(bdir.glob("notes_data-*.json"))
+    if (not force and existing
+            and time.time() - existing[-1].stat().st_mtime < BACKUP_MIN_INTERVAL):
+        return None
+    dest = bdir / f"notes_data-{_stamp()}.json"
+    try:
+        dest.write_bytes(DATA_FILE.read_bytes())
+    except OSError as exc:
+        log.warning("Could not write backup %s: %s", dest.name, exc)
+        return None
+    _rotate("notes_data-*.json", BACKUP_KEEP)
+    return dest
+
+
+def _load_json_file(path: Path) -> dict[str, Any]:
+    """Parse a data file. ValueError (bad UTF-8 / JSON / shape) = corrupt."""
+    data = json.loads(path.read_bytes().decode("utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("top level is not an object")
+    return data
+
+
+def _atomic_write_json(path: Path, data: dict[str, Any]) -> None:
+    """tmp file + fsync + os.replace: a crash never leaves a half file."""
+    tmp = path.with_name(path.name + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
+
+def _recover_corrupt_data(reason: Exception) -> dict[str, Any]:
+    """notes_data.json is unreadable: keep it aside, fall back to a backup.
+
+    The damaged file is never overwritten — it is renamed to
+    notes_data.corrupt-<timestamp>.json. The newest backup that parses is
+    restored; the UI shows RUNTIME.data_notice to the user.
+    """
+    corrupt = DATA_DIR / f"notes_data.corrupt-{_stamp()}.json"
+    os.replace(DATA_FILE, corrupt)
+    log.error("notes_data.json is corrupt (%s); moved to %s", reason, corrupt.name)
+
+    candidates = sorted(_backups_dir().glob("notes_data-*.json"), reverse=True)
+    if DATA_BAK.exists():           # single .bak written by older versions
+        candidates.append(DATA_BAK)
+    for candidate in candidates:
+        try:
+            data = _load_json_file(candidate)
+        except (OSError, ValueError):
+            continue
+        _atomic_write_json(DATA_FILE, data)
+        when = time.strftime("%Y-%m-%d %H:%M", time.localtime(candidate.stat().st_mtime))
+        RUNTIME.data_notice = (
+            f"Your notes file was corrupt. It was kept as {corrupt.name} and the "
+            f"latest good backup ({when}) was restored. Changes made after that "
+            "backup may be missing.")
+        return data
+
+    RUNTIME.data_notice = (
+        f"Your notes file was corrupt and no usable backup was found. The "
+        f"damaged file was kept as {corrupt.name}; NoirPad started empty.")
+    return copy.deepcopy(DEFAULT_DATA)
+
+
 def _read_data_unlocked() -> dict[str, Any]:
     """Read notes_data.json WITHOUT taking the lock (caller must hold it)."""
     if not DATA_FILE.exists():
         return copy.deepcopy(DEFAULT_DATA)
     try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except json.JSONDecodeError:
-        # Fix #8: corrupt JSON must not 500 every request. Try the .bak
-        # snapshot, otherwise fall back to a fresh default structure.
-        if DATA_BAK.exists():
-            try:
-                with open(DATA_BAK, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                log.warning(
-                    "notes_data.json was corrupt; recovered from %s", DATA_BAK.name
-                )
-                return data
-            except json.JSONDecodeError:
-                log.warning("notes_data.json AND %s are corrupt", DATA_BAK.name)
-        else:
-            log.warning(
-                "notes_data.json is corrupt and no backup exists; "
-                "starting from DEFAULT_DATA"
-            )
-        return copy.deepcopy(DEFAULT_DATA)
+        return _load_json_file(DATA_FILE)
+    except ValueError as exc:  # includes UnicodeDecodeError / JSONDecodeError
+        return _recover_corrupt_data(exc)
 
 
 def _write_data_unlocked(data: dict[str, Any]) -> None:
-    """Write notes_data.json WITHOUT taking the lock (caller must hold it).
-
-    Fix #8: snapshot the previous good file to .bak, then write atomically
-    via a temp file + os.replace so a crash mid-write can't corrupt data.
-    """
-    if DATA_FILE.exists():
-        try:
-            DATA_BAK.write_bytes(DATA_FILE.read_bytes())
-        except OSError as exc:
-            log.warning("Could not write backup %s: %s", DATA_BAK.name, exc)
-    with open(DATA_TMP, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(DATA_TMP, DATA_FILE)
+    """Write notes_data.json WITHOUT taking the lock (caller must hold it)."""
+    make_backup()
+    _atomic_write_json(DATA_FILE, data)
 
 
 def _read_data() -> dict[str, Any]:
@@ -538,7 +614,7 @@ def _migrate_to_single_profile() -> None:
             return
         try:
             data = _read_data_unlocked()
-        except Exception:  # unreadable file is handled by the normal read path
+        except OSError:  # corrupt content is recovered inside _read_data_unlocked
             return
         legacy = (
             "users" in data
@@ -569,7 +645,28 @@ def _note_exists(data: dict, note_id: str) -> bool:
     return False
 
 
-set_data_dir(get_data_dir())
+def acquire_instance_lock(data_dir: Optional[Path] = None) -> Optional[IO]:
+    """Lock DATA_DIR/noirpad.lock so only one NoirPad uses this data dir.
+
+    Two processes doing read-modify-write on the same notes_data.json would
+    silently drop each other's changes (D7). Returns the open lock handle
+    (keep it alive for the process lifetime) or None if another NoirPad —
+    desktop or web — already holds it. The OS releases it on exit/crash.
+    """
+    path = Path(data_dir or DATA_DIR) / "noirpad.lock"
+    handle = open(path, "a+")
+    try:
+        if os.name == "nt":
+            import msvcrt
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        handle.close()
+        return None
+    return handle
 
 
 # ---------------------------------------------------------------------------
@@ -613,6 +710,7 @@ class _Runtime:
     mode: str = "server"
     password: Optional[str] = os.environ.get("NOIRPAD_PASSWORD") or None
     desktop_token: Optional[str] = None
+    data_notice: Optional[str] = None        # shown once in the UI (D8)
     allowed_hosts: set[str] = set(LOOPBACK_HOSTS) | _env_allowed_hosts()
     sessions: dict[str, float] = {}       # token -> expires_at (epoch secs)
     login_failures: list[float] = []
@@ -639,6 +737,10 @@ def configure(*, mode: Optional[str] = None, password: Any = ...,
         RUNTIME.allowed_hosts |= _env_allowed_hosts()
     RUNTIME.sessions.clear()
     RUNTIME.login_failures.clear()
+
+
+# Data paths need RUNTIME (corrupt-file notices), so they are set up here.
+set_data_dir(get_data_dir())
 
 
 def _password_matches(candidate: str) -> bool:
@@ -686,14 +788,25 @@ def _host_of(value: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+MAX_NAME_LEN = 300                 # note / folder name
+MAX_NOTE_CHARS = 5_000_000         # one note's text (images are separate files)
+MAX_FORMATS = 20_000               # format runs per note
+MAX_TAGS = 50
+MAX_TAG_LEN = 100
+
+Name = Annotated[str, Field(max_length=MAX_NAME_LEN)]
+NoteText = Annotated[str, Field(max_length=MAX_NOTE_CHARS)]
+Formats = Annotated[list[Any], Field(max_length=MAX_FORMATS)]
+
+
 class NewItemReq(BaseModel):
     parent_id: Optional[str] = None
-    name: str
+    name: Name
 
 
 class RenameReq(BaseModel):
     id: str
-    name: str
+    name: Name
 
 
 class MoveReq(BaseModel):
@@ -707,8 +820,8 @@ class DeleteReq(BaseModel):
 
 
 class NoteBody(BaseModel):
-    content: str
-    formats: list[Any] = []
+    content: NoteText
+    formats: Formats = []
     # Optional per-note rendering mode. None means "leave unchanged"; pass
     # "rich-text" to clear back to default, "markdown" to opt in.
     mode: Optional[str] = None
@@ -719,7 +832,8 @@ class ToggleFavReq(BaseModel):
 
 
 class TagsBody(BaseModel):
-    tags: list[str]
+    tags: Annotated[list[Annotated[str, Field(max_length=MAX_TAG_LEN)]],
+                    Field(max_length=MAX_TAGS)]
 
 
 class RestoreReq(BaseModel):
@@ -755,8 +869,8 @@ class CryptoReq(BaseModel):
 class SaveEncryptedReq(BaseModel):
     id: str
     password: str
-    content: str
-    formats: list[Any] = []
+    content: NoteText
+    formats: Formats = []
 
 
 class LoginReq(BaseModel):
@@ -907,7 +1021,14 @@ async def session_info(request: Request):
         "mode": RUNTIME.mode,
         "password_required": password_required,
         "authenticated": _is_authenticated(request),
+        "data_notice": RUNTIME.data_notice if _is_authenticated(request) else None,
     }
+
+
+@app.post("/api/session/dismiss-notice")
+async def dismiss_notice():
+    RUNTIME.data_notice = None
+    return {"ok": True}
 
 
 @app.post("/api/session/bind")
@@ -1469,73 +1590,45 @@ async def get_image(filename: str):
 # ---- Export ----
 
 
-@app.get("/api/export/{note_id}/txt")
-async def export_txt(note_id: str):
+def _attachment(filename: str) -> str:
+    """Content-Disposition for *filename*: RFC 5987 UTF-8 name + ASCII fallback.
+
+    HTTP headers are latin-1; a raw Czech name used to crash with HTTP 500
+    (K7). Browsers use filename*, old clients the ASCII approximation.
+    """
+    ascii_name = unicodedata.normalize("NFKD", filename).encode("ascii", "ignore").decode()
+    ascii_name = re.sub(r"[^A-Za-z0-9._() -]", "_", ascii_name).strip(" .") or "note"
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(filename, safe='')}"
+
+
+def _note_for_export(note_id: str) -> tuple[dict, str, str]:
     data = _read_data()
-    if not _note_exists(data, note_id):
-        raise HTTPException(404, "Note not found")
     content = data.get("notes", {}).get(note_id)
-    if content is None:
+    if content is None or not _note_exists(data, note_id):
         raise HTTPException(404, "Note not found")
     item = find_item_by_id(data["tree"], note_id)
-    name = item["name"] if item else note_id
-    buf = io.BytesIO(content.encode("utf-8"))
+    return data, (item["name"] if item else note_id), content
+
+
+@app.get("/api/export/{note_id}/txt")
+async def export_txt(note_id: str):
+    _, name, content = _note_for_export(note_id)
     return StreamingResponse(
-        buf,
+        io.BytesIO(content.encode("utf-8")),
         media_type="text/plain; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{name}.txt"'},
+        headers={"Content-Disposition": _attachment(_safe_filename(name) + ".txt")},
     )
 
 
 @app.get("/api/export/{note_id}/html")
 async def export_html(note_id: str):
-    data = _read_data()
-    if not _note_exists(data, note_id):
-        raise HTTPException(404, "Note not found")
-    content = data.get("notes", {}).get(note_id)
-    if content is None:
-        raise HTTPException(404, "Note not found")
-    item = find_item_by_id(data["tree"], note_id)
-    name = item["name"] if item else note_id
-
-    # Build a simple HTML document
-    font = data.get("font_family", "Cascadia Code")
-    size = data.get("font_size", 12)
-
-    # Escape HTML entities
-    escaped = (
-        content.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\n", "<br>\n")
-    )
-
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>{name}</title>
-<style>
-  body {{
-    background: #0a0a0a;
-    color: #00ff00;
-    font-family: '{font}', monospace;
-    font-size: {size}px;
-    padding: 2rem;
-    white-space: pre-wrap;
-  }}
-</style>
-</head>
-<body>
-{escaped}
-</body>
-</html>"""
-
-    buf = io.BytesIO(html.encode("utf-8"))
+    data, name, content = _note_for_export(note_id)
+    doc = _build_note_html(name, content, data.get("font_family", "Cascadia Code"),
+                           data.get("font_size", 12))
     return StreamingResponse(
-        buf,
+        io.BytesIO(doc.encode("utf-8")),
         media_type="text/html; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{name}.html"'},
+        headers={"Content-Disposition": _attachment(_safe_filename(name) + ".html")},
     )
 
 
@@ -1561,23 +1654,20 @@ def _is_encrypted_content(content: str) -> bool:
     return isinstance(obj, dict) and obj.get("encrypted") is True
 
 
-def _build_note_html(name: str, content: str, font: str, size: int) -> str:
+def _build_note_html(name: str, content: str, font: str, size: Any) -> str:
     """Render a single note as a standalone HTML5 document.
 
-    Identical visual treatment to the per-note `/api/export/{id}/html`
-    endpoint so users get a consistent look between single-note and
-    bulk export. Body uses white-space:pre-wrap so the plaintext lines
-    survive as-is without needing <br> substitution.
+    Shared by the per-note `/api/export/{id}/html` endpoint and the bulk
+    export. Name and body are HTML-escaped; the font name is reduced to
+    characters that are safe inside the CSS string.
     """
-    escaped_name = (
-        name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    )
-    escaped_body = (
-        content.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\n", "<br>\n")
-    )
+    escaped_name = html_lib.escape(name)
+    escaped_body = html_lib.escape(content, quote=False).replace("\n", "<br>\n")
+    safe_font = re.sub(r"[^\w \-]", "", str(font or "")) or "monospace"
+    try:
+        safe_size = max(6, min(200, int(size)))
+    except (TypeError, ValueError):
+        safe_size = 12
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1587,8 +1677,8 @@ def _build_note_html(name: str, content: str, font: str, size: int) -> str:
   body {{
     background: #0a0a0a;
     color: #00ff00;
-    font-family: '{font}', monospace;
-    font-size: {size}px;
+    font-family: '{safe_font}', monospace;
+    font-size: {safe_size}px;
     padding: 2rem;
     white-space: pre-wrap;
   }}
@@ -1686,12 +1776,12 @@ async def export_all_notes():
 # ---- Backup ----
 
 
-@app.get("/api/backup")
-async def backup_download():
-    """Backup zip: the whole notes_data.json plus every referenced image."""
-    data = _read_data()
-    data_json = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+MAX_BACKUP_UNCOMPRESSED = 500 * 1024 * 1024   # sum of unpacked sizes (zip bomb)
+MAX_BACKUP_FILES = 10_000
 
+
+def _build_backup_zip(data: dict[str, Any]) -> bytes:
+    """notes_data.json + every image referenced by the notes, as a zip."""
     image_names: set = set()
     for names in (data.get("note_images") or {}).values():
         if names:
@@ -1704,14 +1794,20 @@ async def backup_download():
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("notes_data.json", data_json)
+        zf.writestr("notes_data.json",
+                    json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"))
         if IMAGES_DIR.exists():
             for img in IMAGES_DIR.iterdir():
                 if img.is_file() and img.name in image_names:
                     zf.write(img, f"images/{img.name}")
-    buf.seek(0)
+    return buf.getvalue()
+
+
+@app.get("/api/backup")
+async def backup_download():
+    """Backup zip: the whole notes_data.json plus every referenced image."""
     return StreamingResponse(
-        buf,
+        io.BytesIO(_build_backup_zip(_read_data())),
         media_type="application/zip",
         headers={"Content-Disposition": 'attachment; filename="noirpad_backup.zip"'},
     )
@@ -1728,6 +1824,11 @@ async def backup_import(file: UploadFile = File(...)):
     buf = io.BytesIO(contents)
     try:
         with zipfile.ZipFile(buf, "r") as zf:
+            infos = zf.infolist()
+            # D15: refuse archives that would unpack to something huge.
+            if (len(infos) > MAX_BACKUP_FILES
+                    or sum(i.file_size for i in infos) > MAX_BACKUP_UNCOMPRESSED):
+                raise HTTPException(413, "Backup archive is too large")
             names = zf.namelist()
             if "notes_data.json" not in names:
                 raise HTTPException(400, "Invalid backup: notes_data.json missing")
@@ -1784,10 +1885,20 @@ async def backup_import(file: UploadFile = File(...)):
                     nid for nid in dict.fromkeys(imp_favorites) if nid in imp_note_ids
                 ]
 
+            # D15: a safety copy of the current state before replacing it.
+            with _file_lock:
+                bdir = _backups_dir()
+                bdir.mkdir(exist_ok=True)
+                safety = bdir / f"pre-import-{_stamp()}.zip"
+                safety.write_bytes(_build_backup_zip(_read_data_unlocked()))
+                _rotate("pre-import-*.zip", BACKUP_KEEP)
+
             _update_data(_mut)
 
             for name in image_entries:
                 dest = _safe_image_path(name.split("/", 1)[1])
+                if dest.exists():
+                    continue  # D15: never overwrite an existing image
                 with _file_lock:
                     with open(dest, "wb") as f:
                         f.write(zf.read(name))
@@ -1810,5 +1921,12 @@ if __name__ == "__main__":
         sys.exit(
             f"Refusing to listen on {host}: set NOIRPAD_PASSWORD first, "
             "otherwise anyone on the network can read your notes."
+        )
+    instance_lock = acquire_instance_lock()
+    if instance_lock is None:
+        sys.exit(
+            f"NoirPad is already running with the data directory {DATA_DIR} "
+            "(desktop app or another web server). Close it first: two "
+            "instances would overwrite each other's changes."
         )
     uvicorn.run(app, host=host, port=port)

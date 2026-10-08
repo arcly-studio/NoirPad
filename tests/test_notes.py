@@ -167,3 +167,28 @@ def test_legacy_multi_user_data_is_flattened(np_backend, tmp_path):
     assert data["tree"] == [{"id": "a", "name": "A", "type": "note"},
                             {"id": "b", "name": "B", "type": "note"}]
     assert list(d.glob("notes_data.pre-single-profile-*.json"))
+
+
+# Limity délky názvu a obsahu
+def test_name_length_limit(client, np_backend):
+    long = "x" * (np_backend.MAX_NAME_LEN + 1)
+    assert client.post("/api/tree/new-note", json={"name": long}).status_code == 422
+    assert client.post("/api/tree/new-folder", json={"name": long}).status_code == 422
+    nid = new_note(client, "ok")
+    assert client.post("/api/tree/rename", json={"id": nid, "name": long}).status_code == 422
+    assert client.post("/api/tree/rename",
+                       json={"id": nid, "name": "x" * np_backend.MAX_NAME_LEN}).status_code == 200
+
+
+def test_content_length_limit(client, np_backend, monkeypatch):
+    nid = new_note(client)
+    too_big = "x" * (np_backend.MAX_NOTE_CHARS + 1)
+    assert client.put(f"/api/note/{nid}", json={"content": too_big}).status_code == 422
+
+
+def test_tag_limits(client, np_backend):
+    nid = new_note(client)
+    assert client.put(f"/api/tags/{nid}",
+                      json={"tags": ["t"] * (np_backend.MAX_TAGS + 1)}).status_code == 422
+    assert client.put(f"/api/tags/{nid}",
+                      json={"tags": ["x" * (np_backend.MAX_TAG_LEN + 1)]}).status_code == 422

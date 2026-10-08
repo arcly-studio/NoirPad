@@ -132,8 +132,37 @@ WINDOW_INITIAL_WIDTH = 1280
 WINDOW_INITIAL_HEIGHT = 800
 
 
+def _focus_running_instance() -> None:
+    """Bring the already-open NoirPad window to front, or explain why not."""
+    if sys.platform != "win32":
+        print("NoirPad is already running.", file=sys.stderr)
+        return
+    import ctypes
+
+    user32 = ctypes.windll.user32
+    hwnd = user32.FindWindowW(None, WINDOW_TITLE)
+    if hwnd:
+        user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+        user32.SetForegroundWindow(hwnd)
+        return
+    user32.MessageBoxW(
+        None,
+        "NoirPad is already running (maybe as the web version in a terminal).\n\n"
+        "Close the other instance first; two NoirPads on the same notes would "
+        "overwrite each other's changes.",
+        WINDOW_TITLE,
+        0x40,  # MB_ICONINFORMATION
+    )
+
+
 def main() -> int:
     backend = _load_backend()
+    # One NoirPad per data directory (desktop or web), see D7 in the audit.
+    instance_lock = backend.acquire_instance_lock()
+    if instance_lock is None:
+        _focus_running_instance()
+        return 0
+
     # Random per-launch token: every /api/ request must carry it, so other
     # local processes (or web pages) that find the port can't use the API.
     token = secrets.token_urlsafe(32)
@@ -164,6 +193,9 @@ def main() -> int:
     # links.js opens external links with window.open(); pywebview must hand
     # those to the system browser, never load them in the app window.
     webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
+    # Exports and backups are downloads; pywebview cancels them by default.
+    # With this on, WebView2 shows a "Save as" dialog.
+    webview.settings["ALLOW_DOWNLOADS"] = True
 
     webview.create_window(
         WINDOW_TITLE,
@@ -189,6 +221,7 @@ def main() -> int:
         )
     finally:
         handle.stop()
+        instance_lock.close()
 
     return 0
 

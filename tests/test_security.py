@@ -18,7 +18,8 @@ def raw_client(backend, **kw):
 def test_password_mode_requires_login(client, np_backend):
     np_backend.configure(password="tajne-heslo")
     assert client.get("/api/session").json() == {
-        "mode": "server", "password_required": True, "authenticated": False}
+        "mode": "server", "password_required": True, "authenticated": False,
+        "data_notice": None}
     assert client.get("/api/data").status_code == 401
     assert client.get("/images/x.png").status_code == 401
 

@@ -102,7 +102,10 @@ window.NP = window.NP || {};
             pwInput.value = "";
             if (session) session.authenticated = true;
             hide();
-            return bootApp();
+            return NP.api.session().then(function (res) {
+                session = res || session;
+                return bootApp();
+            }).then(showDataNotice);
         }).catch(function (err) {
             setBusy(false);
             showError((err && err.message) || "Login failed");
@@ -133,6 +136,17 @@ window.NP = window.NP || {};
         return Promise.resolve();
     }
 
+    /* The backend recovered from a corrupt notes file (or found none). */
+    function showDataNotice() {
+        if (!session || !session.data_notice) return;
+        var msg = session.data_notice;
+        session.data_notice = null;
+        setTimeout(function () {
+            window.alert("NoirPad: " + msg);
+            NP.api.dismissNotice().catch(function () { /* shown anyway */ });
+        }, 300);
+    }
+
     function showStartError(err) {
         var sub = document.getElementById("splash-subtitle");
         if (sub) sub.textContent = "Failed to reach server: " + (err && err.message ? err.message : err);
@@ -161,7 +175,7 @@ window.NP = window.NP || {};
                     show();
                     return;
                 }
-                return bootApp();
+                return bootApp().then(showDataNotice);
             }).catch(showStartError);
         }
     };

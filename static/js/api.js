@@ -44,7 +44,12 @@ window.NP = window.NP || {};
             var msg = txt;
             try {
                 var obj = JSON.parse(txt);
-                if (obj && obj.detail) msg = obj.detail;
+                if (obj && typeof obj.detail === "string") {
+                    msg = obj.detail;
+                } else if (obj && Array.isArray(obj.detail)) {
+                    /* FastAPI validation error list (e.g. name too long) */
+                    msg = obj.detail.map(function (d) { return d.msg; }).join("; ");
+                }
             } catch (e) { /* not json — keep raw */ }
             var e = new Error(msg || ("API " + res.status));
             e.status = res.status;
@@ -268,6 +273,10 @@ window.NP = window.NP || {};
 
         logout: function () {
             return request("POST", "/api/logout");
+        },
+
+        dismissNotice: function () {
+            return request("POST", "/api/session/dismiss-notice");
         },
 
         /* Desktop: lets <img src="/images/…"> through (cookie). */
