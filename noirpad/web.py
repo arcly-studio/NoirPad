@@ -26,5 +26,5 @@ def main() -> None:
             "instances would overwrite each other's changes."
         )
     from .__version__ import __version__
-    print(f"NoirPad {__version__} — http://{host}:{port}/  (data: {storage.DATA_DIR})")
+    print(f"NoirPad {__version__} - http://{host}:{port}/  (data: {storage.DATA_DIR})")
     uvicorn.run(app, host=host, port=port)
