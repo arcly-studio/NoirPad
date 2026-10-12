@@ -38,7 +38,6 @@ CONSOLE = False
 # desktop.py can importlib it from sys._MEIPASS. The frontend tree is added
 # verbatim so resource_path("static") finds index.html + css/ + js/.
 datas = [
-    ("NoirPad-web.py", "."),
     ("static", "static"),
 ]
 

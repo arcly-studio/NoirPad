@@ -33,6 +33,10 @@ window.NP = window.NP || {};
     NP.editor = {
         el: null,
         _autosaveTimer: null,
+        /* id + text + formats of the last successful save: a silent save
+           of an unchanged note is skipped (no file write, no new data
+           version for other windows to reload). */
+        _lastSavedKey: null,
         _currentNoteId: null,
         /* Whether the note currently loaded in the editor is stored
            encrypted on the server. Derived from the FRESHLY fetched
@@ -764,6 +768,11 @@ window.NP = window.NP || {};
                 formats = NP.editor._extractFormats();
             }
 
+            var key = id + " " + text + " " + JSON.stringify(formats);
+            if (silent && key === NP.editor._lastSavedKey) {
+                return Promise.resolve();
+            }
+
             var savePromise;
             if (NP.editor._currentNoteEncrypted) {
                 var token = NP.editor._unlockToken;
@@ -784,6 +793,7 @@ window.NP = window.NP || {};
             NP.editor._lastSave = savePromise;
 
             return savePromise.then(function () {
+                NP.editor._lastSavedKey = key;
                 if (!silent) {
                     NP.editor._showSaveFlash();
                 }
@@ -831,11 +841,17 @@ window.NP = window.NP || {};
 
         /* ---- Auto-save ---- */
 
+        /* Autosave on: every `autosave_interval` seconds (Settings).
+           Off: a 30 s safety net, so a crash never costs more than half a
+           minute of typing. Unchanged notes are not rewritten either way. */
         startAutosave: function () {
             NP.editor.stopAutosave();
+            var data = (NP.state && NP.state.data) || {};
+            var seconds = data.autosave ? parseInt(data.autosave_interval, 10) : 30;
+            if (!(seconds >= 5)) seconds = 30;
             NP.editor._autosaveTimer = setInterval(function () {
                 NP.editor.save(true);
-            }, 30000);
+            }, seconds * 1000);
         },
 
         stopAutosave: function () {

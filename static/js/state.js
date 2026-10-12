@@ -10,7 +10,7 @@ window.NP = window.NP || {};
 
     NP.state = {
         data: null,
-        version: 0,
+        etag: null,
         openTabs: [],
         activeTabId: null,
         currentNoteId: null,
@@ -22,34 +22,34 @@ window.NP = window.NP || {};
         matrixRunning: false,
 
         init: function () {
-            return NP.api.getData().then(function (data) {
-                NP.state.data = data;
-                NP.state.version = data._version || 0;
-                return data;
+            return NP.api.getDataIfChanged(null).then(function (res) {
+                NP.state.data = res.data;
+                NP.state.etag = res.etag;
+                return res.data;
             });
         },
 
+        /* Pick up changes made elsewhere (another tab, a restored backup).
+           Only while the window is visible, and the server answers 304
+           when nothing changed (D13). */
         poll: function () {
-            return NP.api.getVersion().then(function (res) {
-                var newVersion = (res && res.version) || 0;
-                if (newVersion && newVersion !== NP.state.version) {
-                    return NP.api.getData().then(function (data) {
-                        NP.state.data = data;
-                        NP.state.version = newVersion;
-                        /* Reflect remote changes in the UI */
-                        if (NP.tree && NP.tree.render) NP.tree.render();
-                    });
-                }
+            if (document.visibilityState !== "visible") return Promise.resolve();
+            return NP.api.getDataIfChanged(NP.state.etag).then(function (res) {
+                if (!res) return;
+                NP.state.data = res.data;
+                NP.state.etag = res.etag;
+                if (NP.tree && NP.tree.render) NP.tree.render();
             }).catch(function () {
-                /* silently ignore polling errors */
+                /* offline / locked: try again on the next tick */
             });
         },
 
         startPolling: function () {
             if (pollTimer) clearInterval(pollTimer);
-            pollTimer = setInterval(function () {
-                NP.state.poll();
-            }, POLL_INTERVAL);
+            pollTimer = setInterval(NP.state.poll, POLL_INTERVAL);
+            document.addEventListener("visibilitychange", function () {
+                if (document.visibilityState === "visible") NP.state.poll();
+            });
         },
 
         getTheme: function () {

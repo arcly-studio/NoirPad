@@ -10,6 +10,10 @@ images/
 build/
 dist/
 
-# Local dev environments
+# Local dev environments and test output
 .venv/
 node_modules/
+.pytest_cache/
+coverage/
+.coverage
+htmlcov/

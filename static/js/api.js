@@ -118,8 +118,16 @@ window.NP = window.NP || {};
             return request("GET", "/api/data");
         },
 
-        getVersion: function () {
-            return request("GET", "/api/data/version");
+        /* → {data, etag}, or null when the data still matches `etag`. */
+        getDataIfChanged: function (etag) {
+            var headers = etag ? { "If-None-Match": etag } : {};
+            return apiFetch("/api/data", { headers: headers }).then(function (res) {
+                if (res.status === 304) return null;
+                if (!res.ok) return errorFrom(res);
+                return res.json().then(function (data) {
+                    return { data: data, etag: res.headers.get("etag") };
+                });
+            });
         },
 
         getNote: function (id) {

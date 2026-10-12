@@ -349,10 +349,7 @@ window.NP = window.NP || {};
             function (v) {
                 saveSetting({ autosave: v });
                 syncAutosaveIndicator(v);
-                if (NP.editor) {
-                    if (v && NP.editor.startAutosave) NP.editor.startAutosave();
-                    else if (NP.editor.stopAutosave) NP.editor.stopAutosave();
-                }
+                if (NP.editor && NP.editor._currentNoteId) NP.editor.startAutosave();
             }
         );
 
@@ -361,9 +358,9 @@ window.NP = window.NP || {};
             aiDd.addEventListener("np-dropdown-change", function (e) {
                 var n = parseInt(e.detail.value, 10);
                 saveSetting({ autosave_interval: isNaN(n) ? 5 : n });
-                /* TODO: integrate interval value with NP.editor autosave
-                   debounce — startAutosave() currently hardcodes 30000ms.
-                   Persisting only for now (autosave logic left untouched). */
+                if (NP.editor && NP.editor.startAutosave && NP.editor._autosaveTimer) {
+                    NP.editor.startAutosave();   /* restart with the new interval */
+                }
             });
         }
 

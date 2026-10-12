@@ -1,62 +1,29 @@
 """
-NoirPad desktop launcher.
+NoirPad desktop launcher (PyInstaller entry point).
 
-Wraps the existing FastAPI app (NoirPad-web.py) in a native window using
-pywebview + WebView2 (EdgeChromium) on Windows. The FastAPI server runs in
-a background thread on a free loopback port; the webview points at it.
-
-This file is the PyInstaller entrypoint. Running `python desktop.py` in dev
-gives the same desktop experience without bundling. The plain web mode
-(`python NoirPad-web.py`) is unaffected — desktop.py is purely additive.
+Wraps the FastAPI app (noirpad.app) in a native window using pywebview +
+WebView2 (EdgeChromium) on Windows. The server runs in a background thread
+on a free loopback port; the webview points at it. `python desktop.py` in
+dev gives the same experience without bundling.
 """
 
 from __future__ import annotations
 
-import sys, os
+import os
+import sys
+
+# PyInstaller windowed builds have no console: give print() somewhere to go.
 if sys.stdout is None:
     sys.stdout = open(os.devnull, "w")
 if sys.stderr is None:
     sys.stderr = open(os.devnull, "w")
 
-import importlib.util
 import secrets
 import socket
 import threading
 import time
-from pathlib import Path
 
 import uvicorn
-
-
-# ---------------------------------------------------------------------------
-# Locate + import NoirPad-web.py
-# ---------------------------------------------------------------------------
-#
-# The backend module's filename has a dash, so a plain `import NoirPad_web`
-# won't work. We resolve it relative to:
-#   * sys._MEIPASS in a PyInstaller bundle (where --add-data puts it), or
-#   * this file's directory in dev.
-# Then load it via importlib so PyInstaller still sees a real Python script
-# and the FastAPI `app` object is reachable.
-
-def _backend_path() -> Path:
-    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
-    return base / "NoirPad-web.py"
-
-
-def _load_backend():
-    path = _backend_path()
-    if not path.is_file():
-        raise FileNotFoundError(f"Backend module not found at {path}")
-    spec = importlib.util.spec_from_file_location("noirpad_web", str(path))
-    if spec is None or spec.loader is None:
-        raise ImportError(f"Cannot build module spec for {path}")
-    module = importlib.util.module_from_spec(spec)
-    # Register before exec so any "from noirpad_web import X" inside the
-    # module (none today, but cheap to be safe) resolves to the same object.
-    sys.modules["noirpad_web"] = module
-    spec.loader.exec_module(module)
-    return module
 
 
 # ---------------------------------------------------------------------------
@@ -99,7 +66,7 @@ class _ServerHandle:
             app=app,
             host="127.0.0.1",
             port=port,
-            log_level="info",
+            log_level="warning",
             access_log=False,
             workers=1,
             reload=False,
@@ -156,9 +123,10 @@ def _focus_running_instance() -> None:
 
 
 def main() -> int:
-    backend = _load_backend()
+    from noirpad import app as backend_app, server_auth, storage
+
     # One NoirPad per data directory (desktop or web), see D7 in the audit.
-    instance_lock = backend.acquire_instance_lock()
+    instance_lock = storage.acquire_instance_lock()
     if instance_lock is None:
         _focus_running_instance()
         return 0
@@ -166,9 +134,9 @@ def main() -> int:
     # Random per-launch token: every /api/ request must carry it, so other
     # local processes (or web pages) that find the port can't use the API.
     token = secrets.token_urlsafe(32)
-    backend.configure(mode="desktop", password=None, desktop_token=token)
+    server_auth.configure(mode="desktop", password=None, desktop_token=token)
     port = _pick_free_port()
-    handle = _ServerHandle(backend.app, port)
+    handle = _ServerHandle(backend_app.app, port)
     handle.start()
 
     if not _wait_for_server(port, timeout=10.0):
@@ -208,7 +176,7 @@ def main() -> int:
     )
     # Persistent WebView2 profile so localStorage (open folders, CRT
     # toggle) survives restarts; it lives next to the notes.
-    storage_path = backend.DATA_DIR / "webview"
+    storage_path = storage.DATA_DIR / "webview"
     storage_path.mkdir(parents=True, exist_ok=True)
     try:
         # gui="edgechromium" forces WebView2 on Windows, which is what we

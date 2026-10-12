@@ -1,0 +1,94 @@
+"""Pydantic request bodies."""
+
+from typing import Annotated, Any, Optional
+
+from pydantic import BaseModel, Field
+
+from .config import MAX_FORMATS, MAX_NAME_LEN, MAX_NOTE_CHARS, MAX_TAG_LEN, MAX_TAGS
+from .crypto import MAX_NOTE_PASSWORD
+
+Name = Annotated[str, Field(max_length=MAX_NAME_LEN)]
+NoteText = Annotated[str, Field(max_length=MAX_NOTE_CHARS)]
+Formats = Annotated[list[Any], Field(max_length=MAX_FORMATS)]
+NotePassword = Annotated[str, Field(max_length=MAX_NOTE_PASSWORD)]
+
+
+class NewItemReq(BaseModel):
+    parent_id: Optional[str] = None
+    name: Name
+
+
+class RenameReq(BaseModel):
+    id: str
+    name: Name
+
+
+class MoveReq(BaseModel):
+    id: str
+    target_id: str
+    position: str  # "before" | "after" | "inside"
+
+
+class IdReq(BaseModel):
+    id: str
+
+
+class NoteBody(BaseModel):
+    content: NoteText
+    formats: Formats = []
+    # Optional per-note rendering mode. None means "leave unchanged"; pass
+    # "rich-text" to clear back to default, "markdown" to opt in.
+    mode: Optional[str] = None
+
+
+class TagsBody(BaseModel):
+    tags: Annotated[list[Annotated[str, Field(max_length=MAX_TAG_LEN)]],
+                    Field(max_length=MAX_TAGS)]
+
+
+class SettingsBody(BaseModel):
+    theme: Optional[str] = None
+    ui_font: Optional[str] = None
+    font_family: Optional[str] = None
+    font_size: Optional[int] = None
+    autosave: Optional[bool] = None
+    page_orientation: Optional[str] = None
+    matrix_rain_enabled: Optional[bool] = None
+    show_splash: Optional[bool] = None
+    autosave_interval: Optional[int] = None
+    spellcheck: Optional[bool] = None
+    glitch_effect: Optional[bool] = None
+    confirm_delete: Optional[bool] = None
+    show_shortcut_hints: Optional[bool] = None
+    idle_lock_minutes: Optional[str] = None
+    default_encrypted: Optional[bool] = None
+    glow_intensity: Optional[int] = None
+    custom_shortcuts: Optional[dict] = None
+
+
+class PasswordReq(BaseModel):
+    id: str
+    password: NotePassword
+
+
+class DecryptReq(BaseModel):
+    id: str
+    unlock_token: Optional[str] = None
+    password: Optional[NotePassword] = None
+
+
+class LockReq(BaseModel):
+    unlock_token: str
+
+
+class SaveEncryptedReq(BaseModel):
+    id: str
+    unlock_token: str
+    content: NoteText
+    formats: Formats = []
+    lock_after: bool = False   # leaving the page: save, then forget the key
+
+
+class LoginReq(BaseModel):
+    password: str
+    remember: bool = True

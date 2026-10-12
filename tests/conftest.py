@@ -5,7 +5,6 @@ NOIRPAD_DATA_DIR is pointed at a throwaway directory before the module is
 imported, and every test gets its own fresh data dir via `set_data_dir`.
 """
 
-import importlib.util
 import io
 import os
 import struct
@@ -23,15 +22,41 @@ os.environ["NOIRPAD_DATA_DIR"] = tempfile.mkdtemp(prefix="noirpad-test-import-")
 os.environ.pop("NOIRPAD_PASSWORD", None)
 
 
-def _load_backend():
-    spec = importlib.util.spec_from_file_location("noirpad_web", ROOT / "NoirPad-web.py")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["noirpad_web"] = module
-    spec.loader.exec_module(module)
-    return module
+sys.path.insert(0, str(ROOT))
+
+import noirpad.app  # noqa: E402  (after NOIRPAD_DATA_DIR is set)
+from noirpad import config, crypto, runtime, server_auth, storage  # noqa: E402
+from noirpad.routes import backup as backup_routes  # noqa: E402
+from noirpad.routes import encryption as encryption_routes  # noqa: E402
 
 
-backend = _load_backend()
+class _Backend:
+    """The tests' view of the backend as one namespace.
+
+    Reads come from the noirpad module that defines the name; writes (incl.
+    monkeypatch.setattr) go to every module holding that same object, so
+    patched limits take effect where the code reads them.
+    """
+
+    _modules = (storage, server_auth, config, crypto, runtime, noirpad.app,
+                backup_routes, encryption_routes)
+    _aliases = {"_read_data": "read_data", "_update_data": "update_data"}
+
+    def __getattr__(self, name):
+        name = self._aliases.get(name, name)
+        for mod in self._modules:
+            if name in vars(mod):
+                return vars(mod)[name]
+        raise AttributeError(name)
+
+    def __setattr__(self, name, value):
+        current = getattr(self, name)
+        for mod in self._modules:
+            if vars(mod).get(name, object()) is current:
+                setattr(mod, name, value)
+
+
+backend = _Backend()
 
 # Header the frontend sends on every API call (CSRF guard, D5).
 API_HEADERS = {"X-NoirPad-Request": "1"}

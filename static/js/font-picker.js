@@ -86,10 +86,6 @@ window.NP = window.NP || {};
         if (!editor || !savedRange || savedRange.collapsed) return false;
         if (!editor.contains(savedRange.commonAncestorContainer)) return false;
         try {
-            console.log("[font-picker] apply to selection:", {
-                font: fontFamily, size: sizePx,
-                text: savedRange.toString().slice(0, 40)
-            });
             var span = document.createElement("span");
             span.style.fontFamily = fontFamily;
             span.style.fontSize = sizePx;

@@ -86,7 +86,6 @@ window.NP = window.NP || {};
 
         upload: function (file) {
             if (!NP.editor || !NP.editor._currentNoteId) {
-                console.warn("[images] no note loaded — upload skipped");
                 return Promise.resolve();
             }
             return NP.api.uploadImage(file).then(function (res) {
@@ -211,7 +210,6 @@ window.NP = window.NP || {};
 
         _uploadAsLink: function (file) {
             if (!NP.editor || !NP.editor._currentNoteId) {
-                console.warn("[images] no note loaded — upload skipped");
                 return Promise.resolve();
             }
             return NP.api.uploadImage(file).then(function (res) {

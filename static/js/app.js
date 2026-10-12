@@ -454,11 +454,7 @@ window.NP = window.NP || {};
                     NP.state.data.autosave = enabled;
                     NP.api.saveSettings({ autosave: enabled });
                     refreshAutosaveIndicator();
-                    if (enabled && NP.editor) {
-                        NP.editor.startAutosave();
-                    } else if (NP.editor) {
-                        NP.editor.stopAutosave();
-                    }
+                    if (NP.editor && NP.editor._currentNoteId) NP.editor.startAutosave();
                 });
             }
         }

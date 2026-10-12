@@ -48,12 +48,8 @@ window.NP = window.NP || {};
     }
 
     function lockAllUnlockedEncryptedNotes() {
-        var locked = false;
         if (NP.encryption && NP.encryption.lockAll) {
-            locked = !!NP.encryption.lockAll();
-        }
-        if (locked) {
-            console.log("[auto-lock] Encrypted note locked after idle");
+            NP.encryption.lockAll();
         }
     }
 
