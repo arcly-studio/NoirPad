@@ -146,6 +146,11 @@ window.NP = window.NP || {};
             });
         },
 
+        /* → {version, url} from noirpad/__version__.py */
+        version: function () {
+            return request("GET", "/api/version");
+        },
+
         getNote: function (id) {
             return request("GET", "/api/note/" + encodeURIComponent(id));
         },

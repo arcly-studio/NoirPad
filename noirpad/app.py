@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import config, images, server_auth, storage
+from .__version__ import __version__
 from .errors import ApiError
 from .routes import ROUTERS
 
@@ -33,7 +34,7 @@ async def _lifespan(_app: FastAPI):
 
 
 # No interactive API docs: this is a local app, not a public API.
-app = FastAPI(title="NoirPad", version="1.0.0", lifespan=_lifespan,
+app = FastAPI(title="NoirPad", version=__version__, lifespan=_lifespan,
               docs_url=None, redoc_url=None, openapi_url=None)
 
 # No CORSMiddleware on purpose: the frontend is same-origin, and no other

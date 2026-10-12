@@ -9,7 +9,11 @@ window.NP = window.NP || {};
             /* Restore CRT state immediately (before any rendering) */
             if (NP.effects && NP.effects.crtRestore) NP.effects.crtRestore();
 
-            return NP.state.init().then(function () {
+            /* Version + project URL for About / welcome (one source:
+               noirpad/__version__.py). Not critical: start without it. */
+            var info = NP.api.version().catch(function () { return {}; });
+            return Promise.all([NP.state.init(), info]).then(function (res) {
+                NP.appInfo = res[1] || {};
                 NP.themes.apply(NP.state.data.theme || "matrix");
 
                 /* Initialize modules */

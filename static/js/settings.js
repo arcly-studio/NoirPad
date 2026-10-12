@@ -580,6 +580,16 @@ window.NP = window.NP || {};
             });
         }
 
+        /* ---- About: version and project link from /api/version ---- */
+        var info = NP.appInfo || {};
+        var aboutVersion = document.getElementById("about-version");
+        if (aboutVersion && info.version) aboutVersion.textContent = "v" + info.version;
+        var aboutSource = document.getElementById("about-source");
+        if (aboutSource && info.url) {
+            aboutSource.href = info.url;
+            aboutSource.textContent = info.url.replace(/^https:\/\//, "") + " \u2197";
+        }
+
         /* ---- Session (only for a password-protected server) ---- */
         var sessionSection = document.getElementById("settings-session-section");
         if (sessionSection && NP.auth && NP.auth.passwordRequired) {

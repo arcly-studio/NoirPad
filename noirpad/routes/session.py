@@ -7,6 +7,7 @@ from fastapi import APIRouter, Request, Response
 
 from .. import app_lock
 from .. import server_auth as auth
+from ..__version__ import PROJECT_URL, __version__
 from ..errors import ApiError
 from ..models import LoginReq
 from ..runtime import RUNTIME
@@ -28,6 +29,12 @@ async def session_info(request: Request):
         # Needed before login / app lock, so the gate is in the right language.
         "language": read_data().get("language", "auto"),
     }
+
+
+@router.get("/api/version")
+async def version():
+    """For the About box and bug reports (noirpad/__version__.py)."""
+    return {"version": __version__, "url": PROJECT_URL}
 
 
 @router.post("/api/session/dismiss-notice")

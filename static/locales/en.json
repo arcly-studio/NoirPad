@@ -147,7 +147,7 @@
     },
     "welcome": {
       "subtitle": "Your dark notebook",
-      "version": "v{version} — web edition",
+      "version": "v{version}",
       "hint": "Select a note to begin or press {keys} for commands"
     },
     "overview": {

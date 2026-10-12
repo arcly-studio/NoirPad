@@ -155,7 +155,7 @@
     },
     "welcome": {
       "subtitle": "Váš temný zápisník",
-      "version": "v{version} — webová edice",
+      "version": "v{version}",
       "hint": "Vyberte poznámku, nebo stiskněte {keys} pro příkazy"
     },
     "overview": {

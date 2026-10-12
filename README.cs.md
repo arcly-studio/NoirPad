@@ -7,7 +7,7 @@
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.0-brightgreen.svg)](#)
+[![Release](https://img.shields.io/github/v/release/krystof2-ops/NoirPad-web?include_prereleases)](https://github.com/krystof2-ops/NoirPad-web/releases)
 
 NoirPad je lokální single-user desktop-style aplikace pro psaní poznámek inspirovaná estetikou terminálu. Spojuje čistý FastAPI backend s vanilla-JS frontendem (žádný build krok), takže ji naklonuješ, nainstaluješ a spustíš pod minutu. Poznámky žijí v jednom JSON souboru vedle aplikace — žádná databáze, žádný cloud, žádná telemetrie.
 

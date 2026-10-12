@@ -7,7 +7,7 @@
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.0-brightgreen.svg)](#)
+[![Release](https://img.shields.io/github/v/release/krystof2-ops/NoirPad-web?include_prereleases)](https://github.com/krystof2-ops/NoirPad-web/releases)
 
 NoirPad is a local, single-user, desktop-style note app inspired by terminal aesthetics. It pairs a clean FastAPI backend with a vanilla-JS frontend (zero build step) so you can clone, install, and run it in under a minute. Notes live in a single JSON file next to the app — no database, no cloud, no telemetry.
 

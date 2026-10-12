@@ -360,7 +360,7 @@ window.NP = window.NP || {};
             html += "<p class='welcome-sub'>" + NP.escapeHtml(NP.t("editor.welcome.subtitle")) + "</p>";
 
             /* Version */
-            html += "<p class='welcome-version'>" + NP.escapeHtml(NP.t("editor.welcome.version", { version: "2.0" })) + "</p>";
+            html += "<p class='welcome-version'>" + NP.escapeHtml(NP.t("editor.welcome.version", { version: (NP.appInfo && NP.appInfo.version) || "?" })) + "</p>";
 
             /* Hint */
             html += "<p class='welcome-hint'>" + NP.escapeHtml(NP.t("editor.welcome.hint")).replace("{keys}",
