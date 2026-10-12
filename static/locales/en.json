@@ -183,7 +183,7 @@
     "mdDialog": {
       "title": "Export Markdown to PDF",
       "message": "How do you want this note to look in the PDF?",
-      "rendered": "Markdown text",
+      "rendered": "Preview",
       "rawLight": "Raw text — light (black on white)",
       "rawDark": "Raw text — dark (white on black)",
       "cancel": "Cancel"
@@ -222,10 +222,10 @@
       "function": "Function keys",
       "save": "Save note",
       "find": "Find in note",
-      "focus": "Focus mode",
+      "focus": "Sidebar / focus mode (in Markdown mode: bold)",
       "orientation": "Toggle page orientation",
-      "italic": "Italic",
-      "underline": "Underline",
+      "italic": "Italic (rich text)",
+      "underline": "Underline (rich text)",
       "undo": "Undo",
       "redo": "Redo",
       "paste": "Paste (including images)",
@@ -245,23 +245,23 @@
       "title": "Command bar",
       "intro": "Open the command bar with Ctrl+Shift+P. Type a command starting with a colon.",
       "available": "Available commands",
-      "search": "Search notes",
+      "search": "Search in the current note",
       "newNote": "New note",
       "newFolder": "New folder",
       "theme": "Change theme",
-      "encrypt": "Encrypt note",
-      "decrypt": "Decrypt note",
+      "encrypt": "Lock the note with a password",
+      "decrypt": "Remove the note's encryption",
       "fullscreen": "Fullscreen",
       "autosave": "Autosave",
-      "export": "Export as text",
+      "export": "Export as text (.txt)",
       "exportPdf": "Export as PDF",
       "exportHtml": "Export as HTML",
       "focus": "Focus mode",
       "tag": "Add tag",
-      "tags": "Filter by tags",
+      "tags": "Show all tags",
       "fontSize": "Font size",
       "font": "Choose font",
-      "backup": "Back up data",
+      "backup": "Download a backup (.zip)",
       "import": "Import backup",
       "fav": "Toggle favorite",
       "emptyTrash": "Empty trash",
@@ -279,52 +279,55 @@
     },
     "editor": {
       "title": "Editor",
-      "monospace": "Monospace editor with formatting support",
+      "monospace": "Each note is either rich text (formatting) or Markdown (Ctrl+M)",
       "formatting": "Italic (Ctrl+I) and underline (Ctrl+U)",
       "undo": "Undo/redo history (Ctrl+Z / Ctrl+Y)",
       "orientation": "Ctrl+L toggles page orientation (landscape/portrait)"
     },
     "encryption": {
       "title": "Encryption",
-      "intro": "Notes can be encrypted with a password using AES (Fernet). Encrypted notes are marked with a lock icon.",
-      "encrypt": "The :encrypt command encrypts a note",
-      "decrypt": "The :decrypt command decrypts a note",
-      "password": "The password is not stored — if you lose it, the note cannot be recovered"
+      "intro": "A note can be locked with its own password (Lock button, Ctrl+Shift+L or :encrypt). The text is encrypted with Fernet (AES-128-CBC + HMAC-SHA256); the key is derived from the password with PBKDF2-SHA256 (480,000 iterations, random salt). Locked notes show a lock icon.",
+      "encrypt": ":encrypt locks the current note",
+      "decrypt": ":decrypt removes the encryption for good (the note is saved as plain text again)",
+      "password": "The password is never stored — if you forget it, the note cannot be recovered",
+      "notEncrypted": "Not encrypted: the note's title, tags and images"
     },
     "images": {
       "title": "Images",
       "paste": "Paste an image from the clipboard with Ctrl+V",
-      "folder": "Images are stored in the images/ folder",
-      "zoom": "Zoom with Ctrl+mouse wheel"
+      "folder": "Images are stored as files in the images folder of the data directory (%LOCALAPPDATA%\\NoirPad\\images)",
+      "zoom": "Zoom with Ctrl+mouse wheel",
+      "viewer": "Click an image to view it full size"
     },
     "export": {
       "title": "Export",
       "text": ":export — Export as plain text (.txt)",
-      "pdf": ":exportpdf — Export as PDF (with optional color)",
-      "html": ":exporthtml — Export as HTML"
+      "pdf": ":exportpdf — Export as PDF via the print dialog (Markdown notes: preview or source text)",
+      "html": ":exporthtml — Export as HTML",
+      "all": "Settings → Data — export all notes as Markdown or HTML files in a ZIP"
     },
     "tags": {
       "title": "Tags and favorites",
-      "tag": ":tag — Add/remove a note tag",
-      "tags": ":tags — Filter notes by tag",
-      "fav": ":fav — Mark/unmark a note as favorite",
+      "tag": ":tag <name> — Add a tag to the note (remove it with × on the tag)",
+      "tags": ":tags — Show all tags",
+      "fav": ":fav or Ctrl+D — Add the note to favorites, or remove it",
       "sorting": "Favorites are sorted to the top of the list"
     },
     "themes": {
       "title": "Themes",
-      "intro": "12 color themes. Change the theme with the :theme command."
+      "intro": "17 color themes. Change the theme in Settings or with :theme <name>."
     },
     "backup": {
       "title": "Backup",
-      "backup": ":backup — Export all data as a .zip file",
-      "import": ":import — Import a backup from a .zip file"
+      "backup": ":backup — Download all notes and images as a .zip file",
+      "import": ":import — Restore a backup from a .zip file (replaces all notes; a safety copy is made first)"
     },
     "effects": {
       "title": "Effects",
       "matrix": ":matrix — Turn the Matrix rain animation on/off",
       "splash": "Splash screen with an ASCII art logo on startup",
-      "cursor": "Custom round cursor with smooth blinking",
-      "focus": "Focus mode (Ctrl+B) — hides the sidebar"
+      "focus": "Focus mode (Ctrl+B) — hides the sidebar",
+      "crt": ":crt — Turn the CRT scanlines on/off"
     },
     "md": {
       "title": "Markdown",
@@ -338,7 +341,6 @@
       "other": "Other",
       "shortcuts": "Keyboard shortcuts (in markdown mode)",
       "wrapSelection": "Wrap selection in",
-      "tipList": "Tip: Press Enter at the end of a list item to continue the list automatically.",
       "tipBacktick": "Tip: Backtick (`) on Czech keyboard = AltGr + ý + space",
       "tipImages": "Tip: Use +Img button or Ctrl+V to paste images directly. Click any image to view fullscreen, Ctrl+wheel to resize.",
       "h1": {
@@ -404,6 +406,11 @@
         "italic": "*italic*",
         "code": "`code`",
         "link": "[link](url)"
+      },
+      "task": {
+        "syntax": "- [ ] Task",
+        "snippet": "- [ ] To do\n- [x] Done",
+        "desc": "Task list (shown as checkboxes)"
       }
     }
   },
@@ -431,7 +438,6 @@
   "commands": {
     "placeholder": "Type a command (e.g. :search, :theme amber)",
     "applyTheme": "Apply theme",
-    "pdfUnavailable": "PDF export not available in web",
     "hints": {
       "text": "<text>",
       "name": "<name>",
@@ -442,8 +448,8 @@
       "newNote": "Create new note",
       "newFolder": "Create new folder",
       "theme": "Switch theme",
-      "encrypt": "Encrypt current note",
-      "decrypt": "Decrypt current note",
+      "encrypt": "Lock current note with a password",
+      "decrypt": "Remove encryption from current note",
       "fullscreen": "Toggle fullscreen",
       "autosave": "Toggle autosave",
       "export": "Export as TXT",
@@ -551,7 +557,8 @@
     "contextMenu": {
       "newNote": "New Note",
       "newFolder": "New Folder",
-      "toggleFavorite": "Toggle Favorite"
+      "addFavorite": "Add to favorites",
+      "removeFavorite": "Remove from favorites"
     }
   },
   "fontPicker": {
@@ -619,7 +626,7 @@
       "font": "Font",
       "fontTitle": "Font settings",
       "markdownTitle": "Toggle markdown mode (Ctrl+M)",
-      "favoriteTitle": "Toggle favorite",
+      "favoriteTitle": "Favorite (Ctrl+D)",
       "lock": "Lock",
       "lockTitle": "Lock / Unlock note",
       "image": "+Img",

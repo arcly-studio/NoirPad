@@ -379,7 +379,8 @@ window.NP = window.NP || {};
             } else {
                 items = [
                     { label: NP.t("common.rename"), action: "rename" },
-                    { label: NP.t("tree.contextMenu.toggleFavorite"), action: "favorite" },
+                    { label: NP.t(((NP.state.data && NP.state.data.favorites) || []).indexOf(id) !== -1
+                        ? "tree.contextMenu.removeFavorite" : "tree.contextMenu.addFavorite"), action: "favorite" },
                     { label: NP.t("common.delete"), action: "delete" }
                 ];
             }

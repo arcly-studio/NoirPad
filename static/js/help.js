@@ -30,6 +30,14 @@ window.NP = window.NP || {};
                     ["Ctrl+Y", "help.keys.redo"],
                     ["Ctrl+V", "help.keys.paste"],
                     ["Ctrl+Shift+P", "help.keys.commandBar"],
+                    ["Ctrl+M", "shortcuts.labels.toggleMarkdown"],
+                    ["Ctrl+D", "shortcuts.labels.toggleFavorite"],
+                    ["Ctrl+Shift+L", "shortcuts.labels.toggleLock"],
+                    ["Ctrl+Shift+N", "shortcuts.labels.newNote"],
+                    ["Ctrl+Shift+F", "shortcuts.labels.newFolder"],
+                    ["Ctrl+Shift+I", "shortcuts.labels.insertImage"],
+                    ["Ctrl+Shift+T", "shortcuts.labels.openFontPicker"],
+                    ["Ctrl+,", "shortcuts.labels.openSettings"],
                     ["Ctrl+Tab", "help.keys.nextTab"],
                     ["Ctrl+Shift+Tab", "help.keys.prevTab"],
                     ["Ctrl+W", "help.keys.closeTab"]
@@ -74,7 +82,12 @@ window.NP = window.NP || {};
                     [":emptytrash", "help.commands.emptyTrash"],
                     [":orientation", "help.commands.orientation"],
                     [":matrix", "help.commands.matrix"],
-                    [":help", "help.commands.help"]
+                    [":help", "help.commands.help"],
+                    [":findall", "commands.desc.findall"],
+                    [":crt", "commands.desc.crt"],
+                    [":settings", "commands.desc.settings"],
+                    [":closetab", "commands.desc.closetab"],
+                    [":closeall", "commands.desc.closeall"]
                 ]}
             ]
         },
@@ -108,6 +121,7 @@ window.NP = window.NP || {};
                 { type: "bullets", value: [
                     "help.encryption.encrypt",
                     "help.encryption.decrypt",
+                    "help.encryption.notEncrypted",
                     "help.encryption.password"
                 ]}
             ]
@@ -118,7 +132,8 @@ window.NP = window.NP || {};
                 { type: "bullets", value: [
                     "help.images.paste",
                     "help.images.folder",
-                    "help.images.zoom"
+                    "help.images.zoom",
+                    "help.images.viewer"
                 ]}
             ]
         },
@@ -128,7 +143,8 @@ window.NP = window.NP || {};
                 { type: "bullets", value: [
                     "help.export.text",
                     "help.export.pdf",
-                    "help.export.html"
+                    "help.export.html",
+                    "help.export.all"
                 ]}
             ]
         },
@@ -149,7 +165,8 @@ window.NP = window.NP || {};
                 { type: "text", value: "help.themes.intro" },
                 { type: "bullets", raw: true, value: [
                     "matrix, amber, cyan, red, purple, blue",
-                    "pink, white, gold, lime, orange, ice"
+                    "pink, white, gold, lime, orange, ice",
+                    "dracula, synthwave, nord, gruvbox, tokyo-night"
                 ]}
             ]
         },
@@ -168,7 +185,7 @@ window.NP = window.NP || {};
                 { type: "bullets", value: [
                     "help.effects.matrix",
                     "help.effects.splash",
-                    "help.effects.cursor",
+                    "help.effects.crt",
                     "help.effects.focus"
                 ]}
             ]
@@ -191,9 +208,9 @@ window.NP = window.NP || {};
                 ]},
                 { type: "md-category", title: "help.md.lists", items: [
                     { id: "help.md.ul", snippet: true },
-                    { id: "help.md.ol", snippet: true }
+                    { id: "help.md.ol", snippet: true },
+                    { id: "help.md.task", snippet: true }
                 ]},
-                { type: "md-note", value: "help.md.tipList" },
                 { type: "md-category", title: "help.md.code", items: [
                     { id: "help.md.inlineCode" },
                     { id: "help.md.codeBlock", snippet: true }

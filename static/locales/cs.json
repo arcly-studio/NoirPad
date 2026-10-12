@@ -98,7 +98,7 @@
     "startFailed": "NoirPad neodpovídá: {error}"
   },
   "appLock": {
-    "chooseMessage": "Zvolte heslo s aspoň {min} znaky.",
+    "chooseMessage": "Zvolte heslo dlouhé alespoň {min} znaků.",
     "chooseWarning": "Zapomenuté heslo k zámku aplikace NoirPad neumí obnovit. Zámek vaše poznámky nešifruje.",
     "setPassword": "Nastavit heslo",
     "currentMessage": "Zadejte současné heslo k zámku aplikace.",
@@ -114,7 +114,7 @@
     "alreadyEncrypted": "Poznámka už je zašifrovaná.",
     "notEncrypted": "Poznámka není zašifrovaná.",
     "lockTitle": "Zamknout poznámku heslem",
-    "lockMessage": "Zvolte heslo o délce alespoň {n} znaků.",
+    "lockMessage": "Zvolte heslo dlouhé alespoň {n} znaků.",
     "lockWarning": "Zapomenuté heslo = tuto poznámku už nikdy neotevřete. Obnovit ji nelze.\nŠifruje se pouze text poznámky. Její název, štítky a obrázky zůstávají na disku nešifrované.",
     "lock": "Zamknout",
     "unlock": "Odemknout",
@@ -156,17 +156,17 @@
     "welcome": {
       "subtitle": "Váš temný zápisník",
       "version": "v{version}",
-      "hint": "Vyberte poznámku, nebo stiskněte {keys} pro příkazy"
+      "hint": "Vyberte poznámku, nebo stiskněte {keys} a zadejte příkaz"
     },
     "overview": {
       "summary": "{direct}, {total}",
       "directItems": {
-        "one": "{n} přímá položka",
-        "few": "{n} přímé položky",
-        "many": "{n} přímé položky",
-        "other": "{n} přímých položek"
+        "one": "{n} položka ve složce",
+        "few": "{n} položky ve složce",
+        "many": "{n} položky ve složce",
+        "other": "{n} položek ve složce"
       },
-      "totalItems": "celkem {n}"
+      "totalItems": "celkem {n} i s podsložkami"
     },
     "count": {
       "chars": {
@@ -199,9 +199,9 @@
     "mdDialog": {
       "title": "Export Markdownu do PDF",
       "message": "Jak má poznámka v PDF vypadat?",
-      "rendered": "Vykreslený Markdown",
-      "rawLight": "Prostý text — světlý (černá na bílé)",
-      "rawDark": "Prostý text — tmavý (bílá na černé)",
+      "rendered": "Náhled",
+      "rawLight": "Zdrojový text – světlý (černé na bílém)",
+      "rawDark": "Zdrojový text – tmavý (bílé na černém)",
       "cancel": "Zrušit"
     }
   },
@@ -238,10 +238,10 @@
       "function": "Funkční klávesy",
       "save": "Uložit poznámku",
       "find": "Hledat v poznámce",
-      "focus": "Režim soustředění",
+      "focus": "Postranní panel / režim soustředění (v režimu Markdown: tučné)",
       "orientation": "Přepnout orientaci stránky",
-      "italic": "Kurzíva",
-      "underline": "Podtržené",
+      "italic": "Kurzíva (formátovaný text)",
+      "underline": "Podtržené (formátovaný text)",
       "undo": "Zpět",
       "redo": "Znovu",
       "paste": "Vložit (včetně obrázků)",
@@ -261,25 +261,25 @@
       "title": "Příkazová lišta",
       "intro": "Příkazovou lištu otevřete zkratkou Ctrl+Shift+P. Zadejte příkaz začínající dvojtečkou.",
       "available": "Dostupné příkazy",
-      "search": "Hledat v poznámkách",
+      "search": "Hledat v aktuální poznámce",
       "newNote": "Nová poznámka",
       "newFolder": "Nová složka",
       "theme": "Změnit motiv",
-      "encrypt": "Zašifrovat poznámku",
-      "decrypt": "Dešifrovat poznámku",
+      "encrypt": "Zamknout poznámku heslem",
+      "decrypt": "Zrušit šifrování poznámky",
       "fullscreen": "Celá obrazovka",
       "autosave": "Automatické ukládání",
-      "export": "Exportovat jako text",
+      "export": "Exportovat jako text (.txt)",
       "exportPdf": "Exportovat jako PDF",
       "exportHtml": "Exportovat jako HTML",
       "focus": "Režim soustředění",
       "tag": "Přidat štítek",
-      "tags": "Filtrovat podle štítků",
+      "tags": "Zobrazit všechny štítky",
       "fontSize": "Velikost písma",
       "font": "Vybrat písmo",
-      "backup": "Zálohovat data",
+      "backup": "Stáhnout zálohu (.zip)",
       "import": "Importovat zálohu",
-      "fav": "Přepnout oblíbené",
+      "fav": "Oblíbená poznámka – přidat, nebo odebrat",
       "emptyTrash": "Vysypat koš",
       "orientation": "Orientace stránky",
       "matrix": "Efekt Matrix rain",
@@ -295,52 +295,55 @@
     },
     "editor": {
       "title": "Editor",
-      "monospace": "Editor s písmem pevné šířky a podporou formátování",
+      "monospace": "Každá poznámka je buď formátovaný text, nebo Markdown (Ctrl+M)",
       "formatting": "Kurzíva (Ctrl+I) a podtržení (Ctrl+U)",
       "undo": "Historie změn – zpět/znovu (Ctrl+Z / Ctrl+Y)",
       "orientation": "Ctrl+L přepíná orientaci stránky (na šířku / na výšku)"
     },
     "encryption": {
       "title": "Šifrování",
-      "intro": "Poznámky lze zašifrovat heslem pomocí AES (Fernet). Šifrované poznámky jsou označeny ikonou zámku.",
-      "encrypt": "Příkaz :encrypt poznámku zašifruje",
-      "decrypt": "Příkaz :decrypt poznámku dešifruje",
-      "password": "Heslo se nikam neukládá — při jeho ztrátě nelze poznámku obnovit"
+      "intro": "Poznámku lze zamknout vlastním heslem (tlačítko Zamknout, Ctrl+Shift+L nebo :encrypt). Text se šifruje algoritmem Fernet (AES-128-CBC + HMAC-SHA256); klíč se z hesla odvozuje pomocí PBKDF2-SHA256 (480 000 iterací, náhodná sůl). Zamčené poznámky mají ikonu zámku.",
+      "encrypt": ":encrypt zamkne aktuální poznámku",
+      "decrypt": ":decrypt šifrování natrvalo zruší (poznámka se znovu uloží jako prostý text)",
+      "password": "Heslo se nikam neukládá — když ho zapomenete, poznámku nejde obnovit",
+      "notEncrypted": "Nešifrovaný zůstává název poznámky, její štítky a obrázky"
     },
     "images": {
       "title": "Obrázky",
       "paste": "Obrázek vložíte ze schránky pomocí Ctrl+V",
-      "folder": "Obrázky se ukládají do složky images/",
-      "zoom": "Velikost změníte pomocí Ctrl + kolečka myši"
+      "folder": "Obrázky se ukládají jako soubory do složky images v datové složce (%LOCALAPPDATA%\\NoirPad\\images)",
+      "zoom": "Velikost změníte pomocí Ctrl + kolečka myši",
+      "viewer": "Kliknutím obrázek zobrazíte v plné velikosti"
     },
     "export": {
       "title": "Export",
       "text": ":export — export jako prostý text (.txt)",
-      "pdf": ":exportpdf — export jako PDF (s volitelnou barvou)",
-      "html": ":exporthtml — export jako HTML"
+      "pdf": ":exportpdf — export do PDF přes dialog tisku (u Markdownu jako náhled nebo zdrojový text)",
+      "html": ":exporthtml — export jako HTML",
+      "all": "Nastavení → Data — export všech poznámek jako soubory Markdown nebo HTML v ZIPu"
     },
     "tags": {
       "title": "Štítky a oblíbené",
-      "tag": ":tag — přidat/odebrat štítek poznámky",
-      "tags": ":tags — filtrovat poznámky podle štítku",
-      "fav": ":fav — přidat poznámku do oblíbených nebo ji z nich odebrat",
+      "tag": ":tag <název> — přidat poznámce štítek (odeberete ho křížkem na štítku)",
+      "tags": ":tags — zobrazit všechny štítky",
+      "fav": ":fav nebo Ctrl+D — přidat poznámku do oblíbených, nebo ji z nich odebrat",
       "sorting": "Oblíbené se řadí na začátek seznamu"
     },
     "themes": {
       "title": "Motivy",
-      "intro": "12 barevných motivů. Motiv změníte příkazem :theme."
+      "intro": "17 barevných motivů. Motiv změníte v Nastavení nebo příkazem :theme <název>."
     },
     "backup": {
       "title": "Záloha",
-      "backup": ":backup — exportovat všechna data jako soubor .zip",
-      "import": ":import — importovat zálohu ze souboru .zip"
+      "backup": ":backup — stáhnout všechny poznámky a obrázky jako soubor .zip",
+      "import": ":import — obnovit zálohu ze souboru .zip (nahradí všechny poznámky; předtím se uloží bezpečnostní kopie)"
     },
     "effects": {
       "title": "Efekty",
       "matrix": ":matrix — zapnout/vypnout animaci Matrix rain",
       "splash": "Úvodní obrazovka s ASCII art logem při spuštění",
-      "cursor": "Vlastní kulatý kurzor s plynulým blikáním",
-      "focus": "Režim soustředění (Ctrl+B) — skryje postranní panel"
+      "focus": "Režim soustředění (Ctrl+B) — skryje postranní panel",
+      "crt": ":crt — zapnout/vypnout CRT řádkování"
     },
     "md": {
       "title": "Markdown",
@@ -354,9 +357,8 @@
       "other": "Ostatní",
       "shortcuts": "Klávesové zkratky (v režimu Markdown)",
       "wrapSelection": "Obalí výběr do",
-      "tipList": "Tip: Když na konci položky seznamu stisknete Enter, seznam bude automaticky pokračovat.",
       "tipBacktick": "Tip: Obrácený apostrof (`) napíšete na české klávesnici jako AltGr + ý + mezerník",
-      "tipImages": "Tip: Obrázky vložíte přímo tlačítkem +Img nebo zkratkou Ctrl+V. Kliknutím na obrázek ho zobrazíte na celou obrazovku, Ctrl + kolečkem myši změníte jeho velikost.",
+      "tipImages": "Tip: Obrázky vložíte přímo tlačítkem +Obr nebo zkratkou Ctrl+V. Kliknutím na obrázek ho zobrazíte na celou obrazovku, Ctrl + kolečkem myši změníte jeho velikost.",
       "h1": {
         "syntax": "# Nadpis 1",
         "desc": "Největší nadpis"
@@ -420,6 +422,11 @@
         "italic": "*kurzíva*",
         "code": "`kód`",
         "link": "[odkaz](url)"
+      },
+      "task": {
+        "syntax": "- [ ] Úkol",
+        "snippet": "- [ ] Udělat\n- [x] Hotovo",
+        "desc": "Seznam úkolů (zobrazí se jako zaškrtávací políčka)"
       }
     }
   },
@@ -443,7 +450,7 @@
     "theme": "Motiv: {theme}",
     "target": "Dosažen cíl NoirPad.target",
     "ready": "NoirPad je připraven",
-    "continue": "[ Pokračujte stiskem libovolné klávesy nebo kliknutím ]"
+    "continue": "[ Pokračujte libovolnou klávesou nebo kliknutím ]"
   },
   "focus": {
     "exitTitle": "Ukončit režim soustředění (Ctrl+B)"
@@ -451,7 +458,6 @@
   "commands": {
     "placeholder": "Zadejte příkaz (např. :search, :theme amber)",
     "applyTheme": "Použít motiv",
-    "pdfUnavailable": "Export do PDF není ve webové verzi k dispozici",
     "hints": {
       "text": "<text>",
       "name": "<název>",
@@ -462,28 +468,28 @@
       "newNote": "Vytvořit novou poznámku",
       "newFolder": "Vytvořit novou složku",
       "theme": "Přepnout motiv",
-      "encrypt": "Zašifrovat aktuální poznámku",
-      "decrypt": "Dešifrovat aktuální poznámku",
-      "fullscreen": "Přepnout celou obrazovku",
-      "autosave": "Přepnout automatické ukládání",
+      "encrypt": "Zamknout aktuální poznámku heslem",
+      "decrypt": "Zrušit šifrování aktuální poznámky",
+      "fullscreen": "Zapnout/vypnout celou obrazovku",
+      "autosave": "Zapnout/vypnout automatické ukládání",
       "export": "Exportovat jako TXT",
       "exportpdf": "Exportovat jako PDF",
       "exporthtml": "Exportovat jako HTML",
-      "focus": "Přepnout režim soustředění",
+      "focus": "Zapnout/vypnout režim soustředění",
       "tag": "Přidat štítek k poznámce",
       "tags": "Zobrazit všechny štítky",
       "fontsize": "Nastavit velikost písma (6–72)",
       "font": "Otevřít výběr písma",
       "backup": "Stáhnout zálohu",
       "import": "Importovat zálohu",
-      "fav": "Přepnout oblíbené",
+      "fav": "Oblíbená poznámka – přidat, nebo odebrat",
       "emptytrash": "Vysypat koš",
       "orientation": "Přepnout orientaci stránky",
-      "matrix": "Přepnout efekt Matrix rain",
+      "matrix": "Zapnout/vypnout efekt Matrix rain",
       "help": "Zobrazit nápovědu",
       "closetab": "Zavřít aktuální kartu",
       "closeall": "Zavřít všechny karty",
-      "crt": "Přepnout CRT řádkování",
+      "crt": "Zapnout/vypnout CRT řádkování",
       "settings": "Otevřít nastavení",
       "findall": "Hledat ve všech poznámkách"
     }
@@ -493,7 +499,7 @@
       "markdown": "Markdown",
       "editor": "Editor",
       "notes": "Poznámky",
-      "ui": "Rozhraní",
+      "ui": "Vzhled",
       "tabs": "Karty"
     },
     "labels": {
@@ -516,14 +522,14 @@
       "findNext": "Najít další",
       "findPrev": "Najít předchozí",
       "insertImage": "Vložit obrázek",
-      "toggleMarkdown": "Přepnout režim Markdown",
+      "toggleMarkdown": "Přepnout mezi formátovaným textem a Markdownem",
       "newFolder": "Nová složka",
       "newNote": "Nová poznámka",
-      "delete": "Smazat vybrané",
-      "rename": "Přejmenovat vybrané",
-      "toggleFavorite": "Přepnout oblíbené",
+      "delete": "Smazat vybranou položku",
+      "rename": "Přejmenovat vybranou položku",
+      "toggleFavorite": "Oblíbená poznámka – přidat, nebo odebrat",
       "toggleLock": "Zamknout/odemknout poznámku",
-      "toggleSidebar": "Přepnout postranní panel / soustředění",
+      "toggleSidebar": "Skrýt/zobrazit postranní panel (režim soustředění)",
       "toggleOrientation": "Přepnout orientaci stránky",
       "openSettings": "Otevřít nastavení",
       "openHelp": "Otevřít nápovědu",
@@ -535,14 +541,14 @@
       "closeTab": "Zavřít kartu"
     },
     "errors": {
-      "empty": "Prázdná klávesová zkratka",
+      "empty": "Nebyla stisknuta žádná klávesa",
       "needsModifier": "Zkratka musí obsahovat Ctrl, Alt nebo Shift",
       "reserved": "Tuto zkratku si vyhrazuje prohlížeč a nelze ji použít"
     }
   },
   "shortcutsManager": {
     "otherCategory": "Ostatní",
-    "record": "Nahrát",
+    "record": "Nastavit",
     "resetToDefault": "Obnovit výchozí",
     "noneFound": "Žádné zkratky nenalezeny.",
     "pressKeys": "Stiskněte klávesy…",
@@ -558,7 +564,7 @@
       "many": "{n} upravené",
       "other": "{n} upravených"
     },
-    "conflictConfirm": "Zkratku „{keys}“ už používá akce „{label}“. Přepsat?",
+    "conflictConfirm": "Zkratku „{keys}“ už používá akce „{label}“. Přeřadit ji sem?",
     "resetAllConfirm": "Opravdu chcete obnovit VŠECHNY zkratky na výchozí hodnoty?"
   },
   "tree": {
@@ -575,12 +581,13 @@
     "contextMenu": {
       "newNote": "Nová poznámka",
       "newFolder": "Nová složka",
-      "toggleFavorite": "Přidat/odebrat z oblíbených"
+      "addFavorite": "Přidat do oblíbených",
+      "removeFavorite": "Odebrat z oblíbených"
     }
   },
   "fontPicker": {
     "title": "VÝBĚR PÍSMA",
-    "filterPlaceholder": "Filtrovat písma...",
+    "filterPlaceholder": "Hledat písmo…",
     "sizeLabel": "Velikost:",
     "previewLabel": "Náhled:",
     "previewSample": "Příliš žluťoučký kůň úpěl ďábelské ódy.",
@@ -598,15 +605,15 @@
     "importFailed": "Import se nezdařil: {error}"
   },
   "search": {
-    "placeholder": "Hledat...",
+    "placeholder": "Hledat…",
     "previous": "Předchozí (Shift+F3)",
     "next": "Další (F3)",
     "close": "Zavřít (Esc)",
     "count": "{current} z {total}"
   },
   "findAll": {
-    "placeholder": "Hledat ve všech poznámkách...",
-    "typeToSearch": "Začněte psát pro vyhledávání",
+    "placeholder": "Hledat ve všech poznámkách…",
+    "typeToSearch": "Napište, co hledáte",
     "noMatches": "Žádné shody"
   },
   "app": {
@@ -622,7 +629,7 @@
   },
   "ui": {
     "splash": {
-      "loading": "Načítání..."
+      "loading": "Načítám…"
     },
     "topBar": {
       "toggleSidebar": "Zobrazit/skrýt postranní panel",
@@ -643,7 +650,7 @@
       "font": "Písmo",
       "fontTitle": "Nastavení písma",
       "markdownTitle": "Přepnout režim Markdown (Ctrl+M)",
-      "favoriteTitle": "Přidat do oblíbených / odebrat",
+      "favoriteTitle": "Oblíbená poznámka (Ctrl+D)",
       "lock": "Zamknout",
       "lockTitle": "Zamknout / odemknout poznámku",
       "image": "+Obr",
@@ -651,20 +658,20 @@
       "pdfTitle": "Exportovat do PDF (Ctrl+P)"
     },
     "tags": {
-      "addPlaceholder": "Přidat štítek..."
+      "addPlaceholder": "Přidat štítek…"
     },
     "commandBar": {
-      "placeholder": "> Zadejte příkaz..."
+      "placeholder": "> Zadejte příkaz…"
     },
     "editor": {
-      "placeholder": "Začněte psát...",
-      "markdownPlaceholder": "Začněte psát v Markdownu..."
+      "placeholder": "Začněte psát…",
+      "markdownPlaceholder": "Začněte psát v Markdownu…"
     },
     "search": {
-      "findPlaceholder": "Hledat...",
+      "findPlaceholder": "Hledat…",
       "previous": "Předchozí",
       "next": "Další",
-      "replacePlaceholder": "Nahradit...",
+      "replacePlaceholder": "Nahradit…",
       "replace": "Nahradit",
       "replaceAll": "Vše",
       "replaceAllTitle": "Nahradit vše"
@@ -685,7 +692,7 @@
     },
     "fontPicker": {
       "title": "Nastavení písma",
-      "searchPlaceholder": "Hledat písma...",
+      "searchPlaceholder": "Hledat písmo…",
       "size": "Velikost:"
     },
     "settings": {
@@ -696,7 +703,7 @@
         "behavior": "Chování",
         "appLock": "Zámek aplikace",
         "data": "Data",
-        "session": "Relace",
+        "session": "Přihlášení",
         "about": "O aplikaci"
       },
       "theme": "Motiv",
@@ -706,7 +713,7 @@
       "openFontPicker": "Vybrat písmo →",
       "glowIntensity": "Intenzita záře",
       "crt": "CRT řádkování",
-      "matrixRain": "Pozadí Matrix rain",
+      "matrixRain": "Efekt Matrix rain na pozadí",
       "showSplash": "Zobrazit úvodní obrazovku při spuštění",
       "autosave": "Automatické ukládání",
       "autosaveHint": "Vypnuto: pojistné uložení každých 30 s",
@@ -723,20 +730,20 @@
       "landscape": "Na šířku",
       "portrait": "Na výšku",
       "spellcheck": "Kontrola pravopisu",
-      "glitchEffect": "Glitch efekt při psaní",
+      "glitchEffect": "Efekt „glitch“ při psaní",
       "newBadge": "NOVÉ",
       "confirmDelete": "Potvrzovat mazání",
       "idleLock": "Automaticky zamknout při nečinnosti",
       "idleLockHint": "Zamkne šifrované poznámky — a při zapnutém zámku aplikace i celou aplikaci",
       "defaultEncrypted": "Nové poznámky rovnou šifrovat",
-      "shortcutHints": "Zobrazovat nápovědu zkratek ve spodní liště",
+      "shortcutHints": "Zobrazovat zkratky ve spodní liště",
       "shortcuts": "Klávesové zkratky",
       "manageShortcuts": "Spravovat →",
       "appLock": "Vyžadovat heslo pro otevření NoirPadu",
       "appLockHint": "Při spuštění a po automatickém zamknutí. Zámek jen brání v otevření aplikace, poznámky NEŠIFRUJE — šifrované jsou pouze zamčené poznámky.",
       "appLockPassword": "Heslo zámku aplikace",
       "appLockChange": "Změnit",
-      "appLockNow": "Zamknout hned",
+      "appLockNow": "Zamknout teď",
       "downloadBackup": "Stáhnout zálohu",
       "importBackup": "Importovat zálohu",
       "exportMarkdown": "Exportovat vše do Markdownu",
@@ -748,14 +755,14 @@
       "logout": "Odhlásit se",
       "version": "Verze",
       "source": "Zdrojový kód",
-      "storageUsed": "Využité úložiště"
+      "storageUsed": "Zabrané místo"
     },
     "dialog": {
       "title": "Dialog"
     },
     "shortcuts": {
       "title": "Klávesové zkratky",
-      "searchPlaceholder": "Hledat zkratky...",
+      "searchPlaceholder": "Hledat zkratky…",
       "customizedOnly": "Jen upravené",
       "resetAll": "Obnovit vše",
       "summaryEmpty": "— zkratek · — upraveno",
@@ -770,7 +777,7 @@
       "gb": "{n} GB"
     },
     "storageError": "— (chyba)",
-    "exporting": "Exportuji...",
+    "exporting": "Exportuji…",
     "exportMdSkipped": {
       "one": "{n} zamčená poznámka byla vynechána. Pokud ji chcete v exportu, nejdřív ji odemkněte a zrušte její šifrování.",
       "few": "{n} zamčené poznámky byly vynechány. Pokud je chcete v exportu, nejdřív je odemkněte a zrušte jejich šifrování.",
@@ -789,13 +796,13 @@
       "many": "{n} obrázku",
       "other": "{n} obrázků"
     },
-    "importDone": "Importováno: {notes}. Nic stávajícího se nezměnilo.",
-    "importDoneWithImages": "Importováno: {notes} a {images}. Nic stávajícího se nezměnilo.",
+    "importDone": "Importováno: {notes}. Stávající poznámky zůstaly beze změny.",
+    "importDoneWithImages": "Importováno: {notes} a {images}. Stávající poznámky zůstaly beze změny.",
     "importSkipped": {
-      "one": "{n} soubor byl příliš velký a byl vynechán.",
-      "few": "{n} soubory byly příliš velké a byly vynechány.",
-      "many": "{n} souboru bylo příliš velkých a bylo vynecháno.",
-      "other": "{n} souborů bylo příliš velkých a bylo vynecháno."
+      "one": "{n} soubor byl příliš velký, takže se vynechal.",
+      "few": "{n} soubory byly příliš velké, takže se vynechaly.",
+      "many": "{n} souboru bylo příliš velkého, takže se vynechalo.",
+      "other": "{n} souborů bylo příliš velkých, takže se vynechaly."
     },
     "importFailed": "Import se nezdařil: {error}",
     "resetConfirm": "Obnovit všechna nastavení na výchozí hodnoty?",

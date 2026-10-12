@@ -10,7 +10,7 @@ function render(src) {
 }
 
 beforeEach(() => {
-    win = loadApp(["vendor/markdown-it/markdown-it.min.js", "vendor/dompurify/purify.min.js", "vendor/highlight/highlight.min.js", "js/utils.js", "js/syntax-highlight.js", "js/markdown.js"]);
+    win = loadApp(["vendor/markdown-it/markdown-it.min.js", "vendor/markdown-it-task-lists/markdown-it-task-lists.min.js", "vendor/dompurify/purify.min.js", "vendor/highlight/highlight.min.js", "js/utils.js", "js/syntax-highlight.js", "js/markdown.js"]);
     preview = win.document.getElementById("md-preview");
 });
 
@@ -88,5 +88,30 @@ describe("audit regressions", () => {
         for (const img of preview.querySelectorAll("img[src]")) {
             expect(img.getAttribute("src")).toMatch(/^(https?:|\/images\/|data:image\/)/i);
         }
+    });
+
+    it("renders task lists as read-only checkboxes", () => {
+        render("- [ ] koupit mléko\n- [x] hotovo\n- obyčejná položka");
+        const boxes = preview.querySelectorAll("input");
+        expect(boxes.length).toBe(2);
+        for (const box of boxes) {
+            expect(box.type).toBe("checkbox");
+            expect(box.disabled).toBe(true);
+        }
+        expect(boxes[0].checked).toBe(false);
+        expect(boxes[1].checked).toBe(true);
+        expect(preview.textContent).toContain("koupit mléko");
+        expect(dangers(preview)).toEqual([]);
+    });
+
+    it("never lets a real form control through the sanitizer", () => {
+        const html = win.NP.sanitizeHtml('<input type="text" name="pw" value="x" autofocus><button>b</button>');
+        const box = win.document.createElement("div");
+        box.innerHTML = html;
+        const input = box.querySelector("input");
+        expect(input.type).toBe("checkbox");
+        expect(input.disabled).toBe(true);
+        expect(input.hasAttribute("name") || input.hasAttribute("value")).toBe(false);
+        expect(box.querySelector("button")).toBeNull();
     });
 });

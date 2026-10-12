@@ -2,7 +2,7 @@
 
 All notable changes to NoirPad. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [1.0.0] – unreleased
+## [1.0.0] – 2026-10-12
 
 First public release.
 
@@ -10,7 +10,7 @@ First public release.
 - Windows installer (per-user, no admin rights) with a WebView2 check, and a self-hostable web
   version.
 - Notes and folders with tabs, tags, favorites and trash; rich-text or Markdown per note with live
-  preview and syntax highlighting; 17 themes; customizable shortcuts.
+  preview, task lists and syntax highlighting; 17 themes; customizable shortcuts.
 - Password-locked notes (Fernet, PBKDF2-SHA256 480 000 iterations). The password is sent once to
   unlock; only the derived key is kept in memory while the note is open.
 - Optional app lock (scrypt hash only; the server refuses every request until unlocked).

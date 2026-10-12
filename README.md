@@ -21,7 +21,7 @@ bundled. The only links that leave the app are the ones you click.
 ## Features
 
 - **Notes and folders** — tree with drag & drop, tabs, tags, favorites, trash with restore.
-- **Two editing modes per note** — rich text, or Markdown with a live preview, tables
+- **Two editing modes per note** — rich text, or Markdown with a live preview, tables, task lists
   and syntax-highlighted code blocks.
 - **Locked notes** — encrypt a single note with its own password (details below).
 - **App lock** (optional) — ask for a password whenever NoirPad starts or after inactivity.

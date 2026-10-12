@@ -15,6 +15,9 @@ const OUT = path.join(ROOT, "static", "vendor");
 const FILES = [
     ["markdown-it/dist/browser/markdown-it.umd.min.js", "markdown-it/markdown-it.min.js"],
     ["markdown-it/LICENSE", "markdown-it/LICENSE"],
+    // - [ ] / - [x] task lists, rendered as disabled (read-only) checkboxes
+    ["markdown-it-task-lists/dist/markdown-it-task-lists.min.js", "markdown-it-task-lists/markdown-it-task-lists.min.js"],
+    ["markdown-it-task-lists/LICENSE", "markdown-it-task-lists/LICENSE"],
     ["dompurify/dist/purify.min.js", "dompurify/purify.min.js"],
     ["dompurify/LICENSE", "dompurify/LICENSE"],
     // highlight.js "common" build: one file, ~40 languages, auto-detection

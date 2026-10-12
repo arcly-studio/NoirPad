@@ -274,15 +274,12 @@ window.NP = window.NP || {};
                 if (NP.state && NP.state.data) {
                     NP.state.data.autosave = !NP.state.data.autosave;
                     if (NP.api) NP.api.saveSettings({ autosave: NP.state.data.autosave });
+                    if (NP.editor && NP.editor._currentNoteId) NP.editor.startAutosave();
                 }
             } else if (lower === ":export") {
                 if (NP.export) NP.export.txt();
             } else if (lower === ":exportpdf") {
-                if (NP.status && NP.status.show) {
-                    NP.status.show(NP.t("commands.pdfUnavailable"));
-                } else {
-                    alert(NP.t("commands.pdfUnavailable"));
-                }
+                if (NP.print) NP.print.exportCurrentNote();
             } else if (lower === ":exporthtml") {
                 if (NP.export) NP.export.html();
             } else if (lower === ":focus") {

@@ -77,7 +77,8 @@ window.NP = window.NP || {};
        plain text when DOMPurify failed to load. */
     var SANITIZE_CONFIG = {
         ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|\/images\/|data:image\/(?:png|jpe?g|gif|webp);base64,)/i,
-        FORBID_TAGS: ["style", "form", "input", "button", "textarea", "select", "option"],
+        /* <input> only survives as a disabled checkbox (task lists, below). */
+        FORBID_TAGS: ["style", "form", "button", "textarea", "select", "option"],
         FORBID_ATTR: ["style"]
     };
     var purifyHooked = false;
@@ -93,6 +94,13 @@ window.NP = window.NP || {};
                 }
                 if (node.tagName === "IMG" && !NP.isImageSrc(node.getAttribute("src"))) {
                     node.removeAttribute("src");
+                }
+                if (node.tagName === "INPUT") {
+                    ["name", "value", "form", "formaction", "id", "autofocus", "list"]
+                        .forEach(function (a) { node.removeAttribute(a); });
+                    node.setAttribute("type", "checkbox");
+                    node.setAttribute("disabled", "");
+                    node.setAttribute("tabindex", "-1");
                 }
             });
         }

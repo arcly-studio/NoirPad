@@ -75,6 +75,11 @@ window.NP = window.NP || {};
         md = window.markdownit({ html: false, linkify: true, breaks: true });
         /* Let every URL through the parser; fixInline + DOMPurify decide. */
         md.validateLink = function () { return true; };
+        /* - [ ] / - [x] → checkboxes. Display only: disabled, and the
+           sanitizer forces that on every <input> anyway. */
+        if (window.markdownitTaskLists) {
+            md.use(window.markdownitTaskLists, { enabled: false, label: false });
+        }
 
         md.core.ruler.push("noirpad_classes", function (state) {
             state.tokens.forEach(function (tok) {

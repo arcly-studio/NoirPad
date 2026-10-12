@@ -21,7 +21,7 @@ aplikace. Ven vedou jen odkazy, na které sami kliknete.
 ## Funkce
 
 - **Poznámky a složky** – strom s přetahováním, karty, štítky, oblíbené, koš s obnovou.
-- **Dva režimy pro každou poznámku** – formátovaný text, nebo Markdown s živým náhledem, tabulkami
+- **Dva režimy pro každou poznámku** – formátovaný text, nebo Markdown s živým náhledem, tabulkami, seznamy úkolů
   a zvýrazněnými bloky kódu.
 - **Zamčené poznámky** – šifrování jednotlivé poznámky vlastním heslem (podrobnosti níže).
 - **Zámek aplikace** (volitelně) – heslo při každém spuštění a po nečinnosti.

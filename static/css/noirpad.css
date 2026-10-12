@@ -4118,3 +4118,14 @@ body.auth-active #matrix-canvas {
     display: flex;
     gap: 8px;
 }
+
+/* Markdown task lists (- [ ] / - [x]): read-only checkboxes, no bullet. */
+#md-preview .task-list-item {
+    list-style: none;
+}
+#md-preview .task-list-item-checkbox {
+    margin: 0 0.5em 0 -1.4em;
+    vertical-align: middle;
+    accent-color: var(--accent, #00ff41);
+    cursor: default;
+}
