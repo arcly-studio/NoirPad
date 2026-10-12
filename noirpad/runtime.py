@@ -22,6 +22,10 @@ class _Runtime:
     allowed_hosts: set[str] = set(LOOPBACK_HOSTS) | env_allowed_hosts()
     sessions: dict[str, float] = {}       # token -> expires_at (epoch secs)
     login_failures: list[float] = []
+    # App lock (app_lock.py): stored scrypt record, unlocked client tokens.
+    app_lock: Optional[dict] = None
+    app_lock_tokens: set[str] = set()
+    app_lock_failures: list[float] = []
 
 
 RUNTIME = _Runtime()

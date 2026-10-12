@@ -23,6 +23,7 @@ from typing import Any, Optional
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 
+from . import app_lock
 from .runtime import LOOPBACK_HOSTS, RUNTIME, env_allowed_hosts
 
 SESSION_COOKIE_NAME = "noirpad_session"
@@ -40,6 +41,9 @@ LOGIN_WINDOW = 60
 
 # Endpoints reachable before login (server mode with a password).
 PUBLIC_API = {("GET", "/api/session"), ("POST", "/api/login"), ("POST", "/api/logout")}
+# … and while the app lock is set and this client has not unlocked it.
+APP_LOCK_OPEN = PUBLIC_API | {("POST", "/api/session/bind"), ("POST", "/api/app-lock/unlock"),
+                              ("POST", "/api/app-lock/lock")}
 _UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 CONTENT_SECURITY_POLICY = "; ".join([
@@ -76,6 +80,8 @@ def configure(*, mode: Optional[str] = None, password: Any = ...,
     RUNTIME.sessions.clear()
     RUNTIME.login_failures.clear()
     RUNTIME.unlocked.clear()
+    RUNTIME.app_lock_tokens.clear()
+    RUNTIME.app_lock_failures.clear()
 
 
 def password_matches(candidate: str) -> bool:
@@ -150,6 +156,8 @@ def check_request(request: Request) -> Optional[JSONResponse]:
 
     if (request.method, path) not in PUBLIC_API and not is_authenticated(request):
         return _deny(401, "Not authenticated")
+    if (request.method, path) not in APP_LOCK_OPEN and not app_lock.is_unlocked(request):
+        return _deny(423, "App is locked")
     return None
 
 

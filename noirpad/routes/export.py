@@ -1,14 +1,17 @@
-"""Single-note TXT/HTML export and the bulk HTML zip."""
+"""Single-note TXT/HTML export, bulk HTML / Markdown zips, Markdown import."""
 
 import io
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
+from .. import config
 from ..export import attachment, build_html_zip, build_note_html, safe_filename
+from ..markdown_io import build_markdown_zip, import_files
 from ..storage import read_data
 from ..tree import find_item_by_id, note_exists
+from ..uploads import read_upload_limited
 
 router = APIRouter()
 
@@ -48,3 +51,21 @@ async def export_all_notes():
     """Every plain note as .html in one zip (encrypted ones are listed)."""
     filename = f"noirpad-notes-{datetime.now().strftime('%Y-%m-%d')}.zip"
     return _download(build_html_zip(read_data()), "application/zip", filename)
+
+
+@router.get("/api/notes/export-md")
+async def export_markdown():
+    """Every plain note as .md in one zip; X-NoirPad-Skipped = locked notes left out."""
+    body, skipped = build_markdown_zip(read_data())
+    response = _download(body, "application/zip",
+                         f"noirpad-markdown-{datetime.now().strftime('%Y-%m-%d')}.zip")
+    response.headers["X-NoirPad-Skipped"] = str(skipped)
+    return response
+
+
+@router.post("/api/notes/import-md")
+async def import_markdown(files: list[UploadFile] = File(...)):
+    """Add notes from .md files or a zip of them. Never changes existing notes."""
+    blobs = [(f.filename or "", await read_upload_limited(f, config.MAX_BACKUP_BYTES))
+             for f in files]
+    return import_files(blobs)

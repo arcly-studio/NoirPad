@@ -44,6 +44,8 @@ STATIC_DIR = resource_path("static")
 # Upload size limits.
 MAX_IMAGE_BYTES = 10 * 1024 * 1024     # 10 MB
 MAX_BACKUP_BYTES = 100 * 1024 * 1024   # 100 MB
+MAX_BACKUP_UNCOMPRESSED = 500 * 1024 * 1024   # sum of unpacked zip sizes (zip bomb)
+MAX_BACKUP_FILES = 10_000
 
 # Request field limits.
 MAX_NAME_LEN = 300                 # note / folder name

@@ -39,6 +39,8 @@ window.NP = window.NP || {};
         return fetch(url, opts);
     }
 
+    var reloadingForLock = false;
+
     function errorFrom(res) {
         return res.text().then(function (txt) {
             var msg = txt;
@@ -53,6 +55,12 @@ window.NP = window.NP || {};
             } catch (e) { /* not json — keep raw */ }
             var e = new Error(msg || ("API " + res.status));
             e.status = res.status;
+            /* 423 = app lock engaged (another window locked it, or the
+               password changed): reload into the lock screen. */
+            if (res.status === 423 && !reloadingForLock) {
+                reloadingForLock = true;
+                window.location.reload();
+            }
             // 401 = server password session missing/expired.
             e.unauthorized = res.status === 401;
             throw e;
@@ -88,7 +96,8 @@ window.NP = window.NP || {};
     }
 
     /* Downloads go through fetch (so they carry the API headers) and a
-       blob: link with `download` (allowed by links.js). */
+       blob: link with `download` (allowed by links.js). Resolves with the
+       response headers, or undefined after showing an error. */
     function download(url) {
         return apiFetch(url).then(function (res) {
             if (!res.ok) return errorFrom(res);
@@ -103,6 +112,7 @@ window.NP = window.NP || {};
                 a.click();
                 document.body.removeChild(a);
                 setTimeout(function () { URL.revokeObjectURL(href); }, 10000);
+                return res.headers;
             });
         }).catch(function (err) {
             alert("Download failed: " + (err && err.message ? err.message : err));
@@ -303,6 +313,30 @@ window.NP = window.NP || {};
         /* Desktop: lets <img src="/images/…"> through (cookie). */
         bindSession: function () {
             return request("POST", "/api/session/bind");
+        },
+
+        /* .md files or zips of them → {notes, folders, images, skipped} */
+        importMarkdown: function (files) {
+            var form = new FormData();
+            Array.prototype.forEach.call(files, function (f) { form.append("files", f); });
+            return request("POST", "/api/notes/import-md", form);
+        },
+
+        appLockUnlock: function (password) {
+            return request("POST", "/api/app-lock/unlock", { password: password });
+        },
+
+        appLockLock: function () {
+            return request("POST", "/api/app-lock/lock");
+        },
+
+        appLockEnable: function (password, currentPassword) {
+            return request("POST", "/api/app-lock/enable",
+                { password: password, current_password: currentPassword || null });
+        },
+
+        appLockDisable: function (password) {
+            return request("POST", "/api/app-lock/disable", { password: password });
         }
     };
 

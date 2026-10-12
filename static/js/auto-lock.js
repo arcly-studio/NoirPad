@@ -1,9 +1,9 @@
-/* auto-lock.js - Auto-lock encrypted notes after a period of inactivity.
+/* auto-lock.js - Auto-lock after a period of inactivity.
  *
  * Setting: idle_lock_minutes ("off" | "5" | "30" | "60"). When on, any
- * user activity resets an idle timer; on expiry every currently-unlocked
- * encrypted note is re-locked via NP.encryption.lockAll() (in this app
- * that's the single open note, unlocked via editor._unlockToken).
+ * user activity resets an idle timer; on expiry the whole app locks if
+ * App lock is on (app-lock.js), otherwise every unlocked encrypted note
+ * is re-locked via NP.encryption.lockAll().
  */
 window.NP = window.NP || {};
 
@@ -41,6 +41,10 @@ window.NP = window.NP || {};
     }
 
     function onIdleExpired() {
+        if (NP.appLock && NP.appLock.enabled) {
+            NP.appLock.lockNow();   /* saves, locks notes, reloads into the gate */
+            return;
+        }
         lockAllUnlockedEncryptedNotes();
         /* Restart, not stop: if the user stays idle and later opens
            another encrypted note it gets locked again. */

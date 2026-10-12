@@ -1,6 +1,10 @@
-"""Bounded reading of multipart uploads."""
+"""Bounded reading of multipart uploads and zip archives."""
+
+import zipfile
 
 from fastapi import HTTPException, UploadFile
+
+from . import config
 
 
 async def read_upload_limited(file: UploadFile, max_bytes: int) -> bytes:
@@ -16,3 +20,11 @@ async def read_upload_limited(file: UploadFile, max_bytes: int) -> bytes:
             raise HTTPException(413, f"File too large (max {max_bytes // (1024 * 1024)} MB)")
         chunks.append(chunk)
     return b"".join(chunks)
+
+
+def check_archive_size(zf: zipfile.ZipFile) -> None:
+    """D15: refuse archives that would unpack to something huge."""
+    infos = zf.infolist()
+    if (len(infos) > config.MAX_BACKUP_FILES
+            or sum(i.file_size for i in infos) > config.MAX_BACKUP_UNCOMPRESSED):
+        raise HTTPException(413, "Backup archive is too large")

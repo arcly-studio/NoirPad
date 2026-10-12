@@ -76,6 +76,8 @@ def set_data_dir(path: Path) -> None:
     RUNTIME.data_notice = None
     _migrate_legacy_data_if_needed(DATA_DIR)
     _migrate_to_single_profile()
+    RUNTIME.app_lock = read_data().get("app_lock") or None
+    RUNTIME.app_lock_tokens.clear()
 
 
 def _migrate_legacy_data_if_needed(target_dir: Path) -> None:
@@ -236,6 +238,14 @@ def write_data_unlocked(data: dict[str, Any]) -> None:
     """Write notes_data.json WITHOUT taking the lock (caller must hold it)."""
     make_backup()
     _atomic_write_json(DATA_FILE, data)
+
+
+# Kept in notes_data.json but never sent to the browser or put in a backup.
+PRIVATE_KEYS = ("app_lock",)
+
+
+def public_view(data: dict[str, Any]) -> dict[str, Any]:
+    return {k: v for k, v in data.items() if k not in PRIVATE_KEYS}
 
 
 def read_data() -> dict[str, Any]:

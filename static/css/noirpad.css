@@ -549,7 +549,7 @@ input, textarea {
 #editor-wrapper {
     flex: 1;
     /* position:relative kept — anchors the absolutely-positioned
-       #command-bar and #lock-overlay children. */
+       #command-bar child. */
     position: relative;
     display: flex;
     justify-content: center;
@@ -2046,46 +2046,11 @@ body.focus-mode #sidebar {
 }
 
 /* ---- Locked note overlay ---- */
-#lock-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 40;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    background: var(--bg);
-    gap: 12px;
-}
 
-#lock-overlay.visible {
-    display: flex;
-}
 
-#lock-overlay .lock-icon {
-    font-size: 32px;
-    color: var(--fg-dim);
-}
 
-#lock-overlay .lock-text {
-    font-size: 12px;
-    color: var(--fg-dim);
-}
 
-#lock-overlay .lock-input {
-    padding: 6px 14px;
-    font-size: 13px;
-    color: var(--fg);
-    background: var(--bg-entry);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    text-align: center;
-    width: 200px;
-}
 
-#lock-overlay .lock-input:focus {
-    border-color: var(--accent);
-}
 
 /* ---- Animations ---- */
 @keyframes fade-in {
@@ -3134,7 +3099,6 @@ body.editor-md-active #editor { display: none; }
     #note-header,
     #search-bar,
     #command-bar,
-    #lock-overlay,
     #settings-overlay,
     #help-overlay,
     #shortcuts-overlay,
@@ -4147,4 +4111,10 @@ body.auth-active #matrix-canvas {
     color: #ff5555;
     min-height: 1.6em;
     margin-bottom: 8px;
+}
+
+/* Settings: two small buttons side by side in one row (App lock). */
+.settings-inline-btns {
+    display: flex;
+    gap: 8px;
 }

@@ -1,7 +1,7 @@
 /* auth.js - NoirPad start gate.
-   NoirPad has a single local profile. Only a self-hosted server started
-   with NOIRPAD_PASSWORD asks for a password; everything else boots the
-   app straight away. */
+   NoirPad has a single local profile. Two optional passwords are asked
+   here before anything loads: a self-hosted server's NOIRPAD_PASSWORD,
+   then the App lock (app-lock.js). Otherwise the app boots straight away. */
 window.NP = window.NP || {};
 
 (function (NP) {
@@ -9,6 +9,7 @@ window.NP = window.NP || {};
 
     var session = null;   // last /api/session response
     var overlay = null;
+    var mode = "server";  // which password the gate asks for: "server" | "applock"
 
     function el(tag, attrs, children) {
         var node = document.createElement(tag);
@@ -41,8 +42,7 @@ window.NP = window.NP || {};
 "| |\\  | (_) | | |  |  __/ (_| | (_| |\n" +
 "|_| \\_|\\___/|_|_|  |_|   \\__,_|\\__,_|"
                 }),
-                el("div", { class: "auth-subtitle",
-                    text: "// this server is password protected" }),
+                el("div", { id: "auth-subtitle", class: "auth-subtitle" }),
                 el("form", { id: "auth-form", class: "auth-form" }, [
                     el("div", { class: "auth-row" }, [
                         el("label", { for: "auth-password", text: "password" }),
@@ -53,7 +53,7 @@ window.NP = window.NP || {};
                             required: "required"
                         })
                     ]),
-                    el("div", { class: "auth-row auth-row-inline" }, [
+                    el("div", { id: "auth-remember-row", class: "auth-row auth-row-inline" }, [
                         el("label", { class: "auth-check" }, [
                             el("input", { id: "auth-remember", type: "checkbox", checked: "checked" }),
                             el("span", { text: " remember me (30 days)" })
@@ -98,22 +98,32 @@ window.NP = window.NP || {};
         showError("");
         setBusy(true);
 
-        NP.api.login(password, remember).then(function () {
+        var attempt = mode === "applock"
+            ? NP.api.appLockUnlock(password)
+            : NP.api.login(password, remember);
+        attempt.then(function () {
             pwInput.value = "";
-            if (session) session.authenticated = true;
+            setBusy(false);
             hide();
             return NP.api.session().then(function (res) {
                 session = res || session;
-                return bootApp();
-            }).then(showDataNotice);
+                return proceed();
+            });
         }).catch(function (err) {
             setBusy(false);
             showError((err && err.message) || "Login failed");
         });
     }
 
-    function show() {
+    function show(which) {
+        mode = which;
         buildOverlay();
+        overlay.querySelector("#auth-subtitle").textContent = mode === "applock"
+            ? "// NoirPad is locked"
+            : "// this server is password protected";
+        overlay.querySelector("#auth-remember-row").style.display =
+            mode === "applock" ? "none" : "";
+        overlay.querySelector("#auth-password").value = "";
         overlay.classList.add("auth-visible");
         document.body.classList.add("auth-active");
         showError("");
@@ -134,6 +144,21 @@ window.NP = window.NP || {};
             return NP.app.init();
         }
         return Promise.resolve();
+    }
+
+    /* Ask for whichever password is still missing, else start the app. */
+    function proceed() {
+        var lock = session.app_lock || {};
+        if (NP.appLock) NP.appLock.enabled = !!lock.enabled;
+        if (session.password_required && !session.authenticated) {
+            show("server");
+            return;
+        }
+        if (lock.enabled && !lock.unlocked) {
+            show("applock");
+            return;
+        }
+        return bootApp().then(showDataNotice);
     }
 
     /* The backend recovered from a corrupt notes file (or found none). */
@@ -171,11 +196,7 @@ window.NP = window.NP || {};
                 return NP.api.session();
             }).then(function (res) {
                 session = res || {};
-                if (session.password_required && !session.authenticated) {
-                    show();
-                    return;
-                }
-                return bootApp().then(showDataNotice);
+                return proceed();
             }).catch(showStartError);
         }
     };

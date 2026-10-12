@@ -100,3 +100,22 @@ def test_d14_runs_at_startup(np_backend):
     with TestClient(np_backend.app, base_url="http://127.0.0.1:8000"):
         pass
     assert (np_backend.IMAGES_DIR / ".trash" / "00000000-0000-0000-0000-000000000000.png").exists()
+
+
+def test_d14_zoomed_marker_and_markdown_link_count_as_references(client, np_backend):
+    zoomed, md = upload(client), upload(client)
+    new_note(client, content=f"<<IMG:{zoomed}|w=320>>")
+    new_note(client, content=f"text ![obr](/images/{md}) text")
+    for name in (zoomed, md):
+        age(np_backend.IMAGES_DIR / name, 2 * DAY)
+    assert images.collect_orphans()["trashed"] == 0
+
+
+def test_markdown_note_images_are_in_backup(client):
+    import io
+    import zipfile
+
+    md = upload(client)
+    new_note(client, content=f"![obr](/images/{md})")
+    names = zipfile.ZipFile(io.BytesIO(client.get("/api/backup").content)).namelist()
+    assert f"images/{md}" in names

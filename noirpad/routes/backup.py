@@ -12,12 +12,9 @@ from fastapi.responses import StreamingResponse
 from .. import config, storage
 from ..images import image_ext_ok, referenced_images, safe_image_path
 from ..tree import collect_note_ids, strip_user_ids
-from ..uploads import read_upload_limited
+from ..uploads import check_archive_size, read_upload_limited
 
 router = APIRouter()
-
-MAX_BACKUP_UNCOMPRESSED = 500 * 1024 * 1024   # sum of unpacked sizes (zip bomb)
-MAX_BACKUP_FILES = 10_000
 
 
 def build_backup_zip(data: dict[str, Any]) -> bytes:
@@ -26,20 +23,13 @@ def build_backup_zip(data: dict[str, Any]) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("notes_data.json",
-                    json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"))
+                    json.dumps(storage.public_view(data), ensure_ascii=False,
+                               indent=2).encode("utf-8"))
         if storage.IMAGES_DIR.exists():
             for img in storage.IMAGES_DIR.iterdir():
                 if img.is_file() and img.name in image_names:
                     zf.write(img, f"images/{img.name}")
     return buf.getvalue()
-
-
-def check_archive_size(zf: zipfile.ZipFile) -> None:
-    """D15: refuse archives that would unpack to something huge."""
-    infos = zf.infolist()
-    if (len(infos) > MAX_BACKUP_FILES
-            or sum(i.file_size for i in infos) > MAX_BACKUP_UNCOMPRESSED):
-        raise HTTPException(413, "Backup archive is too large")
 
 
 @router.get("/api/backup")

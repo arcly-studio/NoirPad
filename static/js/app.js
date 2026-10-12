@@ -14,6 +14,7 @@ window.NP = window.NP || {};
 
                 /* Initialize modules */
                 if (NP.settings && NP.settings.init) NP.settings.init();
+                if (NP.appLock && NP.appLock.init) NP.appLock.init();
                 /* Settings v2: apply persisted runtime state (matrix rain,
                    shortcut hints, spellcheck, page orientation) now that
                    NP.state.data is loaded. */

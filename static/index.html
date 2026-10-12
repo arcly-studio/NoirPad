@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/static/favicon.ico">
     <title>NoirPad</title>
     <link rel="stylesheet" href="/static/vendor/fonts/fonts.css">
     <link rel="stylesheet" href="/static/css/themes.css?v=2.1.31">
@@ -105,13 +106,6 @@
                 <div id="command-bar">
                     <input id="command-input" type="text" placeholder="> Type a command..." spellcheck="false" autocomplete="off">
                     <div id="command-results"></div>
-                </div>
-
-                <!-- Lock overlay -->
-                <div id="lock-overlay">
-                    <div class="lock-icon">&#128274;</div>
-                    <div class="lock-text">This note is encrypted. Enter password to unlock.</div>
-                    <input class="lock-input" id="lock-password-input" type="password" placeholder="Password...">
                 </div>
 
                 <!-- Contenteditable editor -->
@@ -364,8 +358,8 @@
 
             <div class="settings-row">
                 <div class="settings-label-col">
-                    <span class="settings-label">Auto-lock notes when idle</span>
-                    <span class="settings-sublabel">Re-prompts password for encrypted notes</span>
+                    <span class="settings-label">Auto-lock when idle</span>
+                    <span class="settings-sublabel">Locks encrypted notes &mdash; and the whole app if App lock is on</span>
                 </div>
                 <div class="np-dropdown" data-value="off" id="setting-idle-lock">
                     <button class="np-dropdown-trigger" type="button">
@@ -400,12 +394,33 @@
             </div>
 
             <hr class="settings-divider">
+            <div class="settings-section-title">App lock</div>
+
+            <div class="settings-row">
+                <div class="settings-label-col">
+                    <span class="settings-label">Ask for a password to open NoirPad</span>
+                    <span class="settings-sublabel">At start and after auto-lock. It keeps people out of the app but does NOT encrypt your notes &mdash; only locked notes are encrypted.</span>
+                </div>
+                <button class="settings-toggle" id="setting-app-lock" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <div class="settings-row" id="setting-app-lock-actions" hidden>
+                <span class="settings-label">App-lock password</span>
+                <div class="settings-inline-btns">
+                    <button class="settings-link-btn" id="setting-app-lock-change">Change</button>
+                    <button class="settings-link-btn" id="setting-app-lock-now">Lock now</button>
+                </div>
+            </div>
+
+            <hr class="settings-divider">
             <div class="settings-section-title">Data</div>
 
             <div class="settings-data-row">
                 <button class="settings-btn" id="setting-download-backup">Download backup</button>
                 <button class="settings-btn" id="setting-import-backup">Import backup</button>
-                <button class="settings-btn" id="setting-export-all">Export all notes</button>
+                <button class="settings-btn" id="setting-export-md">Export all as Markdown</button>
+                <button class="settings-btn" id="setting-import-md">Import Markdown</button>
+                <button class="settings-btn" id="setting-export-all">Export all as HTML</button>
                 <button class="settings-btn settings-btn-danger" id="setting-empty-trash">Empty trash</button>
                 <button class="settings-btn settings-btn-danger" id="setting-reset-all">Reset all settings</button>
             </div>
@@ -516,6 +531,7 @@
 <script src="/static/js/shortcuts.js?v=2.1.31"></script>
 <script src="/static/js/shortcuts-manager.js?v=2.1.31"></script>
 <script src="/static/js/auto-lock.js?v=2.1.31"></script>
+<script src="/static/js/app-lock.js?v=1"></script>
 <script src="/static/js/print.js?v=2.0.11"></script>
 <script src="/static/js/mobile.js?v=2.1.52"></script>
 <script src="/static/js/app.js?v=2.1.31"></script>

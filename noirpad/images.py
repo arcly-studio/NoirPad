@@ -22,9 +22,13 @@ IMAGE_NAME_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
     r"\.(png|jpe?g|gif|webp)$", re.IGNORECASE)
 
-# Image markers in PLAINTEXT note content: web `<<IMG:name>>`, legacy
-# desktop `\x00IMG:name\x00`.
-_IMG_RE = re.compile(r"<<IMG:([^>\x00]+)>>|\x00IMG:([^\x00]+)\x00")
+# Image references in PLAINTEXT note content: rich-text markers
+# `<<IMG:name>>` / `<<IMG:name|w=300>>` (zoomed), legacy desktop
+# `\x00IMG:name\x00`, and `/images/<name>` URLs (markdown `![](…)`, links).
+_IMG_RE = re.compile(r"<<IMG:([^|>\x00]+)(?:\|[^>\x00]*)?>>|\x00IMG:([^\x00]+)\x00")
+_IMG_URL_RE = re.compile(
+    r"/images/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    r"\.(?:png|jpe?g|gif|webp))", re.IGNORECASE)
 
 
 def sniff_image(data: bytes) -> Optional[str]:
@@ -58,6 +62,7 @@ def extract_image_names(content: Optional[str]) -> list[str]:
         fname = m.group(1) or m.group(2)
         if fname:
             out.append(fname)
+    out.extend(m.group(1) for m in _IMG_URL_RE.finditer(content))
     return out
 
 

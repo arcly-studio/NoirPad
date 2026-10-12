@@ -15,7 +15,7 @@ async def get_data(request: Request):
     if known and known == storage.data_etag():
         return Response(status_code=304, headers={"ETag": known})
     data, etag = storage.read_data_with_etag()
-    return JSONResponse(data, headers={"ETag": etag})
+    return JSONResponse(storage.public_view(data), headers={"ETag": etag})
 
 
 @router.get("/api/storage")

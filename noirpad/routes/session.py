@@ -5,6 +5,7 @@ import time
 
 from fastapi import APIRouter, HTTPException, Request, Response
 
+from .. import app_lock
 from .. import server_auth as auth
 from ..models import LoginReq
 from ..runtime import RUNTIME
@@ -20,6 +21,8 @@ async def session_info(request: Request):
         "password_required": RUNTIME.mode == "server" and bool(RUNTIME.password),
         "authenticated": authenticated,
         "data_notice": RUNTIME.data_notice if authenticated else None,
+        "app_lock": {"enabled": app_lock.enabled(),
+                     "unlocked": app_lock.is_unlocked(request)},
     }
 
 

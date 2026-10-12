@@ -89,6 +89,11 @@ class SaveEncryptedReq(BaseModel):
     lock_after: bool = False   # leaving the page: save, then forget the key
 
 
+class AppLockReq(BaseModel):
+    password: Annotated[str, Field(max_length=1024)]
+    current_password: Optional[Annotated[str, Field(max_length=1024)]] = None
+
+
 class LoginReq(BaseModel):
     password: str
     remember: bool = True

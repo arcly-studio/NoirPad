@@ -470,6 +470,46 @@ window.NP = window.NP || {};
             });
         }
 
+        var exportMd = document.getElementById("setting-export-md");
+        if (exportMd) {
+            exportMd.addEventListener("click", function () {
+                exportMd.disabled = true;
+                NP.api.download("/api/notes/export-md").then(function (headers) {
+                    var skipped = headers ? parseInt(headers.get("x-noirpad-skipped"), 10) : 0;
+                    if (skipped > 0) {
+                        alert(skipped + " locked note(s) were skipped. Unlock and remove " +
+                            "their encryption first if you want them in the export.");
+                    }
+                }).finally(function () { exportMd.disabled = false; });
+            });
+        }
+
+        var importMd = document.getElementById("setting-import-md");
+        if (importMd) {
+            importMd.addEventListener("click", function () {
+                var input = document.createElement("input");
+                input.type = "file";
+                input.multiple = true;
+                input.accept = ".md,.markdown,.txt,.zip";
+                input.addEventListener("change", function () {
+                    if (!input.files || !input.files.length) return;
+                    NP.api.importMarkdown(input.files).then(function (res) {
+                        return NP.state.init().then(function () {
+                            if (NP.tree && NP.tree.render) NP.tree.render();
+                            var msg = "Imported " + res.notes + " note(s)";
+                            if (res.images) msg += " and " + res.images + " image(s)";
+                            msg += ". Nothing existing was changed.";
+                            if (res.skipped) msg += "\n" + res.skipped + " file(s) were too large and skipped.";
+                            alert(msg);
+                        });
+                    }).catch(function (err) {
+                        alert("Import failed: " + (err && err.message ? err.message : err));
+                    });
+                });
+                input.click();
+            });
+        }
+
         var emptyTrash = document.getElementById("setting-empty-trash");
         if (emptyTrash) {
             emptyTrash.addEventListener("click", function () {
