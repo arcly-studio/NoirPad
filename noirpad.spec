@@ -1,110 +1,119 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec for NoirPad desktop.
+PyInstaller spec for NoirPad desktop (onedir). Run through build.ps1:
 
-Layout:
-  * Entrypoint: desktop.py — spins up uvicorn + opens a pywebview window.
-  * Backend script: NoirPad-web.py is shipped as data and loaded by
-    desktop.py via importlib (its dashed filename isn't a legal module name
-    for a plain import, so we let PyInstaller treat it as a resource).
-  * Frontend assets: static/ is added as data and mounted at runtime via
-    resource_path() inside NoirPad-web.py (which honours sys._MEIPASS).
+    pyinstaller --clean --noconfirm noirpad.spec      → dist\\NoirPad\\NoirPad.exe
 
-Build (first pass — keep the console so errors are visible):
-    pyinstaller --clean --noconfirm noirpad.spec
+* Entry point desktop.py imports the noirpad package normally, so the
+  backend is found by static analysis.
+* static/ is bundled as data (minus work files); noirpad.config resolves
+  it from sys._MEIPASS.
+* The exe gets a Windows version resource from noirpad/__version__.py.
+* Files the app never uses are dropped after analysis (see JUNK).
 
-Once the .exe runs end-to-end, flip CONSOLE = False below and rebuild.
-The artefact lands under dist/NoirPad/.
-
-Optional one-file mode: replace COLLECT(...) with the EXE-bundles-everything
-form (see the `--onefile` block at the bottom of this file, commented out).
-Onefile is slower to start (it unpacks _MEIPASS to %TEMP% each launch) and
-slightly harder to debug, so we default to onedir.
-
-The target machine needs the WebView2 Runtime. On Windows 11 and recent
-Windows 10 updates it ships with Edge by default; on stripped-down systems
-install it from https://developer.microsoft.com/microsoft-edge/webview2/.
+The target machine needs the WebView2 Runtime (Windows 11 has it; the
+installer offers it otherwise, and NoirPad.exe explains when it's missing).
 """
 
-from PyInstaller.utils.hooks import collect_submodules, collect_data_files
+import re
+from pathlib import Path
 
-# Toggle to False for the polished build (no terminal window flashes up).
-CONSOLE = False
+from PyInstaller.utils.hooks import collect_submodules
 
-
-# ---- Bundled data files ----------------------------------------------------
-#
-# The backend Python file lives alongside the entrypoint at runtime so
-# desktop.py can importlib it from sys._MEIPASS. The frontend tree is added
-# verbatim so resource_path("static") finds index.html + css/ + js/.
-datas = [
-    ("static", "static"),
-]
+ROOT = Path(SPECPATH)
+VERSION = re.search(r'__version__ = "([^"]+)"',
+                    (ROOT / "noirpad" / "__version__.py").read_text(encoding="utf-8")).group(1)
 
 
-# ---- Hidden imports --------------------------------------------------------
-#
-# desktop.py loads NoirPad-web.py with importlib.util.spec_from_file_location,
-# which is invisible to PyInstaller's static analysis. We enumerate the
-# transitive deps of the backend so they make it into the bundle.
-hiddenimports = [
-    # Core HTTP stack
-    "fastapi",
-    "uvicorn",
-    "uvicorn.logging",
-    "uvicorn.loops",
-    "uvicorn.loops.auto",
-    "uvicorn.protocols",
-    "uvicorn.protocols.http",
-    "uvicorn.protocols.http.auto",
-    "uvicorn.protocols.websockets",
-    "uvicorn.protocols.websockets.auto",
-    "uvicorn.lifespan",
-    "uvicorn.lifespan.on",
-    "starlette.routing",
-    "pydantic",
-    # File uploads
+# ---- Data: the frontend, without work files ---------------------------------
+
+def _static_files():
+    out = []
+    for path in (ROOT / "static").rglob("*"):
+        rel = path.relative_to(ROOT)
+        if (path.is_file() and path.suffix not in (".bak", ".map", ".tmp")
+                and "parts" not in rel.parts):          # static/locales/parts = i18n work files
+            out.append((str(path), str(rel.parent)))
+    return out
+
+
+datas = _static_files()
+
+
+# ---- Hidden imports ---------------------------------------------------------
+# uvicorn picks its loop/protocol implementations by name at runtime, and
+# pywebview loads its Windows backend dynamically.
+hiddenimports = collect_submodules("uvicorn") + [
+    "webview.platforms.edgechromium",
+    "webview.platforms.winforms",
+    "clr_loader",
     "multipart",
     "python_multipart",
-    # Crypto: NoirPad's per-note encryption
-    "cryptography",
-    "_cffi_backend",
-    # platformdirs is used inside get_data_dir() at runtime
-    "platformdirs",
-    # pywebview backend on Windows
-    "webview",
-    "webview.platforms.edgechromium",
-    "clr_loader",
 ]
 
-# Pull in uvicorn / cryptography / fastapi sub-modules wholesale —
-# they all use dynamic / conditional imports that the static analyser misses.
-for pkg in ("uvicorn", "fastapi", "starlette", "cryptography",
-            "anyio", "h11"):
-    hiddenimports += collect_submodules(pkg)
 
-# Some packages ship data files (e.g. .pyi stubs, JSON tables); add them too
-# so we don't get FileNotFoundError surprises at runtime.
-for pkg in ("uvicorn", "fastapi", "starlette", "cryptography"):
-    datas += collect_data_files(pkg)
+# ---- Windows version resource -----------------------------------------------
+
+def _version_file():
+    nums = tuple(int(x) for x in (VERSION.split(".") + ["0", "0", "0"])[:4])
+    text = f"""VSVersionInfo(
+  ffi=FixedFileInfo(filevers={nums}, prodvers={nums}, mask=0x3f, flags=0x0,
+                    OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)),
+  kids=[
+    StringFileInfo([StringTable('040904B0', [
+      StringStruct('CompanyName', 'krystof2-ops'),
+      StringStruct('FileDescription', 'NoirPad'),
+      StringStruct('FileVersion', '{VERSION}'),
+      StringStruct('InternalName', 'NoirPad'),
+      StringStruct('LegalCopyright', 'MIT License'),
+      StringStruct('OriginalFilename', 'NoirPad.exe'),
+      StringStruct('ProductName', 'NoirPad'),
+      StringStruct('ProductVersion', '{VERSION}')])]),
+    VarFileInfo([VarStruct('Translation', [0x0409, 1200])])
+  ]
+)
+"""
+    path = Path(workpath) / "version_info.txt"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return str(path)
 
 
-# ---------------------------------------------------------------------------
-# Analysis / EXE / COLLECT — standard onedir layout
-# ---------------------------------------------------------------------------
+# ---- Analysis ---------------------------------------------------------------
 
 a = Analysis(
     ["desktop.py"],
-    pathex=[],
+    pathex=[str(ROOT)],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    # Never used at runtime: GUI toolkits, test frameworks, dev tools.
+    excludes=["tkinter", "_tkinter", "unittest", "pytest", "pydoc", "lib2to3",
+              "PyInstaller", "pip", "IPython", "matplotlib", "numpy"],
     noarchive=False,
 )
+
+# Shipped by dependencies but never loaded by NoirPad.
+JUNK = re.compile(
+    r"(^|[\\/])("
+    r"fastapi[\\/]\.agents"           # AI-assistant docs inside fastapi
+    r"|pywebview-android\.jar"        # pywebview's Android backend
+    r"|tests?[\\/]"                    # test suites of dependencies
+    r"|node_modules[\\/]"
+    r")|\.(pyi|bak|map)$",
+    re.IGNORECASE)
+
+
+def _keep(entry):
+    return not JUNK.search(entry[0]) and not JUNK.search(str(entry[1]))
+
+
+a.datas = [e for e in a.datas if _keep(e)]
+a.binaries = [e for e in a.binaries if _keep(e)]
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -116,13 +125,14 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=False,
-    console=CONSOLE,
+    upx=False,                  # UPX triggers antivirus false positives
+    console=False,
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
     icon="noirpad.ico",
+    version=_version_file(),
 )
 
 coll = COLLECT(
@@ -134,28 +144,3 @@ coll = COLLECT(
     upx_exclude=[],
     name="NoirPad",
 )
-
-
-# ---------------------------------------------------------------------------
-# Optional --onefile variant (commented out)
-# ---------------------------------------------------------------------------
-#
-# Slower cold start (extracts to %TEMP% each run) and harder to inspect.
-# To use it, comment out the EXE+COLLECT block above and uncomment below:
-#
-# exe = EXE(
-#     pyz,
-#     a.scripts,
-#     a.binaries,
-#     a.datas,
-#     [],
-#     name="NoirPad",
-#     debug=False,
-#     bootloader_ignore_signals=False,
-#     strip=False,
-#     upx=False,
-#     upx_exclude=[],
-#     runtime_tmpdir=None,
-#     console=CONSOLE,
-#     icon="noirpad.ico",
-# )

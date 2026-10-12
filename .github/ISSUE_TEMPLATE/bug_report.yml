@@ -1,0 +1,45 @@
+name: Bug report
+description: Something in NoirPad does not work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please **never paste note contents or passwords** here.
+  - type: input
+    id: version
+    attributes:
+      label: NoirPad version
+      description: Settings → About → Version (e.g. 1.0.0)
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: How do you run NoirPad?
+      options:
+        - Installed desktop app (NoirPad-Setup.exe)
+        - Desktop from source (python desktop.py)
+        - Web / self-hosted (python NoirPad-web.py or uvicorn)
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Windows version (or OS + browser for the web version)
+      placeholder: Windows 11 24H2
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: Steps to reproduce help a lot.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: |
+        Desktop app: `%LOCALAPPDATA%\NoirPad\logs\noirpad.log` (paste the last lines around the error).
+        The log never contains note contents or passwords.
+      render: text

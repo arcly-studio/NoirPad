@@ -1,0 +1,70 @@
+name: Release
+
+# Push a tag like v1.0.0 → build the installer on Windows (same steps as
+# build.ps1) → DRAFT GitHub release with the installer, its .sha256 and the
+# matching CHANGELOG.md section. Publishing the draft stays a manual step.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      TAG: ${{ github.ref_name }}     # only ever used through $env:TAG
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Tag must match noirpad/__version__.py
+        shell: pwsh
+        run: |
+          $version = (python -c "from noirpad.__version__ import __version__; print(__version__)").Trim()
+          if ($env:TAG -ne "v$version") {
+            Write-Error "Tag '$env:TAG' does not match version '$version' in noirpad/__version__.py"
+            exit 1
+          }
+
+      - name: Build (build.ps1)
+        shell: pwsh
+        run: ./build.ps1 -Python python
+
+      - name: Release notes from CHANGELOG.md
+        shell: pwsh
+        run: |
+          $version = $env:TAG.TrimStart("v")
+          $lines = Get-Content CHANGELOG.md -Encoding utf8
+          $start = ($lines | Select-String -Pattern "^## \[?$([regex]::Escape($version))\]?" | Select-Object -First 1).LineNumber
+          if (-not $start) { Write-Error "CHANGELOG.md has no section for $version"; exit 1 }
+          $notes = $lines[$start..($lines.Count - 1)] | ForEach-Object -Begin { $stop = $false } -Process {
+            if ($_ -match "^## ") { $stop = $true }
+            if (-not $stop) { $_ }
+          }
+          $notes | Set-Content release-notes.md -Encoding utf8
+
+      - name: Create draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = $env:TAG.TrimStart("v")
+          gh release create "$env:TAG" `
+            "dist/installer/NoirPad-Setup-$version.exe" `
+            "dist/installer/NoirPad-Setup-$version.exe.sha256" `
+            --draft --title "NoirPad $version" --notes-file release-notes.md
