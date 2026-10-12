@@ -6,6 +6,28 @@ import { JSDOM } from "jsdom";
 
 const STATIC = path.resolve(import.meta.dirname, "../../static");
 
+function deepMerge(into, from) {
+    for (const [k, v] of Object.entries(from)) {
+        if (v && typeof v === "object" && into[k] && typeof into[k] === "object") deepMerge(into[k], v);
+        else into[k] = v;
+    }
+    return into;
+}
+
+// static/locales/<lang>.json plus any not-yet-merged
+// static/locales/parts/*.<lang>.json (work in progress).
+export function locale(lang) {
+    const dir = path.join(STATIC, "locales");
+    const dict = JSON.parse(fs.readFileSync(path.join(dir, `${lang}.json`), "utf8"));
+    const parts = path.join(dir, "parts");
+    if (fs.existsSync(parts)) {
+        for (const f of fs.readdirSync(parts).filter((n) => n.endsWith(`.${lang}.json`)).sort()) {
+            deepMerge(dict, JSON.parse(fs.readFileSync(path.join(parts, f), "utf8")));
+        }
+    }
+    return dict;
+}
+
 const BODY = `
   <div id="editor" contenteditable="true"></div>
   <div id="md-stack"><textarea id="editor-md"></textarea><div id="md-preview"></div></div>
@@ -18,7 +40,11 @@ export function loadApp(scripts, { body = BODY } = {}) {
         pretendToBeVisual: true,
     });
     const win = dom.window;
+    // Every page has i18n.js first; tests read English texts.
+    win.eval(fs.readFileSync(path.join(STATIC, "js/i18n.js"), "utf8"));
+    win.NP.i18n.use("en", locale("en"));
     for (const rel of scripts) {
+        if (rel === "js/i18n.js") continue;
         win.eval(fs.readFileSync(path.join(STATIC, rel), "utf8"));
     }
     return win;

@@ -359,7 +359,7 @@ window.NP = window.NP || {};
         var s = ta.selectionStart;
         var e = ta.selectionEnd;
         var sel = ta.value.substring(s, e);
-        var label = sel || "text";
+        var label = sel || NP.t("markdown.linkTextPlaceholder");
         var ins = "[" + label + "](url)";
         ta.setRangeText(ins, s, e, "end");
         var urlStart = s + 1 + label.length + 2;  /* "[" + label + "](" */
@@ -369,9 +369,10 @@ window.NP = window.NP || {};
 
     function insertImage(ta) {
         var s = ta.selectionStart;
-        var ins = "![alt](url)";
+        var alt = NP.t("markdown.imageAltPlaceholder");
+        var ins = "![" + alt + "](url)";
         ta.setRangeText(ins, s, s, "end");
-        var urlStart = s + 2 + 3 + 2;  /* "![" + "alt" + "](" */
+        var urlStart = s + 2 + alt.length + 2;  /* "![" + alt + "](" */
         ta.setSelectionRange(urlStart, urlStart + 3);
         fireInput(ta);
     }

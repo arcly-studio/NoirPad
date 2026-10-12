@@ -1,6 +1,6 @@
 """Pydantic request bodies."""
 
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -64,6 +64,7 @@ class SettingsBody(BaseModel):
     default_encrypted: Optional[bool] = None
     glow_intensity: Optional[int] = None
     custom_shortcuts: Optional[dict] = None
+    language: Optional[Literal["auto", "en", "cs"]] = None
 
 
 class PasswordReq(BaseModel):

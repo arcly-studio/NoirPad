@@ -104,7 +104,7 @@ window.NP = window.NP || {};
                 if (NP.editor && NP.editor.save) NP.editor.save(true);
             }).catch(function (err) {
                 console.error("Image upload failed:", err);
-                alert("Image upload failed: " + (err && err.message ? err.message : err));
+                alert(NP.t("images.uploadFailed", { error: err && err.message ? err.message : err }));
             });
         },
 
@@ -167,14 +167,15 @@ window.NP = window.NP || {};
 
             var overlay = document.createElement("div");
             overlay.className = "paste-image-overlay";
+            function tx(key) { return NP.escapeHtml(NP.t(key)); }
             overlay.innerHTML =
                 '<div class="paste-image-modal">' +
-                    '<h3>Paste image</h3>' +
-                    '<p>How do you want to paste this image?</p>' +
+                    '<h3>' + tx("images.pasteDialog.title") + '</h3>' +
+                    '<p>' + tx("images.pasteDialog.message") + '</p>' +
                     '<div class="paste-image-buttons">' +
-                        '<button id="paste-as-image">Insert as image</button>' +
-                        '<button id="paste-as-link">Insert as link only</button>' +
-                        '<button id="paste-cancel">Cancel</button>' +
+                        '<button id="paste-as-image">' + tx("images.pasteDialog.asImage") + '</button>' +
+                        '<button id="paste-as-link">' + tx("images.pasteDialog.asLink") + '</button>' +
+                        '<button id="paste-cancel">' + tx("images.pasteDialog.cancel") + '</button>' +
                     '</div>' +
                 '</div>';
             document.body.appendChild(overlay);
@@ -224,7 +225,7 @@ window.NP = window.NP || {};
                 if (NP.editor && NP.editor.save) NP.editor.save(true);
             }).catch(function (err) {
                 console.error("Image upload failed:", err);
-                alert("Image upload failed: " + (err && err.message ? err.message : err));
+                alert(NP.t("images.uploadFailed", { error: err && err.message ? err.message : err }));
             });
         },
 
@@ -266,7 +267,7 @@ window.NP = window.NP || {};
         _insertMarkdownLink: function (url) {
             var ta = document.getElementById("editor-md");
             if (!ta) return;
-            var snippet = "[Image](" + url + ")";
+            var snippet = "[" + NP.t("images.linkLabel") + "](" + url + ")";
             var start = savedMd ? savedMd.start : ta.selectionStart;
             var end = savedMd ? savedMd.end : ta.selectionEnd;
             ta.value = ta.value.substring(0, start) + snippet + ta.value.substring(end);
@@ -346,8 +347,8 @@ window.NP = window.NP || {};
             overlay.id = "image-viewer-overlay";
             overlay.className = "image-viewer-overlay";
             overlay.innerHTML =
-                '<button class="image-viewer-close" aria-label="Close">&times;</button>' +
-                '<img class="image-viewer-img" alt="Image viewer">';
+                '<button class="image-viewer-close" aria-label="' + NP.escapeHtml(NP.t("images.viewer.close")) + '">&times;</button>' +
+                '<img class="image-viewer-img" alt="' + NP.escapeHtml(NP.t("images.viewer.alt")) + '">';
             overlay.querySelector(".image-viewer-img").src = url;
             document.body.appendChild(overlay);
 

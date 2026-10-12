@@ -13,14 +13,14 @@
 
 <!-- ============ Splash Overlay ============ -->
 <div id="splash-overlay">
-    <pre id="splash-ascii">
+    <pre id="splash-ascii" translate="no">
  _   _       _      ____           _
 | \ | | ___ (_)_ __|  _ \ __ _  __| |
 |  \| |/ _ \| | '__| |_) / _` |/ _` |
 | |\  | (_) | | |  |  __/ (_| | (_| |
 |_| \_|\___/|_|_|  |_|   \__,_|\__,_|
     </pre>
-    <div id="splash-subtitle">Loading...</div>
+    <div id="splash-subtitle" data-i18n="ui.splash.loading">Loading...</div>
 </div>
 
 <!-- ============ Matrix Rain Canvas ============ -->
@@ -34,27 +34,27 @@
 
     <!-- ---- Top Bar ---- -->
     <div id="top-bar">
-        <button id="btn-hamburger" class="hamburger-btn" aria-label="Toggle sidebar" type="button">
+        <button id="btn-hamburger" class="hamburger-btn" aria-label="Toggle sidebar" data-i18n-aria-label="ui.topBar.toggleSidebar" type="button">
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                 <line x1="3" y1="6"  x2="17" y2="6"/>
                 <line x1="3" y1="10" x2="17" y2="10"/>
                 <line x1="3" y1="14" x2="17" y2="14"/>
             </svg>
         </button>
-        <div id="top-bar-title">NoirPad</div>
-        <button id="btn-focus" title="Focus mode (Ctrl+B)">
+        <div id="top-bar-title" translate="no">NoirPad</div>
+        <button id="btn-focus" title="Focus mode (Ctrl+B)" data-i18n-title="ui.topBar.focusMode">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
                 <rect x="1" y="1" width="12" height="12" rx="2"/>
                 <line x1="5" y1="1" x2="5" y2="13"/>
             </svg>
         </button>
-        <button id="btn-settings" title="Settings (:settings)">
+        <button id="btn-settings" title="Settings (:settings)" data-i18n-title="ui.topBar.settings">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="7" cy="7" r="2.4"/>
                 <path d="M7 1v1.6M7 11.4V13M1 7h1.6M11.4 7H13M2.76 2.76l1.13 1.13M10.11 10.11l1.13 1.13M11.24 2.76l-1.13 1.13M3.89 10.11l-1.13 1.13"/>
             </svg>
         </button>
-        <div id="status-label">Ready</div>
+        <div id="status-label" data-i18n="ui.topBar.ready">Ready</div>
     </div>
 
     <!-- ---- Main Area ---- -->
@@ -64,11 +64,11 @@
         <div id="sidebar">
             <!-- Button bar -->
             <div id="button-bar">
-                <button id="btn-new-folder" title="New Folder">+Folder</button>
-                <button id="btn-new-note" title="New Note">+Note</button>
-                <button id="btn-delete" title="Delete">Delete</button>
-                <button id="btn-rename" title="Rename">Rename</button>
-                <button id="btn-backup" title="Download backup .zip">Backup</button>
+                <button id="btn-new-folder" title="New Folder" data-i18n-title="ui.sidebar.newFolderTitle" data-i18n="ui.sidebar.newFolder">+Folder</button>
+                <button id="btn-new-note" title="New Note" data-i18n-title="ui.sidebar.newNoteTitle" data-i18n="ui.sidebar.newNote">+Note</button>
+                <button id="btn-delete" title="Delete" data-i18n-title="common.delete" data-i18n="common.delete">Delete</button>
+                <button id="btn-rename" title="Rename" data-i18n-title="common.rename" data-i18n="common.rename">Rename</button>
+                <button id="btn-backup" title="Download backup .zip" data-i18n-title="ui.sidebar.backupTitle" data-i18n="ui.sidebar.backup">Backup</button>
             </div>
 
             <!-- Tree (the functional Trash section is rendered into this
@@ -82,14 +82,14 @@
             <!-- Note header -->
             <div id="note-header">
                 <span id="note-prefix">&gt;&nbsp;</span>
-                <input id="note-title-input" type="text" placeholder="Untitled" spellcheck="false" autocomplete="off" maxlength="300">
-                <button class="header-btn" id="btn-help" title="Help">Help</button>
-                <button class="header-btn" id="btn-font" title="Font settings">Font</button>
-                <button class="header-btn" id="btn-md-toggle" title="Toggle markdown mode (Ctrl+M)">MD</button>
-                <button class="header-btn" id="btn-favorite" title="Toggle favorite">&#9733;</button>
-                <button class="header-btn" id="btn-lock" title="Lock / Unlock note">Lock</button>
-                <button class="header-btn" id="btn-insert-image" title="Insert image">+Img</button>
-                <button class="header-btn" id="btn-print" title="Export to PDF (Ctrl+P)">PDF</button>
+                <input id="note-title-input" type="text" placeholder="Untitled" data-i18n-placeholder="common.untitled" spellcheck="false" autocomplete="off" maxlength="300">
+                <button class="header-btn" id="btn-help" title="Help" data-i18n-title="ui.header.help" data-i18n="ui.header.help">Help</button>
+                <button class="header-btn" id="btn-font" title="Font settings" data-i18n-title="ui.header.fontTitle" data-i18n="ui.header.font">Font</button>
+                <button class="header-btn" id="btn-md-toggle" title="Toggle markdown mode (Ctrl+M)" data-i18n-title="ui.header.markdownTitle" translate="no">MD</button>
+                <button class="header-btn" id="btn-favorite" title="Toggle favorite" data-i18n-title="ui.header.favoriteTitle">&#9733;</button>
+                <button class="header-btn" id="btn-lock" title="Lock / Unlock note" data-i18n-title="ui.header.lockTitle" data-i18n="ui.header.lock">Lock</button>
+                <button class="header-btn" id="btn-insert-image" title="Insert image" data-i18n-title="ui.header.imageTitle" data-i18n="ui.header.image">+Img</button>
+                <button class="header-btn" id="btn-print" title="Export to PDF (Ctrl+P)" data-i18n-title="ui.header.pdfTitle" translate="no">PDF</button>
             </div>
 
             <!-- Tab bar -->
@@ -97,19 +97,19 @@
 
             <!-- Tag bar -->
             <div id="tag-bar">
-                <input id="tag-input" type="text" placeholder="Add tag..." spellcheck="false" autocomplete="off">
+                <input id="tag-input" type="text" placeholder="Add tag..." data-i18n-placeholder="ui.tags.addPlaceholder" spellcheck="false" autocomplete="off">
             </div>
 
             <!-- Editor wrapper -->
             <div id="editor-wrapper">
                 <!-- Command bar overlay (inside editor area) -->
                 <div id="command-bar">
-                    <input id="command-input" type="text" placeholder="> Type a command..." spellcheck="false" autocomplete="off">
+                    <input id="command-input" type="text" placeholder="> Type a command..." data-i18n-placeholder="ui.commandBar.placeholder" spellcheck="false" autocomplete="off">
                     <div id="command-results"></div>
                 </div>
 
                 <!-- Contenteditable editor -->
-                <div id="editor" contenteditable="true" spellcheck="true" data-placeholder="Start typing..."></div>
+                <div id="editor" contenteditable="true" spellcheck="true" data-placeholder="Start typing..." data-i18n-data-placeholder="ui.editor.placeholder"></div>
 
                 <!-- Markdown-mode editor: split-pane layout.
                      Left pane = plain textarea source.
@@ -118,7 +118,7 @@
                      Hidden until body.editor-md-active. -->
                 <div id="md-stack">
                     <div id="md-source">
-                        <textarea id="editor-md" spellcheck="false" autocomplete="off" wrap="soft" placeholder="Start typing markdown..."></textarea>
+                        <textarea id="editor-md" spellcheck="false" autocomplete="off" wrap="soft" placeholder="Start typing markdown..." data-i18n-placeholder="ui.editor.markdownPlaceholder"></textarea>
                     </div>
                     <div id="md-preview" aria-hidden="true"></div>
                 </div>
@@ -126,14 +126,14 @@
 
             <!-- Search bar (hidden by default) -->
             <div id="search-bar">
-                <input id="search-input" type="text" placeholder="Find..." spellcheck="false" autocomplete="off">
+                <input id="search-input" type="text" placeholder="Find..." data-i18n-placeholder="ui.search.findPlaceholder" spellcheck="false" autocomplete="off">
                 <span id="search-count">0/0</span>
-                <button class="search-btn" id="search-prev" title="Previous">&#9650;</button>
-                <button class="search-btn" id="search-next" title="Next">&#9660;</button>
-                <input id="replace-input" type="text" placeholder="Replace..." spellcheck="false" autocomplete="off">
-                <button class="search-btn" id="replace-btn" title="Replace">Replace</button>
-                <button class="search-btn" id="replace-all-btn" title="Replace All">All</button>
-                <button class="search-btn" id="search-close" title="Close">&times;</button>
+                <button class="search-btn" id="search-prev" title="Previous" data-i18n-title="ui.search.previous">&#9650;</button>
+                <button class="search-btn" id="search-next" title="Next" data-i18n-title="ui.search.next">&#9660;</button>
+                <input id="replace-input" type="text" placeholder="Replace..." data-i18n-placeholder="ui.search.replacePlaceholder" spellcheck="false" autocomplete="off">
+                <button class="search-btn" id="replace-btn" title="Replace" data-i18n-title="ui.search.replace" data-i18n="ui.search.replace">Replace</button>
+                <button class="search-btn" id="replace-all-btn" title="Replace All" data-i18n-title="ui.search.replaceAllTitle" data-i18n="ui.search.replaceAll">All</button>
+                <button class="search-btn" id="search-close" title="Close" data-i18n-title="common.close">&times;</button>
             </div>
         </div>
     </div>
@@ -141,20 +141,20 @@
     <!-- ---- Bottom Bar ---- -->
     <div id="bottom-bar">
         <div id="bottom-left">
-            <span id="autosave-toggle" class="bottom-item" title="Toggle autosave">
-                <span id="autosave-indicator">Autosave</span>
+            <span id="autosave-toggle" class="bottom-item" title="Toggle autosave" data-i18n-title="ui.bottomBar.autosaveTitle">
+                <span id="autosave-indicator" data-i18n="ui.bottomBar.autosave">Autosave</span>
             </span>
         </div>
         <div id="bottom-center">
-            <span class="shortcut-hint bottom-item"><kbd>Ctrl+S</kbd> Save</span>
-            <span class="shortcut-hint bottom-item"><kbd>Ctrl+Shift+P</kbd> Commands</span>
-            <span class="shortcut-hint bottom-item"><kbd>Ctrl+F</kbd> Find</span>
-            <span class="shortcut-hint bottom-item"><kbd>Ctrl+B</kbd> Sidebar</span>
+            <span class="shortcut-hint bottom-item"><kbd translate="no">Ctrl+S</kbd> <span data-i18n="ui.bottomBar.save">Save</span></span>
+            <span class="shortcut-hint bottom-item"><kbd translate="no">Ctrl+Shift+P</kbd> <span data-i18n="ui.bottomBar.commands">Commands</span></span>
+            <span class="shortcut-hint bottom-item"><kbd translate="no">Ctrl+F</kbd> <span data-i18n="ui.bottomBar.find">Find</span></span>
+            <span class="shortcut-hint bottom-item"><kbd translate="no">Ctrl+B</kbd> <span data-i18n="ui.bottomBar.sidebar">Sidebar</span></span>
         </div>
         <div id="bottom-right">
-            <span id="char-count" class="bottom-item">0 chars</span>
-            <span id="word-count" class="bottom-item">0 words</span>
-            <span id="line-count" class="bottom-item">0 lines</span>
+            <span id="char-count" class="bottom-item" data-i18n="ui.bottomBar.chars">0 chars</span>
+            <span id="word-count" class="bottom-item" data-i18n="ui.bottomBar.words">0 words</span>
+            <span id="line-count" class="bottom-item" data-i18n="ui.bottomBar.lines">0 lines</span>
         </div>
     </div>
 
@@ -175,8 +175,8 @@
 <div id="help-overlay">
     <div id="help-window">
         <div id="help-header">
-            <h2>Keyboard Shortcuts</h2>
-            <button id="help-close">&times;</button>
+            <h2 data-i18n="ui.help.title">Keyboard Shortcuts</h2>
+            <button id="help-close" aria-label="Close" data-i18n-aria-label="common.close">&times;</button>
         </div>
         <div id="help-body"></div>
     </div>
@@ -186,15 +186,15 @@
 <div id="font-overlay">
     <div id="font-picker">
         <div id="font-picker-header">
-            <h2>Font Settings</h2>
-            <button id="font-picker-close">&times;</button>
+            <h2 data-i18n="ui.fontPicker.title">Font Settings</h2>
+            <button id="font-picker-close" aria-label="Close" data-i18n-aria-label="common.close">&times;</button>
         </div>
-        <input id="font-search" type="text" placeholder="Search fonts..." spellcheck="false" autocomplete="off">
+        <input id="font-search" type="text" placeholder="Search fonts..." data-i18n-placeholder="ui.fontPicker.searchPlaceholder" spellcheck="false" autocomplete="off">
         <div id="font-list"></div>
         <div id="font-size-row">
-            <label for="font-size-input">Size:</label>
+            <label for="font-size-input" data-i18n="ui.fontPicker.size">Size:</label>
             <input id="font-size-input" type="number" min="8" max="32" value="14">
-            <span>px</span>
+            <span translate="no">px</span>
         </div>
     </div>
 </div>
@@ -203,15 +203,30 @@
 <div id="settings-overlay">
     <div id="settings-window">
         <div id="settings-header">
-            <h2>Settings</h2>
-            <button id="settings-close">&times;</button>
+            <h2 data-i18n="ui.settings.title">Settings</h2>
+            <button id="settings-close" aria-label="Close" data-i18n-aria-label="common.close">&times;</button>
         </div>
         <div id="settings-body">
-            <div class="settings-section-title">Appearance</div>
+            <div class="settings-section-title" data-i18n="ui.settings.section.appearance">Appearance</div>
 
             <div class="settings-row">
-                <span class="settings-label">Theme</span>
-                <div class="np-dropdown" data-value="matrix" id="setting-theme">
+                <span class="settings-label" data-i18n="language.label">Language</span>
+                <div class="np-dropdown" data-value="auto" id="setting-language">
+                    <button class="np-dropdown-trigger" type="button">
+                        <span class="np-dropdown-label" data-i18n="language.auto">System default</span>
+                        <span class="np-dropdown-arrow">&#9660;</span>
+                    </button>
+                    <div class="np-dropdown-menu">
+                        <div class="np-dropdown-option" data-value="auto"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label" data-i18n="language.auto">System default</span></div>
+                        <div class="np-dropdown-option" data-value="en"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label" translate="no">English</span></div>
+                        <div class="np-dropdown-option" data-value="cs"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label" translate="no">Čeština</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label" data-i18n="ui.settings.theme">Theme</span>
+                <div class="np-dropdown" data-value="matrix" id="setting-theme" translate="no">
                     <button class="np-dropdown-trigger" type="button">
                         <span class="np-dropdown-label">Matrix</span>
                         <span class="np-dropdown-arrow">&#9660;</span>
@@ -239,219 +254,219 @@
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">UI font</span>
+                <span class="settings-label" data-i18n="ui.settings.uiFont">UI font</span>
                 <div class="np-dropdown" data-value="orbitron" id="setting-ui-font">
                     <button class="np-dropdown-trigger" type="button">
-                        <span class="np-dropdown-label" style="font-family: 'Orbitron', sans-serif;">Orbitron</span>
+                        <span class="np-dropdown-label" translate="no" style="font-family: 'Orbitron', sans-serif;">Orbitron</span>
                         <span class="np-dropdown-arrow">&#9660;</span>
                     </button>
                     <div class="np-dropdown-menu">
                         <div class="np-dropdown-option" data-value="orbitron" data-font-family="'Orbitron', sans-serif">
                             <span class="np-dropdown-marker">&rsaquo;</span>
-                            <span class="np-dropdown-option-label" style="font-family: 'Orbitron', sans-serif; font-weight: 700;">Orbitron</span>
+                            <span class="np-dropdown-option-label" translate="no" style="font-family: 'Orbitron', sans-serif; font-weight: 700;">Orbitron</span>
                         </div>
                         <div class="np-dropdown-option" data-value="space-grotesk" data-font-family="'Space Grotesk', sans-serif">
                             <span class="np-dropdown-marker">&rsaquo;</span>
-                            <span class="np-dropdown-option-label" style="font-family: 'Space Grotesk', sans-serif; font-weight: 500;">Space Grotesk</span>
+                            <span class="np-dropdown-option-label" translate="no" style="font-family: 'Space Grotesk', sans-serif; font-weight: 500;">Space Grotesk</span>
                         </div>
                         <div class="np-dropdown-option" data-value="outfit" data-font-family="'Outfit', sans-serif">
                             <span class="np-dropdown-marker">&rsaquo;</span>
-                            <span class="np-dropdown-option-label" style="font-family: 'Outfit', sans-serif; font-weight: 500;">Outfit</span>
+                            <span class="np-dropdown-option-label" translate="no" style="font-family: 'Outfit', sans-serif; font-weight: 500;">Outfit</span>
                         </div>
                         <div class="np-dropdown-option" data-value="unbounded" data-font-family="'Unbounded', sans-serif">
                             <span class="np-dropdown-marker">&rsaquo;</span>
-                            <span class="np-dropdown-option-label" style="font-family: 'Unbounded', sans-serif; font-weight: 500;">Unbounded</span>
+                            <span class="np-dropdown-option-label" translate="no" style="font-family: 'Unbounded', sans-serif; font-weight: 500;">Unbounded</span>
                         </div>
                         <div class="np-dropdown-option" data-value="inter" data-font-family="'Inter', sans-serif">
                             <span class="np-dropdown-marker">&rsaquo;</span>
-                            <span class="np-dropdown-option-label" style="font-family: 'Inter', sans-serif; font-weight: 500;">Inter</span>
+                            <span class="np-dropdown-option-label" translate="no" style="font-family: 'Inter', sans-serif; font-weight: 500;">Inter</span>
                         </div>
                         <div class="np-dropdown-option" data-value="jetbrains-mono" data-font-family="'JetBrains Mono', monospace">
                             <span class="np-dropdown-marker">&rsaquo;</span>
-                            <span class="np-dropdown-option-label" style="font-family: 'JetBrains Mono', monospace; font-weight: 500;">JetBrains Mono</span>
+                            <span class="np-dropdown-option-label" translate="no" style="font-family: 'JetBrains Mono', monospace; font-weight: 500;">JetBrains Mono</span>
                         </div>
                         <div class="np-dropdown-option" data-value="system" data-font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
                             <span class="np-dropdown-marker">&rsaquo;</span>
-                            <span class="np-dropdown-option-label" style="font-family: system-ui, -apple-system, sans-serif; font-weight: 500;">System default</span>
+                            <span class="np-dropdown-option-label" style="font-family: system-ui, -apple-system, sans-serif; font-weight: 500;" data-i18n="ui.settings.systemFont">System default</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Font &amp; size</span>
-                <button class="settings-link-btn" id="setting-open-font-picker">Open font picker &rarr;</button>
+                <span class="settings-label" data-i18n="ui.settings.fontAndSize">Font &amp; size</span>
+                <button class="settings-link-btn" id="setting-open-font-picker" data-i18n="ui.settings.openFontPicker">Open font picker &rarr;</button>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Glow intensity <span id="setting-glow-intensity-val" style="color:var(--accent);font-weight:700;">100%</span></span>
+                <span class="settings-label"><span data-i18n="ui.settings.glowIntensity">Glow intensity</span> <span id="setting-glow-intensity-val" style="color:var(--accent);font-weight:700;">100%</span></span>
                 <input type="range" id="setting-glow-intensity" class="settings-slider" min="0" max="150" value="100" step="10">
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">CRT scanlines</span>
+                <span class="settings-label" data-i18n="ui.settings.crt">CRT scanlines</span>
                 <button class="settings-toggle" id="setting-crt" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Matrix rain background</span>
+                <span class="settings-label" data-i18n="ui.settings.matrixRain">Matrix rain background</span>
                 <button class="settings-toggle" id="setting-matrix-rain" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Show splash on startup</span>
+                <span class="settings-label" data-i18n="ui.settings.showSplash">Show splash on startup</span>
                 <button class="settings-toggle" id="setting-show-splash" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <hr class="settings-divider">
-            <div class="settings-section-title">Editor</div>
+            <div class="settings-section-title" data-i18n="ui.settings.section.editor">Editor</div>
 
             <div class="settings-row">
                 <div class="settings-label-col">
-                    <span class="settings-label">Autosave</span>
-                    <span class="settings-sublabel">Off: safety save every 30 s</span>
+                    <span class="settings-label" data-i18n="ui.settings.autosave">Autosave</span>
+                    <span class="settings-sublabel" data-i18n="ui.settings.autosaveHint">Off: safety save every 30 s</span>
                 </div>
                 <button class="settings-toggle" id="setting-autosave" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Autosave interval</span>
+                <span class="settings-label" data-i18n="ui.settings.autosaveInterval">Autosave interval</span>
                 <div class="np-dropdown" data-value="5" id="setting-autosave-interval">
                     <button class="np-dropdown-trigger" type="button">
-                        <span class="np-dropdown-label">5 seconds</span>
+                        <span class="np-dropdown-label" data-i18n="ui.settings.duration.s5">5 seconds</span>
                         <span class="np-dropdown-arrow">&#9660;</span>
                     </button>
                     <div class="np-dropdown-menu">
-                        <div class="np-dropdown-option" data-value="5"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">5 seconds</span></div>
-                        <div class="np-dropdown-option" data-value="30"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">30 seconds</span></div>
-                        <div class="np-dropdown-option" data-value="60"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">1 minute</span></div>
-                        <div class="np-dropdown-option" data-value="300"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">5 minutes</span></div>
+                        <div class="np-dropdown-option" data-value="5"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label" data-i18n="ui.settings.duration.s5">5 seconds</span></div>
+                        <div class="np-dropdown-option" data-value="30"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label" data-i18n="ui.settings.duration.s30">30 seconds</span></div>
+                        <div class="np-dropdown-option" data-value="60"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label" data-i18n="ui.settings.duration.m1">1 minute</span></div>
+                        <div class="np-dropdown-option" data-value="300"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label" data-i18n="ui.settings.duration.m5">5 minutes</span></div>
                     </div>
                 </div>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Page orientation</span>
+                <span class="settings-label" data-i18n="ui.settings.pageOrientation">Page orientation</span>
                 <div class="settings-radio-group">
-                    <button class="settings-radio" id="setting-page-orientation-landscape" data-value="landscape"><span class="settings-radio-dot"></span>Landscape</button>
-                    <button class="settings-radio" id="setting-page-orientation-portrait" data-value="portrait"><span class="settings-radio-dot"></span>Portrait</button>
+                    <button class="settings-radio" id="setting-page-orientation-landscape" data-value="landscape"><span class="settings-radio-dot"></span><span data-i18n="ui.settings.landscape">Landscape</span></button>
+                    <button class="settings-radio" id="setting-page-orientation-portrait" data-value="portrait"><span class="settings-radio-dot"></span><span data-i18n="ui.settings.portrait">Portrait</span></button>
                 </div>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Spellcheck</span>
+                <span class="settings-label" data-i18n="ui.settings.spellcheck">Spellcheck</span>
                 <button class="settings-toggle" id="setting-spellcheck" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Glitch typing effect<span class="settings-new-badge">NEW</span></span>
+                <span class="settings-label"><span data-i18n="ui.settings.glitchEffect">Glitch typing effect</span><span class="settings-new-badge" data-i18n="ui.settings.newBadge">NEW</span></span>
                 <button class="settings-toggle" id="setting-glitch-effect" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <hr class="settings-divider">
-            <div class="settings-section-title">Behavior</div>
+            <div class="settings-section-title" data-i18n="ui.settings.section.behavior">Behavior</div>
 
             <div class="settings-row">
-                <span class="settings-label">Confirm before delete</span>
+                <span class="settings-label" data-i18n="ui.settings.confirmDelete">Confirm before delete</span>
                 <button class="settings-toggle" id="setting-confirm-delete" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">
                 <div class="settings-label-col">
-                    <span class="settings-label">Auto-lock when idle</span>
-                    <span class="settings-sublabel">Locks encrypted notes &mdash; and the whole app if App lock is on</span>
+                    <span class="settings-label" data-i18n="ui.settings.idleLock">Auto-lock when idle</span>
+                    <span class="settings-sublabel" data-i18n="ui.settings.idleLockHint">Locks encrypted notes &mdash; and the whole app if App lock is on</span>
                 </div>
                 <div class="np-dropdown" data-value="off" id="setting-idle-lock">
                     <button class="np-dropdown-trigger" type="button">
-                        <span class="np-dropdown-label">Off</span>
+                        <span class="np-dropdown-label" data-i18n="common.off">Off</span>
                         <span class="np-dropdown-arrow">&#9660;</span>
                     </button>
                     <div class="np-dropdown-menu">
-                        <div class="np-dropdown-option" data-value="off"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">Off</span></div>
-                        <div class="np-dropdown-option" data-value="5"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">5 minutes</span></div>
-                        <div class="np-dropdown-option" data-value="30"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">30 minutes</span></div>
-                        <div class="np-dropdown-option" data-value="60"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label">1 hour</span></div>
+                        <div class="np-dropdown-option" data-value="off"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label" data-i18n="common.off">Off</span></div>
+                        <div class="np-dropdown-option" data-value="5"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label" data-i18n="ui.settings.duration.m5">5 minutes</span></div>
+                        <div class="np-dropdown-option" data-value="30"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label" data-i18n="ui.settings.duration.m30">30 minutes</span></div>
+                        <div class="np-dropdown-option" data-value="60"><span class="np-dropdown-marker">&rsaquo;</span><span class="np-dropdown-option-label" data-i18n="ui.settings.duration.h1">1 hour</span></div>
                     </div>
                 </div>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Default new note as encrypted</span>
+                <span class="settings-label" data-i18n="ui.settings.defaultEncrypted">Default new note as encrypted</span>
                 <button class="settings-toggle" id="setting-default-encrypted" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Show shortcut hints in bottom bar</span>
+                <span class="settings-label" data-i18n="ui.settings.shortcutHints">Show shortcut hints in bottom bar</span>
                 <button class="settings-toggle" id="setting-shortcut-hints" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">
                 <div class="settings-label-col">
-                    <span class="settings-label">Keyboard shortcuts</span>
-                    <span class="settings-sublabel" id="shortcuts-summary">&mdash; shortcuts &middot; &mdash; customized</span>
+                    <span class="settings-label" data-i18n="ui.settings.shortcuts">Keyboard shortcuts</span>
+                    <span class="settings-sublabel" id="shortcuts-summary" data-i18n="ui.shortcuts.summaryEmpty">&mdash; shortcuts &middot; &mdash; customized</span>
                 </div>
-                <button class="settings-link-btn" id="open-shortcuts-manager">Manage &rarr;</button>
+                <button class="settings-link-btn" id="open-shortcuts-manager" data-i18n="ui.settings.manageShortcuts">Manage &rarr;</button>
             </div>
 
             <hr class="settings-divider">
-            <div class="settings-section-title">App lock</div>
+            <div class="settings-section-title" data-i18n="ui.settings.section.appLock">App lock</div>
 
             <div class="settings-row">
                 <div class="settings-label-col">
-                    <span class="settings-label">Ask for a password to open NoirPad</span>
-                    <span class="settings-sublabel">At start and after auto-lock. It keeps people out of the app but does NOT encrypt your notes &mdash; only locked notes are encrypted.</span>
+                    <span class="settings-label" data-i18n="ui.settings.appLock">Ask for a password to open NoirPad</span>
+                    <span class="settings-sublabel" data-i18n="ui.settings.appLockHint">At start and after auto-lock. It keeps people out of the app but does NOT encrypt your notes &mdash; only locked notes are encrypted.</span>
                 </div>
                 <button class="settings-toggle" id="setting-app-lock" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row" id="setting-app-lock-actions" hidden>
-                <span class="settings-label">App-lock password</span>
+                <span class="settings-label" data-i18n="ui.settings.appLockPassword">App-lock password</span>
                 <div class="settings-inline-btns">
-                    <button class="settings-link-btn" id="setting-app-lock-change">Change</button>
-                    <button class="settings-link-btn" id="setting-app-lock-now">Lock now</button>
+                    <button class="settings-link-btn" id="setting-app-lock-change" data-i18n="ui.settings.appLockChange">Change</button>
+                    <button class="settings-link-btn" id="setting-app-lock-now" data-i18n="ui.settings.appLockNow">Lock now</button>
                 </div>
             </div>
 
             <hr class="settings-divider">
-            <div class="settings-section-title">Data</div>
+            <div class="settings-section-title" data-i18n="ui.settings.section.data">Data</div>
 
             <div class="settings-data-row">
-                <button class="settings-btn" id="setting-download-backup">Download backup</button>
-                <button class="settings-btn" id="setting-import-backup">Import backup</button>
-                <button class="settings-btn" id="setting-export-md">Export all as Markdown</button>
-                <button class="settings-btn" id="setting-import-md">Import Markdown</button>
-                <button class="settings-btn" id="setting-export-all">Export all as HTML</button>
-                <button class="settings-btn settings-btn-danger" id="setting-empty-trash">Empty trash</button>
-                <button class="settings-btn settings-btn-danger" id="setting-reset-all">Reset all settings</button>
+                <button class="settings-btn" id="setting-download-backup" data-i18n="ui.settings.downloadBackup">Download backup</button>
+                <button class="settings-btn" id="setting-import-backup" data-i18n="ui.settings.importBackup">Import backup</button>
+                <button class="settings-btn" id="setting-export-md" data-i18n="ui.settings.exportMarkdown">Export all as Markdown</button>
+                <button class="settings-btn" id="setting-import-md" data-i18n="ui.settings.importMarkdown">Import Markdown</button>
+                <button class="settings-btn" id="setting-export-all" data-i18n="ui.settings.exportHtml">Export all as HTML</button>
+                <button class="settings-btn settings-btn-danger" id="setting-empty-trash" data-i18n="ui.settings.emptyTrash">Empty trash</button>
+                <button class="settings-btn settings-btn-danger" id="setting-reset-all" data-i18n="ui.settings.resetAll">Reset all settings</button>
             </div>
 
             <div id="settings-session-section" hidden>
                 <hr class="settings-divider">
-                <div class="settings-section-title">Session</div>
+                <div class="settings-section-title" data-i18n="ui.settings.section.session">Session</div>
 
                 <div class="settings-row settings-account-row">
                     <div class="settings-label-col">
-                        <span class="settings-label">Password-protected server</span>
+                        <span class="settings-label" data-i18n="ui.settings.passwordServer">Password-protected server</span>
                     </div>
-                    <button class="settings-logout-btn" id="settings-logout-btn">Logout</button>
+                    <button class="settings-logout-btn" id="settings-logout-btn" data-i18n="ui.settings.logout">Logout</button>
                 </div>
             </div>
 
             <hr class="settings-divider">
-            <div class="settings-section-title">About</div>
+            <div class="settings-section-title" data-i18n="ui.settings.section.about">About</div>
 
             <div class="settings-row">
-                <span class="settings-label">Version</span>
-                <span class="settings-sublabel">v2.1 &mdash; web edition</span>
+                <span class="settings-label" data-i18n="ui.settings.version">Version</span>
+                <span class="settings-sublabel" translate="no">v2.1 &mdash; web edition</span>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Source</span>
-                <a class="settings-link" href="https://github.com/krystof/noirpad" target="_blank" rel="noopener">github.com/krystof/noirpad &#8599;</a>
+                <span class="settings-label" data-i18n="ui.settings.source">Source</span>
+                <a class="settings-link" translate="no" href="https://github.com/krystof/noirpad" target="_blank" rel="noopener">github.com/krystof/noirpad &#8599;</a>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label">Storage used</span>
+                <span class="settings-label" data-i18n="ui.settings.storageUsed">Storage used</span>
                 <span class="settings-sublabel" id="setting-storage-used">&mdash;</span>
             </div>
         </div>
@@ -464,7 +479,7 @@
 <!-- ============ Dialog (reusable) ============ -->
 <div class="dialog-overlay" id="dialog-overlay">
     <div class="dialog-box">
-        <div class="dialog-title" id="dialog-title">Dialog</div>
+        <div class="dialog-title" id="dialog-title" data-i18n="ui.dialog.title">Dialog</div>
         <div class="dialog-message" id="dialog-message"></div>
         <input class="dialog-input" id="dialog-input" type="text" style="display:none;" spellcheck="false" autocomplete="off">
         <div class="dialog-buttons" id="dialog-buttons"></div>
@@ -475,21 +490,21 @@
 <div id="shortcuts-overlay" class="np-overlay" aria-hidden="true">
     <div id="shortcuts-panel">
         <div id="shortcuts-header">
-            <h2 id="shortcuts-title">Shortcuts</h2>
-            <button id="shortcuts-close" aria-label="Close">&times;</button>
+            <h2 id="shortcuts-title" data-i18n="ui.shortcuts.title">Shortcuts</h2>
+            <button id="shortcuts-close" aria-label="Close" data-i18n-aria-label="common.close">&times;</button>
         </div>
 
         <div id="shortcuts-toolbar">
-            <input id="shortcuts-search" type="text" placeholder="Search shortcuts..." spellcheck="false" autocomplete="off">
-            <button id="shortcuts-filter-customized" class="shortcuts-toolbar-btn" aria-pressed="false">Customized only</button>
-            <button id="shortcuts-reset-all" class="shortcuts-toolbar-btn shortcuts-btn-danger">Reset all</button>
+            <input id="shortcuts-search" type="text" placeholder="Search shortcuts..." data-i18n-placeholder="ui.shortcuts.searchPlaceholder" spellcheck="false" autocomplete="off">
+            <button id="shortcuts-filter-customized" class="shortcuts-toolbar-btn" aria-pressed="false" data-i18n="ui.shortcuts.customizedOnly">Customized only</button>
+            <button id="shortcuts-reset-all" class="shortcuts-toolbar-btn shortcuts-btn-danger" data-i18n="ui.shortcuts.resetAll">Reset all</button>
         </div>
 
         <div id="shortcuts-body"></div>
 
         <div id="shortcuts-footer">
-            <span id="shortcuts-footer-info">&mdash; shortcuts &middot; &mdash; customized</span>
-            <span class="shortcuts-footer-hint">Press Escape to cancel recording</span>
+            <span id="shortcuts-footer-info" data-i18n="ui.shortcuts.summaryEmpty">&mdash; shortcuts &middot; &mdash; customized</span>
+            <span class="shortcuts-footer-hint" data-i18n="ui.shortcuts.escapeHint">Press Escape to cancel recording</span>
         </div>
     </div>
 </div>
@@ -498,6 +513,7 @@
 <script src="/static/vendor/markdown-it/markdown-it.min.js"></script>
 <script src="/static/vendor/dompurify/purify.min.js"></script>
 <script src="/static/vendor/highlight/highlight.min.js"></script>
+<script src="/static/js/i18n.js?v=1"></script>
 <script src="/static/js/utils.js?v=2.1.31"></script>
 <script src="/static/js/links.js?v=1"></script>
 <script src="/static/js/syntax-highlight.js?v=3.0.0"></script>

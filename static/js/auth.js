@@ -45,7 +45,7 @@ window.NP = window.NP || {};
                 el("div", { id: "auth-subtitle", class: "auth-subtitle" }),
                 el("form", { id: "auth-form", class: "auth-form" }, [
                     el("div", { class: "auth-row" }, [
-                        el("label", { for: "auth-password", text: "password" }),
+                        el("label", { for: "auth-password", text: NP.t("auth.password") }),
                         el("input", {
                             id: "auth-password",
                             type: "password",
@@ -56,7 +56,7 @@ window.NP = window.NP || {};
                     el("div", { id: "auth-remember-row", class: "auth-row auth-row-inline" }, [
                         el("label", { class: "auth-check" }, [
                             el("input", { id: "auth-remember", type: "checkbox", checked: "checked" }),
-                            el("span", { text: " remember me (30 days)" })
+                            el("span", { text: " " + NP.t("auth.remember") })
                         ])
                     ]),
                     el("div", { id: "auth-error", class: "auth-error" }),
@@ -64,7 +64,7 @@ window.NP = window.NP || {};
                         id: "auth-submit",
                         type: "submit",
                         class: "auth-submit",
-                        text: "> UNLOCK"
+                        text: NP.t("auth.unlock")
                     })
                 ])
             ])
@@ -94,7 +94,7 @@ window.NP = window.NP || {};
         var pwInput = overlay.querySelector("#auth-password");
         var password = pwInput.value;
         var remember = overlay.querySelector("#auth-remember").checked;
-        if (!password) { showError("Password required"); return; }
+        if (!password) { showError(NP.t("errors.password_required")); return; }
         showError("");
         setBusy(true);
 
@@ -111,16 +111,15 @@ window.NP = window.NP || {};
             });
         }).catch(function (err) {
             setBusy(false);
-            showError((err && err.message) || "Login failed");
+            showError((err && err.message) || NP.t("auth.failed"));
         });
     }
 
     function show(which) {
         mode = which;
         buildOverlay();
-        overlay.querySelector("#auth-subtitle").textContent = mode === "applock"
-            ? "// NoirPad is locked"
-            : "// this server is password protected";
+        overlay.querySelector("#auth-subtitle").textContent =
+            NP.t(mode === "applock" ? "auth.appLocked" : "auth.serverProtected");
         overlay.querySelector("#auth-remember-row").style.display =
             mode === "applock" ? "none" : "";
         overlay.querySelector("#auth-password").value = "";
@@ -164,17 +163,17 @@ window.NP = window.NP || {};
     /* The backend recovered from a corrupt notes file (or found none). */
     function showDataNotice() {
         if (!session || !session.data_notice) return;
-        var msg = session.data_notice;
+        var notice = session.data_notice;
         session.data_notice = null;
         setTimeout(function () {
-            window.alert("NoirPad: " + msg);
+            window.alert("NoirPad: " + NP.t("notice." + notice.code, notice.params));  // i18n-ignore (brand)
             NP.api.dismissNotice().catch(function () { /* shown anyway */ });
         }, 300);
     }
 
     function showStartError(err) {
         var sub = document.getElementById("splash-subtitle");
-        if (sub) sub.textContent = "Failed to reach server: " + (err && err.message ? err.message : err);
+        if (sub) sub.textContent = NP.t("auth.startFailed", { error: err && err.message ? err.message : err });
     }
 
     NP.auth = {
@@ -196,8 +195,11 @@ window.NP = window.NP || {};
                 return NP.api.session();
             }).then(function (res) {
                 session = res || {};
-                return proceed();
-            }).catch(showStartError);
+                /* Language first: the gate itself must be translated. */
+                return NP.i18n.init(session.language).then(proceed);
+            }).catch(function (err) {
+                return NP.i18n.init("auto").then(function () { showStartError(err); });
+            });
         }
     };
 

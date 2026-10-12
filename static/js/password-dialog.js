@@ -37,30 +37,30 @@ window.NP = window.NP || {};
         var minLength = opts.minLength || 0;
 
         return new Promise(function (resolve) {
-            var overlay = el("div", "dialog-overlay visible np-password-dialog");
+            var overlay = el("div", "dialog-overlay visible np-password-dialog");  // i18n-ignore (CSS classes)
             overlay.setAttribute("role", "dialog");
             overlay.setAttribute("aria-modal", "true");
             var box = el("form", "dialog-box");
-            box.appendChild(el("div", "dialog-title", opts.title || "Password"));
+            box.appendChild(el("div", "dialog-title", opts.title || NP.t("passwordDialog.title")));
             if (opts.message) box.appendChild(el("div", "dialog-message", opts.message));
-            if (opts.warning) box.appendChild(el("div", "dialog-message np-password-warning", opts.warning));
+            if (opts.warning) box.appendChild(el("div", "dialog-message np-password-warning", opts.warning));  // i18n-ignore (CSS classes)
 
             var auto = opts.confirm ? "new-password" : "current-password";
-            var first = passwordInput("np-pw-1", "Password", auto);
+            var first = passwordInput("np-pw-1", NP.t("passwordDialog.placeholder"), auto);
             box.appendChild(first);
             var second = null;
             if (opts.confirm) {
-                second = passwordInput("np-pw-2", "Repeat password", auto);
+                second = passwordInput("np-pw-2", NP.t("passwordDialog.repeatPlaceholder"), auto);
                 box.appendChild(second);
             }
-            var error = el("div", "dialog-message np-password-error");
+            var error = el("div", "dialog-message np-password-error");  // i18n-ignore (CSS classes)
             error.setAttribute("role", "alert");
             box.appendChild(error);
 
             var buttons = el("div", "dialog-buttons");
-            var cancel = el("button", "dialog-btn", "Cancel");
+            var cancel = el("button", "dialog-btn", NP.t("passwordDialog.cancel"));
             cancel.type = "button";
-            var ok = el("button", "dialog-btn primary", opts.okLabel || "OK");
+            var ok = el("button", "dialog-btn primary", opts.okLabel || NP.t("passwordDialog.ok"));
             ok.type = "submit";
             buttons.appendChild(cancel);
             buttons.appendChild(ok);
@@ -88,11 +88,11 @@ window.NP = window.NP || {};
                 e.preventDefault();
                 var value = first.value;
                 if (!value) {
-                    error.textContent = "Enter a password.";
+                    error.textContent = NP.t("passwordDialog.errorEmpty");
                 } else if (value.length < minLength) {
-                    error.textContent = "Use at least " + minLength + " characters.";
+                    error.textContent = NP.t("passwordDialog.errorTooShort", { n: minLength });
                 } else if (second && second.value !== value) {
-                    error.textContent = "The passwords do not match.";
+                    error.textContent = NP.t("passwordDialog.errorMismatch");
                     second.value = "";
                     second.focus();
                     return;

@@ -61,7 +61,7 @@ window.NP = window.NP || {};
 
             var btn = document.createElement("button");
             btn.id = EXIT_BTN_ID;
-            btn.title = "Exit focus mode (Ctrl+B)";
+            btn.title = NP.t("focus.exitTitle");
             btn.innerHTML = "&#9654;"; /* Right-pointing triangle */
             btn.style.cssText =
                 "position:fixed;left:-20px;top:50%;transform:translateY(-50%);" +

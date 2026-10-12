@@ -56,7 +56,7 @@ window.NP = window.NP || {};
                 var splash = document.getElementById("splash-overlay");
                 if (splash) {
                     var sub = document.getElementById("splash-subtitle");
-                    if (sub) sub.textContent = "Failed to reach server: " + (err && err.message ? err.message : err);
+                    if (sub) sub.textContent = NP.t("app.startFailed", { error: err && err.message ? err.message : err });
                     setTimeout(function () {
                         if (splash.parentNode) splash.parentNode.removeChild(splash);
                     }, 3000);
@@ -258,7 +258,7 @@ window.NP = window.NP || {};
             var btnNewFolder = NP.$("#btn-new-folder");
             if (btnNewFolder) {
                 btnNewFolder.addEventListener("click", function () {
-                    var name = prompt("Folder name:");
+                    var name = prompt(NP.t("tree.promptFolderName"));
                     if (!name) return;
                     var parentId = NP.state.currentNoteId ? null : null;
                     NP.api.newFolder(parentId, name).then(function () {
@@ -272,7 +272,7 @@ window.NP = window.NP || {};
             var btnNewNote = NP.$("#btn-new-note");
             if (btnNewNote) {
                 btnNewNote.addEventListener("click", function () {
-                    var name = prompt("Note name:");
+                    var name = prompt(NP.t("tree.promptNoteName"));
                     if (!name) return;
                     var parentId = (NP.tree && NP.tree.getNewItemParentId)
                         ? NP.tree.getNewItemParentId() : null;
@@ -341,7 +341,7 @@ window.NP = window.NP || {};
                     if (!NP.state.currentNoteId) return;
                     var item = NP.editor._findItemInTree(NP.state.data.tree, NP.state.currentNoteId);
                     var oldName = item ? item.name : "";
-                    var newName = prompt("New name:", oldName);
+                    var newName = prompt(NP.t("tree.promptNewName"), oldName);
                     if (!newName || newName === oldName) return;
                     NP.api.rename(NP.state.currentNoteId, newName).then(function () {
                         if (item) item.name = newName;

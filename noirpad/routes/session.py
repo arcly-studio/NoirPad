@@ -3,12 +3,14 @@
 import secrets
 import time
 
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Request, Response
 
 from .. import app_lock
 from .. import server_auth as auth
+from ..errors import ApiError
 from ..models import LoginReq
 from ..runtime import RUNTIME
+from ..storage import read_data
 
 router = APIRouter()
 
@@ -23,6 +25,8 @@ async def session_info(request: Request):
         "data_notice": RUNTIME.data_notice if authenticated else None,
         "app_lock": {"enabled": app_lock.enabled(),
                      "unlocked": app_lock.is_unlocked(request)},
+        # Needed before login / app lock, so the gate is in the right language.
+        "language": read_data().get("language", "auto"),
     }
 
 
@@ -54,10 +58,10 @@ async def login(req: LoginReq, response: Response):
     RUNTIME.login_failures[:] = [t for t in RUNTIME.login_failures
                                  if t > now - auth.LOGIN_WINDOW]
     if len(RUNTIME.login_failures) >= auth.LOGIN_MAX_FAILURES:
-        raise HTTPException(429, "Too many attempts, try again in a minute")
+        raise ApiError(429, "too_many_attempts")
     if len(req.password) > 1024 or not auth.password_matches(req.password):
         RUNTIME.login_failures.append(now)
-        raise HTTPException(401, "Wrong password")
+        raise ApiError(401, "wrong_password")
     token = secrets.token_urlsafe(32)
     ttl = auth.SESSION_TTL_REMEMBER if req.remember else auth.SESSION_TTL_SHORT
     RUNTIME.sessions[token] = now + ttl

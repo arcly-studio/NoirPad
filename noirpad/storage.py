@@ -59,6 +59,7 @@ DEFAULT_DATA: dict[str, Any] = {
     "default_encrypted": False,
     "glow_intensity": 100,  # 0-150 percent
     "custom_shortcuts": {},  # id -> "Ctrl+Shift+X" (only non-default)
+    "language": "auto",      # "auto" (browser language) | "en" | "cs"
 }
 
 
@@ -212,15 +213,11 @@ def _recover_corrupt_data(reason: Exception) -> dict[str, Any]:
             continue
         _atomic_write_json(DATA_FILE, data)
         when = time.strftime("%Y-%m-%d %H:%M", time.localtime(candidate.stat().st_mtime))
-        RUNTIME.data_notice = (
-            f"Your notes file was corrupt. It was kept as {corrupt.name} and the "
-            f"latest good backup ({when}) was restored. Changes made after that "
-            "backup may be missing.")
+        RUNTIME.data_notice = {"code": "data_restored",
+                               "params": {"file": corrupt.name, "when": when}}
         return data
 
-    RUNTIME.data_notice = (
-        f"Your notes file was corrupt and no usable backup was found. The "
-        f"damaged file was kept as {corrupt.name}; NoirPad started empty.")
+    RUNTIME.data_notice = {"code": "data_reset", "params": {"file": corrupt.name}}
     return copy.deepcopy(DEFAULT_DATA)
 
 

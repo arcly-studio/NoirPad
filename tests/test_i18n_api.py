@@ -1,0 +1,49 @@
+"""Step C: the API returns error codes (the frontend writes the text) and
+the UI language setting."""
+
+import json
+import re
+from pathlib import Path
+
+from conftest import ROOT, new_note
+
+LOCALES = ROOT / "static" / "locales"
+
+
+def test_errors_are_codes(client):
+    r = client.get("/api/note/nope")
+    assert r.status_code == 404
+    assert r.json() == {"detail": {"code": "note_not_found"}}
+
+
+def test_error_params(client):
+    nid = new_note(client)
+    r = client.post("/api/encrypt", json={"id": nid, "password": "short"})
+    assert r.json()["detail"] == {"code": "password_too_short", "params": {"min": 8}}
+
+
+def test_guard_errors_are_codes(client):
+    r = client.get("/api/data", headers={"host": "evil.example"})
+    assert r.json() == {"detail": {"code": "invalid_host"}}
+
+
+def test_every_backend_code_is_translated():
+    errors, notices = set(), set()
+    for path in (ROOT / "noirpad").rglob("*.py"):
+        src = path.read_text(encoding="utf-8")
+        errors |= set(re.findall(r'ApiError\(\d+, "([a-z_]+)"', src))
+        errors |= set(re.findall(r'_deny\(\d+, "([a-z_]+)"\)', src))
+        notices |= set(re.findall(r'data_notice = \{"code": "([a-z_]+)"', src))
+    assert len(errors) > 20 and notices == {"data_restored", "data_reset"}
+    for lang in ("en", "cs"):
+        locale = json.loads((LOCALES / f"{lang}.json").read_text(encoding="utf-8"))
+        missing = sorted({f"errors.{c}" for c in errors if c not in locale["errors"]}
+                         | {f"notice.{c}" for c in notices if c not in locale["notice"]})
+        assert not missing, f"{lang}.json: {missing}"
+
+
+def test_language_setting(client):
+    assert client.get("/api/session").json()["language"] == "auto"
+    assert client.put("/api/settings", json={"language": "cs"}).status_code == 200
+    assert client.get("/api/session").json()["language"] == "cs"
+    assert client.put("/api/settings", json={"language": "de"}).status_code == 422

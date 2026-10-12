@@ -4,35 +4,37 @@ window.NP = window.NP || {};
 (function (NP) {
     "use strict";
 
+    /* hint / desc hold translation keys, resolved with NP.t when shown
+       (this table is built before the dictionaries load). */
     var COMMANDS = [
-        { cmd: ":search", hint: "<text>", desc: "Search in note" },
-        { cmd: ":new note", hint: "<name>", desc: "Create new note" },
-        { cmd: ":new folder", hint: "<name>", desc: "Create new folder" },
-        { cmd: ":theme", hint: "<name>", desc: "Switch theme" },
-        { cmd: ":encrypt", hint: "", desc: "Encrypt current note" },
-        { cmd: ":decrypt", hint: "", desc: "Decrypt current note" },
-        { cmd: ":fullscreen", hint: "", desc: "Toggle fullscreen" },
-        { cmd: ":autosave", hint: "", desc: "Toggle autosave" },
-        { cmd: ":export", hint: "", desc: "Export as TXT" },
-        { cmd: ":exportpdf", hint: "", desc: "Export as PDF" },
-        { cmd: ":exporthtml", hint: "", desc: "Export as HTML" },
-        { cmd: ":focus", hint: "", desc: "Toggle focus mode" },
-        { cmd: ":tag", hint: "<name>", desc: "Add tag to note" },
-        { cmd: ":tags", hint: "", desc: "Show all tags" },
-        { cmd: ":fontsize", hint: "<N>", desc: "Set font size (6-72)" },
-        { cmd: ":font", hint: "", desc: "Open font picker" },
-        { cmd: ":backup", hint: "", desc: "Download backup" },
-        { cmd: ":import", hint: "", desc: "Import backup" },
-        { cmd: ":fav", hint: "", desc: "Toggle favorite" },
-        { cmd: ":emptytrash", hint: "", desc: "Empty trash" },
-        { cmd: ":orientation", hint: "", desc: "Toggle page orientation" },
-        { cmd: ":matrix", hint: "", desc: "Toggle matrix rain" },
-        { cmd: ":help", hint: "", desc: "Show help" },
-        { cmd: ":closetab", hint: "", desc: "Close current tab" },
-        { cmd: ":closeall", hint: "", desc: "Close all tabs" },
-        { cmd: ":crt", hint: "", desc: "Toggle CRT scanlines" },
-        { cmd: ":settings", hint: "", desc: "Open settings" },
-        { cmd: ":findall", hint: "<text>", desc: "Search across all notes" }
+        { cmd: ":search", hint: "commands.hints.text", desc: "commands.desc.search" },
+        { cmd: ":new note", hint: "commands.hints.name", desc: "commands.desc.newNote" },  // i18n-ignore (command syntax)
+        { cmd: ":new folder", hint: "commands.hints.name", desc: "commands.desc.newFolder" },  // i18n-ignore (command syntax)
+        { cmd: ":theme", hint: "commands.hints.name", desc: "commands.desc.theme" },
+        { cmd: ":encrypt", hint: "", desc: "commands.desc.encrypt" },
+        { cmd: ":decrypt", hint: "", desc: "commands.desc.decrypt" },
+        { cmd: ":fullscreen", hint: "", desc: "commands.desc.fullscreen" },
+        { cmd: ":autosave", hint: "", desc: "commands.desc.autosave" },
+        { cmd: ":export", hint: "", desc: "commands.desc.export" },
+        { cmd: ":exportpdf", hint: "", desc: "commands.desc.exportpdf" },
+        { cmd: ":exporthtml", hint: "", desc: "commands.desc.exporthtml" },
+        { cmd: ":focus", hint: "", desc: "commands.desc.focus" },
+        { cmd: ":tag", hint: "commands.hints.name", desc: "commands.desc.tag" },
+        { cmd: ":tags", hint: "", desc: "commands.desc.tags" },
+        { cmd: ":fontsize", hint: "commands.hints.number", desc: "commands.desc.fontsize" },
+        { cmd: ":font", hint: "", desc: "commands.desc.font" },
+        { cmd: ":backup", hint: "", desc: "commands.desc.backup" },
+        { cmd: ":import", hint: "", desc: "commands.desc.import" },
+        { cmd: ":fav", hint: "", desc: "commands.desc.fav" },
+        { cmd: ":emptytrash", hint: "", desc: "commands.desc.emptytrash" },
+        { cmd: ":orientation", hint: "", desc: "commands.desc.orientation" },
+        { cmd: ":matrix", hint: "", desc: "commands.desc.matrix" },
+        { cmd: ":help", hint: "", desc: "commands.desc.help" },
+        { cmd: ":closetab", hint: "", desc: "commands.desc.closetab" },
+        { cmd: ":closeall", hint: "", desc: "commands.desc.closeall" },
+        { cmd: ":crt", hint: "", desc: "commands.desc.crt" },
+        { cmd: ":settings", hint: "", desc: "commands.desc.settings" },
+        { cmd: ":findall", hint: "commands.hints.text", desc: "commands.desc.findall" }
     ];
 
     var overlay = null;
@@ -59,7 +61,7 @@ window.NP = window.NP || {};
 
         input = document.createElement("input");
         input.type = "text";
-        input.placeholder = "Type a command (e.g. :search, :theme amber)";
+        input.placeholder = NP.t("commands.placeholder");
         input.style.cssText =
             "width:100%;box-sizing:border-box;padding:8px 12px;" +
             "background:var(--bg,#000);color:var(--fg,#00ff41);" +
@@ -94,13 +96,14 @@ window.NP = window.NP || {};
             return;
         }
         var matches = COMMANDS.filter(function (c) {
-            return c.cmd.indexOf(val) !== -1 || c.desc.toLowerCase().indexOf(val) !== -1;
+            return c.cmd.indexOf(val) !== -1 ||
+                NP.t(c.desc).toLowerCase().indexOf(val) !== -1;
         });
         /* Also check theme names */
         if (NP.THEMES) {
             Object.keys(NP.THEMES).forEach(function (t) {
                 if (t.indexOf(val) !== -1) {
-                    matches.push({ cmd: t, hint: "", desc: "Apply theme" });
+                    matches.push({ cmd: t, hint: "", desc: "commands.applyTheme" });
                 }
             });
         }
@@ -120,7 +123,8 @@ window.NP = window.NP || {};
             item.style.cssText =
                 "padding:6px 10px;cursor:pointer;font-family:var(--font-mono,'Consolas',monospace);" +
                 "font-size:13px;color:var(--fg,#00ff41);border-radius:3px;";
-            item.textContent = m.cmd + (m.hint ? " " + m.hint : "") + "  \u2014 " + m.desc;
+            item.textContent = m.cmd + (m.hint ? " " + NP.t(m.hint) : "") +
+                "  \u2014 " + NP.t(m.desc);
             item.addEventListener("mouseenter", function () {
                 highlightItem(i);
             });
@@ -241,13 +245,13 @@ window.NP = window.NP || {};
             if (lower.indexOf(":search ") === 0) {
                 var q = cmd.substring(8).trim();
                 if (q && NP.search) NP.search.find(q);
-            } else if (lower.indexOf(":new note ") === 0) {
+            } else if (lower.indexOf(":new note ") === 0) {  // i18n-ignore (command syntax)
                 var noteName = cmd.substring(10).trim();
                 if (noteName && NP.api) NP.api.newNote(getSelectedFolderId(), noteName).then(function () {
                     if (NP.state) NP.state.poll();
                     if (NP.tree) NP.tree.render();
                 });
-            } else if (lower.indexOf(":new folder ") === 0) {
+            } else if (lower.indexOf(":new folder ") === 0) {  // i18n-ignore (command syntax)
                 var folderName = cmd.substring(12).trim();
                 if (folderName && NP.api) NP.api.newFolder(getSelectedFolderId(), folderName).then(function () {
                     if (NP.state) NP.state.poll();
@@ -275,9 +279,9 @@ window.NP = window.NP || {};
                 if (NP.export) NP.export.txt();
             } else if (lower === ":exportpdf") {
                 if (NP.status && NP.status.show) {
-                    NP.status.show("PDF export not available in web");
+                    NP.status.show(NP.t("commands.pdfUnavailable"));
                 } else {
-                    alert("PDF export not available in web");
+                    alert(NP.t("commands.pdfUnavailable"));
                 }
             } else if (lower === ":exporthtml") {
                 if (NP.export) NP.export.html();

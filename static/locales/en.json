@@ -1,0 +1,775 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "delete": "Delete",
+    "rename": "Rename",
+    "restore": "Restore",
+    "yes": "Yes",
+    "no": "No",
+    "on": "On",
+    "off": "Off",
+    "untitled": "Untitled",
+    "loading": "Loading…",
+    "error": "Error",
+    "password": "Password",
+    "minutes": {
+      "one": "{n} minute",
+      "other": "{n} minutes"
+    },
+    "seconds": {
+      "one": "{n} second",
+      "other": "{n} seconds"
+    },
+    "notes": {
+      "one": "{n} note",
+      "other": "{n} notes"
+    },
+    "images": {
+      "one": "{n} image",
+      "other": "{n} images"
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong ({status}).",
+    "network": "Cannot reach NoirPad. Is it still running?",
+    "invalid_input": "Some of the entered values are invalid (for example too long).",
+    "index_missing": "The app files are missing (static/index.html).",
+    "invalid_host": "Request refused: unknown host name.",
+    "cross_origin": "Request refused: it came from another website.",
+    "csrf_header_missing": "Request refused: missing NoirPad header.",
+    "token_invalid": "This window is no longer connected to NoirPad. Restart the app.",
+    "not_authenticated": "Please log in again.",
+    "app_locked": "NoirPad is locked.",
+    "too_many_attempts": "Too many attempts. Try again in a minute.",
+    "wrong_password": "Wrong password.",
+    "password_required": "Enter the password.",
+    "password_too_short": "The password must have at least {min} characters.",
+    "password_too_long": "The password is too long.",
+    "note_not_found": "The note no longer exists.",
+    "note_locked": "The note is locked. Unlock it again.",
+    "note_already_encrypted": "The note is already locked.",
+    "item_not_found": "The item no longer exists.",
+    "trash_item_not_found": "The item is no longer in the trash.",
+    "parent_not_found": "The folder no longer exists.",
+    "target_not_found": "The target folder no longer exists.",
+    "move_into_itself": "A folder cannot be moved into itself.",
+    "image_type_not_allowed": "Only PNG, JPEG, GIF and WebP images are allowed.",
+    "image_not_found": "The image was not found.",
+    "file_too_large": "The file is too large (max {max_mb} MB).",
+    "archive_too_large": "The archive is too large to import.",
+    "not_a_zip": "The file is not a valid ZIP archive.",
+    "backup_missing_data": "This is not a NoirPad backup (notes_data.json is missing).",
+    "backup_corrupt_data": "The backup is damaged (notes_data.json cannot be read).",
+    "backup_unsafe_path": "The backup contains an unsafe file path: {name}",
+    "backup_not_image": "The backup contains a file that is not an image: {name}",
+    "import_unsupported_file": "Only .md files and .zip archives can be imported."
+  },
+  "notice": {
+    "data_restored": "Your notes file was damaged. It was kept as {file} and the latest good backup ({when}) was restored. Changes made after that backup may be missing.",
+    "data_reset": "Your notes file was damaged and no usable backup was found. The damaged file was kept as {file}; NoirPad started empty."
+  },
+  "language": {
+    "label": "Language",
+    "auto": "System default",
+    "en": "English",
+    "cs": "Čeština"
+  },
+  "api": {
+    "downloadFailed": "Download failed: {error}"
+  },
+  "auth": {
+    "password": "password",
+    "remember": "remember me (30 days)",
+    "unlock": "> UNLOCK",
+    "failed": "Login failed",
+    "appLocked": "// NoirPad is locked",
+    "serverProtected": "// this server is password protected",
+    "startFailed": "Failed to reach NoirPad: {error}"
+  },
+  "appLock": {
+    "chooseMessage": "Choose a password of at least {min} characters.",
+    "chooseWarning": "NoirPad cannot reset a forgotten app-lock password. The lock does not encrypt your notes.",
+    "setPassword": "Set password",
+    "currentMessage": "Enter the current app-lock password.",
+    "continue": "Continue",
+    "enableTitle": "Turn on app lock",
+    "changeTitle": "Change app-lock password",
+    "newTitle": "New app-lock password",
+    "disableTitle": "Turn off app lock",
+    "failed": "App lock: {error}"
+  },
+  "encryption": {
+    "noNoteSelected": "No note selected.",
+    "alreadyEncrypted": "Note is already encrypted.",
+    "notEncrypted": "Note is not encrypted.",
+    "lockTitle": "Lock note with a password",
+    "lockMessage": "Choose a password of at least {n} characters.",
+    "lockWarning": "Forgotten password = this note can never be opened again. There is no recovery.\nOnly the note text is encrypted. Its title, tags and images stay unencrypted on disk.",
+    "lock": "Lock",
+    "unlock": "Unlock",
+    "removeLock": "Remove lock",
+    "lockButtonTitle": "Encrypt this note with a password",
+    "removeLockButtonTitle": "Remove encryption from this note",
+    "unlockButtonTitle": "Enter password to view this note",
+    "encryptFailed": "Encryption failed: {error}",
+    "removeTitle": "Remove encryption",
+    "removeMessage": "Enter the note's password. The note will be stored as plain text.",
+    "removeOk": "Remove encryption",
+    "decryptFailed": "Decryption failed: {error}",
+    "unlockTitle": "Unlock note",
+    "unlockMessage": "This note is encrypted. Enter its password.",
+    "wrongPassword": "Wrong password. Try again.",
+    "reunlockMessage": "The note was locked. Enter its password to save your changes.",
+    "unlockFirst": "Unlock this note first, then remove encryption.",
+    "removeConfirm": "Remove encryption from this note?\n\nThe password protection will be permanently removed and the content saved as plain text.",
+    "removeFailed": "Failed to remove encryption: {error}"
+  },
+  "passwordDialog": {
+    "title": "Password",
+    "placeholder": "Password",
+    "repeatPlaceholder": "Repeat password",
+    "cancel": "Cancel",
+    "ok": "OK",
+    "errorEmpty": "Enter a password.",
+    "errorTooShort": "Use at least {n} characters.",
+    "errorMismatch": "The passwords do not match."
+  },
+  "editor": {
+    "unlockFailed": "Could not unlock the note: {error}",
+    "loadError": "Error loading note: {error}",
+    "lockedNotSaved": "Note is locked; changes were not saved.",
+    "lockScreen": {
+      "title": "This note is encrypted",
+      "hint": "Click on the note again to enter password"
+    },
+    "welcome": {
+      "subtitle": "Your dark notebook",
+      "version": "v{version} — web edition",
+      "hint": "Select a note to begin or press {keys} for commands"
+    },
+    "overview": {
+      "summary": "{direct}, {total}",
+      "directItems": {
+        "one": "{n} direct item",
+        "other": "{n} direct items"
+      },
+      "totalItems": "{n} total"
+    },
+    "count": {
+      "chars": {
+        "one": "{n} char",
+        "other": "{n} chars"
+      },
+      "words": {
+        "one": "{n} word",
+        "other": "{n} words"
+      },
+      "lines": {
+        "one": "{n} line",
+        "other": "{n} lines"
+      }
+    }
+  },
+  "markdown": {
+    "linkTextPlaceholder": "text",
+    "imageAltPlaceholder": "alt"
+  },
+  "print": {
+    "noNoteSelected": "No note selected.",
+    "unlockFirst": "Unlock this note before exporting to PDF.",
+    "mdDialog": {
+      "title": "Export Markdown to PDF",
+      "message": "How do you want this note to look in the PDF?",
+      "rendered": "Markdown text",
+      "rawLight": "Raw text — light (black on white)",
+      "rawDark": "Raw text — dark (white on black)",
+      "cancel": "Cancel"
+    }
+  },
+  "images": {
+    "uploadFailed": "Image upload failed: {error}",
+    "linkLabel": "Image",
+    "pasteDialog": {
+      "title": "Paste image",
+      "message": "How do you want to paste this image?",
+      "asImage": "Insert as image",
+      "asLink": "Insert as link only",
+      "cancel": "Cancel"
+    },
+    "viewer": {
+      "close": "Close",
+      "alt": "Image viewer"
+    }
+  },
+  "export": {
+    "noNoteSelected": "No note selected."
+  },
+  "help": {
+    "title": "HELP",
+    "close": "Close (Esc)",
+    "copied": "Copied!",
+    "overview": {
+      "title": "Overview",
+      "p1": "NoirPad is a note-taking app with a hacker/terminal aesthetic: green text on a black background, a monospace font and ASCII effects.",
+      "p2": "It supports a tree of folders and notes, encryption, export, tags, themes and more."
+    },
+    "keys": {
+      "title": "Keyboard shortcuts",
+      "basic": "Basic shortcuts",
+      "function": "Function keys",
+      "save": "Save note",
+      "find": "Find in note",
+      "focus": "Focus mode",
+      "orientation": "Toggle page orientation",
+      "italic": "Italic",
+      "underline": "Underline",
+      "undo": "Undo",
+      "redo": "Redo",
+      "paste": "Paste (including images)",
+      "commandBar": "Command bar",
+      "nextTab": "Next tab",
+      "prevTab": "Previous tab",
+      "closeTab": "Close tab",
+      "help": "Help",
+      "rename": "Rename",
+      "findNext": "Next search result",
+      "findPrev": "Previous search result",
+      "fullscreen": "Fullscreen",
+      "delete": "Delete item",
+      "closeOverlay": "Close dialog or overlay"
+    },
+    "commands": {
+      "title": "Command bar",
+      "intro": "Open the command bar with Ctrl+Shift+P. Type a command starting with a colon.",
+      "available": "Available commands",
+      "search": "Search notes",
+      "newNote": "New note",
+      "newFolder": "New folder",
+      "theme": "Change theme",
+      "encrypt": "Encrypt note",
+      "decrypt": "Decrypt note",
+      "fullscreen": "Fullscreen",
+      "autosave": "Autosave",
+      "export": "Export as text",
+      "exportPdf": "Export as PDF",
+      "exportHtml": "Export as HTML",
+      "focus": "Focus mode",
+      "tag": "Add tag",
+      "tags": "Filter by tags",
+      "fontSize": "Font size",
+      "font": "Choose font",
+      "backup": "Back up data",
+      "import": "Import backup",
+      "fav": "Toggle favorite",
+      "emptyTrash": "Empty trash",
+      "orientation": "Page orientation",
+      "matrix": "Matrix rain effect",
+      "help": "This help"
+    },
+    "notes": {
+      "title": "Notes and folders",
+      "tree": "Tree of folders and notes in the left panel",
+      "drag": "Drag items to move them (drag & drop)",
+      "contextMenu": "Right-click to open the context menu",
+      "rename": "F2 renames the selected item",
+      "delete": "Delete removes it (moves it to the trash)"
+    },
+    "editor": {
+      "title": "Editor",
+      "monospace": "Monospace editor with formatting support",
+      "formatting": "Italic (Ctrl+I) and underline (Ctrl+U)",
+      "undo": "Undo/redo history (Ctrl+Z / Ctrl+Y)",
+      "orientation": "Ctrl+L toggles page orientation (landscape/portrait)"
+    },
+    "encryption": {
+      "title": "Encryption",
+      "intro": "Notes can be encrypted with a password using AES (Fernet). Encrypted notes are marked with a lock icon.",
+      "encrypt": "The :encrypt command encrypts a note",
+      "decrypt": "The :decrypt command decrypts a note",
+      "password": "The password is not stored — if you lose it, the note cannot be recovered"
+    },
+    "images": {
+      "title": "Images",
+      "paste": "Paste an image from the clipboard with Ctrl+V",
+      "folder": "Images are stored in the images/ folder",
+      "zoom": "Zoom with Ctrl+mouse wheel"
+    },
+    "export": {
+      "title": "Export",
+      "text": ":export — Export as plain text (.txt)",
+      "pdf": ":exportpdf — Export as PDF (with optional color)",
+      "html": ":exporthtml — Export as HTML"
+    },
+    "tags": {
+      "title": "Tags and favorites",
+      "tag": ":tag — Add/remove a note tag",
+      "tags": ":tags — Filter notes by tag",
+      "fav": ":fav — Mark/unmark a note as favorite",
+      "sorting": "Favorites are sorted to the top of the list"
+    },
+    "themes": {
+      "title": "Themes",
+      "intro": "12 color themes. Change the theme with the :theme command."
+    },
+    "backup": {
+      "title": "Backup",
+      "backup": ":backup — Export all data as a .zip file",
+      "import": ":import — Import a backup from a .zip file"
+    },
+    "effects": {
+      "title": "Effects",
+      "matrix": ":matrix — Turn the Matrix rain animation on/off",
+      "splash": "Splash screen with an ASCII art logo on startup",
+      "cursor": "Custom round cursor with smooth blinking",
+      "focus": "Focus mode (Ctrl+B) — hides the sidebar"
+    },
+    "md": {
+      "title": "Markdown",
+      "intro": "NoirPad supports Markdown formatting. Toggle Markdown mode using the MD button in the top bar (or Ctrl+M). Click any example below to copy it to clipboard.",
+      "headings": "Headings",
+      "textFormatting": "Text formatting",
+      "lists": "Lists",
+      "code": "Code",
+      "links": "Links",
+      "images": "Images",
+      "other": "Other",
+      "shortcuts": "Keyboard shortcuts (in markdown mode)",
+      "wrapSelection": "Wrap selection in",
+      "tipList": "Tip: Press Enter at the end of a list item to continue the list automatically.",
+      "tipBacktick": "Tip: Backtick (`) on Czech keyboard = AltGr + ý + space",
+      "tipImages": "Tip: Use +Img button or Ctrl+V to paste images directly. Click any image to view fullscreen, Ctrl+wheel to resize.",
+      "h1": {
+        "syntax": "# Heading 1",
+        "desc": "Largest heading"
+      },
+      "h2": {
+        "syntax": "## Heading 2",
+        "desc": "Medium heading"
+      },
+      "h3": {
+        "syntax": "### Heading 3",
+        "desc": "Smallest heading"
+      },
+      "bold": {
+        "syntax": "**bold text**",
+        "desc": "Bold"
+      },
+      "italic": {
+        "syntax": "*italic text*",
+        "desc": "Italic"
+      },
+      "strike": {
+        "syntax": "~~strikethrough~~",
+        "desc": "Strikethrough"
+      },
+      "ul": {
+        "syntax": "- Item",
+        "snippet": "- Item one\n- Item two\n- Item three",
+        "desc": "Unordered list (- or * or +)"
+      },
+      "ol": {
+        "syntax": "1. Item",
+        "snippet": "1. First\n2. Second\n3. Third",
+        "desc": "Numbered list"
+      },
+      "inlineCode": {
+        "syntax": "`inline code`",
+        "desc": "Inline code"
+      },
+      "codeBlock": {
+        "syntax": "```code block```",
+        "snippet": "```\ncode block\nmultiple lines\n```",
+        "desc": "Multi-line code block"
+      },
+      "link": {
+        "syntax": "[text](url)",
+        "snippet": "[Link text](https://example.com)",
+        "desc": "Clickable link"
+      },
+      "image": {
+        "syntax": "![alt](url)",
+        "snippet": "![Image description](/images/example.png)",
+        "desc": "Embed image"
+      },
+      "quote": {
+        "syntax": "> Quote",
+        "snippet": "> Quote text\n> Multiple lines",
+        "desc": "Blockquote"
+      },
+      "wrap": {
+        "bold": "**bold**",
+        "italic": "*italic*",
+        "code": "`code`",
+        "link": "[link](url)"
+      }
+    }
+  },
+  "splash": {
+    "mounted": "Mounted /notes",
+    "loadedTree": "Loaded tree: {notes}, {folders}",
+    "notes": {
+      "one": "{n} note",
+      "other": "{n} notes"
+    },
+    "folders": {
+      "one": "{n} folder",
+      "other": "{n} folders"
+    },
+    "crypto": "Initialized crypto subsystem (Fernet/PBKDF2)",
+    "backend": "Connected to backend at :{port}",
+    "theme": "Theme: {theme}",
+    "target": "Reached target NoirPad.target",
+    "ready": "NoirPad ready",
+    "continue": "[ Press any key or click to continue ]"
+  },
+  "focus": {
+    "exitTitle": "Exit focus mode (Ctrl+B)"
+  },
+  "commands": {
+    "placeholder": "Type a command (e.g. :search, :theme amber)",
+    "applyTheme": "Apply theme",
+    "pdfUnavailable": "PDF export not available in web",
+    "hints": {
+      "text": "<text>",
+      "name": "<name>",
+      "number": "<N>"
+    },
+    "desc": {
+      "search": "Search in note",
+      "newNote": "Create new note",
+      "newFolder": "Create new folder",
+      "theme": "Switch theme",
+      "encrypt": "Encrypt current note",
+      "decrypt": "Decrypt current note",
+      "fullscreen": "Toggle fullscreen",
+      "autosave": "Toggle autosave",
+      "export": "Export as TXT",
+      "exportpdf": "Export as PDF",
+      "exporthtml": "Export as HTML",
+      "focus": "Toggle focus mode",
+      "tag": "Add tag to note",
+      "tags": "Show all tags",
+      "fontsize": "Set font size (6-72)",
+      "font": "Open font picker",
+      "backup": "Download backup",
+      "import": "Import backup",
+      "fav": "Toggle favorite",
+      "emptytrash": "Empty trash",
+      "orientation": "Toggle page orientation",
+      "matrix": "Toggle matrix rain",
+      "help": "Show help",
+      "closetab": "Close current tab",
+      "closeall": "Close all tabs",
+      "crt": "Toggle CRT scanlines",
+      "settings": "Open settings",
+      "findall": "Search across all notes"
+    }
+  },
+  "shortcuts": {
+    "categories": {
+      "markdown": "Markdown",
+      "editor": "Editor",
+      "notes": "Notes",
+      "ui": "UI",
+      "tabs": "Tabs"
+    },
+    "labels": {
+      "mdH1": "Markdown: H1 heading",
+      "mdH2": "Markdown: H2 heading",
+      "mdH3": "Markdown: H3 heading",
+      "mdBold": "Markdown: Bold",
+      "mdItalic": "Markdown: Italic",
+      "mdCodeInline": "Markdown: Inline code",
+      "mdStrikethrough": "Markdown: Strikethrough",
+      "mdCodeBlock": "Markdown: Code block",
+      "mdQuote": "Markdown: Quote",
+      "mdListBullet": "Markdown: Bullet list",
+      "mdListNumbered": "Markdown: Numbered list",
+      "mdHorizontalRule": "Markdown: Horizontal rule",
+      "mdLink": "Markdown: Link",
+      "mdImage": "Markdown: Image",
+      "save": "Save note",
+      "find": "Find in note",
+      "findNext": "Find next",
+      "findPrev": "Find previous",
+      "insertImage": "Insert image",
+      "toggleMarkdown": "Toggle markdown mode",
+      "newFolder": "New folder",
+      "newNote": "New note",
+      "delete": "Delete selected",
+      "rename": "Rename selected",
+      "toggleFavorite": "Toggle favorite",
+      "toggleLock": "Lock/unlock note",
+      "toggleSidebar": "Toggle sidebar/focus",
+      "toggleOrientation": "Toggle page orientation",
+      "openSettings": "Open settings",
+      "openHelp": "Open help",
+      "openCommandPalette": "Open command palette",
+      "openFontPicker": "Open font picker",
+      "fullscreen": "Toggle fullscreen",
+      "nextTab": "Next tab",
+      "prevTab": "Previous tab",
+      "closeTab": "Close tab"
+    },
+    "errors": {
+      "empty": "Empty keystroke",
+      "needsModifier": "Shortcut must include Ctrl, Alt, or Shift",
+      "reserved": "This shortcut is reserved by your browser and cannot be used"
+    }
+  },
+  "shortcutsManager": {
+    "otherCategory": "Other",
+    "record": "Record",
+    "resetToDefault": "Reset to default",
+    "noneFound": "No shortcuts found.",
+    "pressKeys": "Press keys...",
+    "totalCount": {
+      "one": "{n} shortcut",
+      "other": "{n} shortcuts"
+    },
+    "customCount": {
+      "one": "{n} customized",
+      "other": "{n} customized"
+    },
+    "conflictConfirm": "Shortcut \"{keys}\" is already used by \"{label}\". Override?",
+    "resetAllConfirm": "Reset ALL shortcuts to their defaults?"
+  },
+  "tree": {
+    "trashHeader": "Trash",
+    "deletePermanently": "Delete permanently",
+    "confirmDeletePermanently": "Permanently delete '{name}'? This cannot be undone.",
+    "defaultNoteName": "Note",
+    "thisItem": "this item",
+    "confirmTrashFolder": "Move folder '{name}' and all its contents to trash?",
+    "confirmTrashNote": "Move '{name}' to trash?",
+    "promptNoteName": "Note name:",
+    "promptFolderName": "Folder name:",
+    "promptNewName": "New name:",
+    "contextMenu": {
+      "newNote": "New Note",
+      "newFolder": "New Folder",
+      "toggleFavorite": "Toggle Favorite"
+    }
+  },
+  "fontPicker": {
+    "title": "FONT PICKER",
+    "filterPlaceholder": "Filter fonts...",
+    "sizeLabel": "Size:",
+    "previewLabel": "Preview:",
+    "previewSample": "The quick brown fox jumps over the lazy dog.",
+    "apply": "Apply",
+    "categories": {
+      "monospace": "Monospace",
+      "sansSerif": "Sans-serif",
+      "serif": "Serif",
+      "display": "Display"
+    }
+  },
+  "backup": {
+    "importConfirm": "Import \"{name}\"?\n\nThis REPLACES ALL your notes, folders and trash with the contents of the backup. Your current notes are saved first to the backups folder (pre-import-….zip) in the NoirPad data directory.\n\nSettings are not changed.",
+    "importSuccess": "Backup imported successfully.",
+    "importFailed": "Import failed: {error}"
+  },
+  "search": {
+    "placeholder": "Find...",
+    "previous": "Previous (Shift+F3)",
+    "next": "Next (F3)",
+    "close": "Close (Escape)",
+    "count": "{current} of {total}"
+  },
+  "findAll": {
+    "placeholder": "Search across all notes...",
+    "typeToSearch": "Type to search",
+    "noMatches": "No matches"
+  },
+  "app": {
+    "startFailed": "Failed to reach server: {error}"
+  },
+  "tags": {
+    "remove": "Remove tag",
+    "allTags": "All tags:",
+    "none": "(none)"
+  },
+  "trash": {
+    "confirmEmpty": "Permanently delete all items in trash? This cannot be undone."
+  },
+  "ui": {
+    "splash": {
+      "loading": "Loading..."
+    },
+    "topBar": {
+      "toggleSidebar": "Toggle sidebar",
+      "focusMode": "Focus mode (Ctrl+B)",
+      "settings": "Settings (:settings)",
+      "ready": "Ready"
+    },
+    "sidebar": {
+      "newFolder": "+Folder",
+      "newFolderTitle": "New Folder",
+      "newNote": "+Note",
+      "newNoteTitle": "New Note",
+      "backup": "Backup",
+      "backupTitle": "Download backup .zip"
+    },
+    "header": {
+      "help": "Help",
+      "font": "Font",
+      "fontTitle": "Font settings",
+      "markdownTitle": "Toggle markdown mode (Ctrl+M)",
+      "favoriteTitle": "Toggle favorite",
+      "lock": "Lock",
+      "lockTitle": "Lock / Unlock note",
+      "image": "+Img",
+      "imageTitle": "Insert image",
+      "pdfTitle": "Export to PDF (Ctrl+P)"
+    },
+    "tags": {
+      "addPlaceholder": "Add tag..."
+    },
+    "commandBar": {
+      "placeholder": "> Type a command..."
+    },
+    "editor": {
+      "placeholder": "Start typing...",
+      "markdownPlaceholder": "Start typing markdown..."
+    },
+    "search": {
+      "findPlaceholder": "Find...",
+      "previous": "Previous",
+      "next": "Next",
+      "replacePlaceholder": "Replace...",
+      "replace": "Replace",
+      "replaceAll": "All",
+      "replaceAllTitle": "Replace All"
+    },
+    "bottomBar": {
+      "autosave": "Autosave",
+      "autosaveTitle": "Toggle autosave",
+      "save": "Save",
+      "commands": "Commands",
+      "find": "Find",
+      "sidebar": "Sidebar",
+      "chars": "0 chars",
+      "words": "0 words",
+      "lines": "0 lines"
+    },
+    "help": {
+      "title": "Keyboard Shortcuts"
+    },
+    "fontPicker": {
+      "title": "Font Settings",
+      "searchPlaceholder": "Search fonts...",
+      "size": "Size:"
+    },
+    "settings": {
+      "title": "Settings",
+      "section": {
+        "appearance": "Appearance",
+        "editor": "Editor",
+        "behavior": "Behavior",
+        "appLock": "App lock",
+        "data": "Data",
+        "session": "Session",
+        "about": "About"
+      },
+      "theme": "Theme",
+      "uiFont": "UI font",
+      "systemFont": "System default",
+      "fontAndSize": "Font & size",
+      "openFontPicker": "Open font picker →",
+      "glowIntensity": "Glow intensity",
+      "crt": "CRT scanlines",
+      "matrixRain": "Matrix rain background",
+      "showSplash": "Show splash on startup",
+      "autosave": "Autosave",
+      "autosaveHint": "Off: safety save every 30 s",
+      "autosaveInterval": "Autosave interval",
+      "duration": {
+        "s5": "5 seconds",
+        "s30": "30 seconds",
+        "m1": "1 minute",
+        "m5": "5 minutes",
+        "m30": "30 minutes",
+        "h1": "1 hour"
+      },
+      "pageOrientation": "Page orientation",
+      "landscape": "Landscape",
+      "portrait": "Portrait",
+      "spellcheck": "Spellcheck",
+      "glitchEffect": "Glitch typing effect",
+      "newBadge": "NEW",
+      "confirmDelete": "Confirm before delete",
+      "idleLock": "Auto-lock when idle",
+      "idleLockHint": "Locks encrypted notes — and the whole app if App lock is on",
+      "defaultEncrypted": "Default new note as encrypted",
+      "shortcutHints": "Show shortcut hints in bottom bar",
+      "shortcuts": "Keyboard shortcuts",
+      "manageShortcuts": "Manage →",
+      "appLock": "Ask for a password to open NoirPad",
+      "appLockHint": "At start and after auto-lock. It keeps people out of the app but does NOT encrypt your notes — only locked notes are encrypted.",
+      "appLockPassword": "App-lock password",
+      "appLockChange": "Change",
+      "appLockNow": "Lock now",
+      "downloadBackup": "Download backup",
+      "importBackup": "Import backup",
+      "exportMarkdown": "Export all as Markdown",
+      "importMarkdown": "Import Markdown",
+      "exportHtml": "Export all as HTML",
+      "emptyTrash": "Empty trash",
+      "resetAll": "Reset all settings",
+      "passwordServer": "Password-protected server",
+      "logout": "Logout",
+      "version": "Version",
+      "source": "Source",
+      "storageUsed": "Storage used"
+    },
+    "dialog": {
+      "title": "Dialog"
+    },
+    "shortcuts": {
+      "title": "Shortcuts",
+      "searchPlaceholder": "Search shortcuts...",
+      "customizedOnly": "Customized only",
+      "resetAll": "Reset all",
+      "summaryEmpty": "— shortcuts · — customized",
+      "escapeHint": "Press Escape to cancel recording"
+    }
+  },
+  "settings": {
+    "size": {
+      "bytes": "{n} B",
+      "kb": "{n} KB",
+      "mb": "{n} MB",
+      "gb": "{n} GB"
+    },
+    "storageError": "— (error)",
+    "exporting": "Exporting...",
+    "exportMdSkipped": {
+      "one": "{n} locked note was skipped. Unlock it and remove its encryption first if you want it in the export.",
+      "other": "{n} locked notes were skipped. Unlock them and remove their encryption first if you want them in the export."
+    },
+    "importNotes": {
+      "one": "{n} note",
+      "other": "{n} notes"
+    },
+    "importImages": {
+      "one": "{n} image",
+      "other": "{n} images"
+    },
+    "importDone": "Imported {notes}. Nothing existing was changed.",
+    "importDoneWithImages": "Imported {notes} and {images}. Nothing existing was changed.",
+    "importSkipped": {
+      "one": "{n} file was too large and skipped.",
+      "other": "{n} files were too large and skipped."
+    },
+    "importFailed": "Import failed: {error}",
+    "resetConfirm": "Reset all settings to defaults?",
+    "resetConfirmDetail": "This restores theme, fonts, toggles, idle-lock, and custom shortcuts. Your notes, folders, and trash will NOT be affected.",
+    "serverError": "Server error {status}",
+    "resetFailed": "Failed to reset settings: {error}",
+    "logoutConfirm": "Log out of NoirPad?"
+  }
+}

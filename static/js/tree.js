@@ -169,7 +169,7 @@ window.NP = window.NP || {};
 
                 var header = document.createElement("div");
                 header.style.cssText = "padding:4px 12px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--fg-dim);opacity:0.6;user-select:none;";
-                header.textContent = "Trash";
+                header.textContent = NP.t("tree.trashHeader");
                 container.appendChild(header);
 
                 for (var t = 0; t < trashTree.length; t++) {
@@ -262,8 +262,8 @@ window.NP = window.NP || {};
                 html += "<span style='margin-right:4px;font-size:8px;color:var(--fg-dim);'>\u25c6</span>";
             }
             html += "<span style='color:var(--fg-dim);'>" + NP.escapeHtml(item.name) + "</span>";
-            html += "<span class='tree-trash-restore' style='margin-left:auto;cursor:pointer;padding:0 3px;color:var(--fg-dim);font-size:11px;' title='Restore'>\u21a9</span>";
-            html += "<span class='tree-trash-delete' style='cursor:pointer;padding:0 3px;color:var(--fg-dim);font-size:10px;' title='Delete permanently'>\u00d7</span>";
+            html += "<span class='tree-trash-restore' style='margin-left:auto;cursor:pointer;padding:0 3px;color:var(--fg-dim);font-size:11px;' title='" + NP.escapeHtml(NP.t("common.restore")) + "'>\u21a9</span>";
+            html += "<span class='tree-trash-delete' style='cursor:pointer;padding:0 3px;color:var(--fg-dim);font-size:10px;' title='" + NP.escapeHtml(NP.t("tree.deletePermanently")) + "'>\u00d7</span>";
 
             div.style.display = "flex";
             div.style.alignItems = "center";
@@ -287,7 +287,7 @@ window.NP = window.NP || {};
             if (deleteBtn) {
                 deleteBtn.addEventListener("click", function (e) {
                     e.stopPropagation();
-                    if (!confirm("Permanently delete '" + item.name + "'? This cannot be undone.")) return;
+                    if (!confirm(NP.t("tree.confirmDeletePermanently", { name: item.name }))) return;
                     NP.api.deleteTrashItem(item.id).then(function () {
                         return NP.state.init();
                     }).then(function () {
@@ -333,7 +333,7 @@ window.NP = window.NP || {};
                 NP.state.currentNoteId = id;
                 if (NP.tabs) {
                     var item = findItemById(NP.state.data.tree, id);
-                    var name = item ? item.name : "Note";
+                    var name = item ? item.name : NP.t("tree.defaultNoteName");
                     NP.tabs.add(id, name);
                 } else if (NP.editor) {
                     /* Only call loadNote directly if tabs module is not available */
@@ -371,16 +371,16 @@ window.NP = window.NP || {};
             var items = [];
             if (type === "folder") {
                 items = [
-                    { label: "New Note", action: "new-note" },
-                    { label: "New Folder", action: "new-folder" },
-                    { label: "Rename", action: "rename" },
-                    { label: "Delete", action: "delete" }
+                    { label: NP.t("tree.contextMenu.newNote"), action: "new-note" },
+                    { label: NP.t("tree.contextMenu.newFolder"), action: "new-folder" },
+                    { label: NP.t("common.rename"), action: "rename" },
+                    { label: NP.t("common.delete"), action: "delete" }
                 ];
             } else {
                 items = [
-                    { label: "Rename", action: "rename" },
-                    { label: "Toggle Favorite", action: "favorite" },
-                    { label: "Delete", action: "delete" }
+                    { label: NP.t("common.rename"), action: "rename" },
+                    { label: NP.t("tree.contextMenu.toggleFavorite"), action: "favorite" },
+                    { label: NP.t("common.delete"), action: "delete" }
                 ];
             }
 
@@ -435,12 +435,12 @@ window.NP = window.NP || {};
             if (!id) return;
             var item = findItemById(data.tree, id);
             if (!item) return;
-            var name = item.name || "this item";
+            var name = item.name || NP.t("tree.thisItem");
             var isFolder = item.type === "folder";
             var skipConfirm = data.confirm_delete === false;
             var msg = isFolder
-                ? "Move folder '" + name + "' and all its contents to trash?"
-                : "Move '" + name + "' to trash?";
+                ? NP.t("tree.confirmTrashFolder", { name: name })
+                : NP.t("tree.confirmTrashNote", { name: name });
             if (!skipConfirm && !confirm(msg)) return;
             NP.api.deleteItem(id).then(function () {
                 if (NP.state.currentNoteId === id) {
@@ -460,7 +460,7 @@ window.NP = window.NP || {};
         _handleContextAction: function (action, id, type) {
             switch (action) {
                 case "new-note":
-                    var noteName = prompt("Note name:");
+                    var noteName = prompt(NP.t("tree.promptNoteName"));
                     if (noteName) {
                         NP.api.newNote(id, noteName).then(function () {
                             NP.state.setFolderOpenState(id, true);
@@ -472,7 +472,7 @@ window.NP = window.NP || {};
                     break;
 
                 case "new-folder":
-                    var folderName = prompt("Folder name:");
+                    var folderName = prompt(NP.t("tree.promptFolderName"));
                     if (folderName) {
                         NP.api.newFolder(id, folderName).then(function () {
                             NP.state.setFolderOpenState(id, true);
@@ -484,7 +484,7 @@ window.NP = window.NP || {};
                     break;
 
                 case "rename":
-                    var newName = prompt("New name:");
+                    var newName = prompt(NP.t("tree.promptNewName"));
                     if (newName) {
                         NP.api.rename(id, newName).then(function () {
                             return NP.state.init();

@@ -15,7 +15,7 @@ class _Runtime:
     mode: str = "server"
     password: Optional[str] = os.environ.get("NOIRPAD_PASSWORD") or None
     desktop_token: Optional[str] = None
-    data_notice: Optional[str] = None        # shown once in the UI (D8)
+    data_notice: Optional[dict] = None       # {"code", "params"}, shown once in the UI (D8)
     # Unlocked encrypted notes: token -> {note_id, key, salt, created, used}.
     # Keys live only here, never on disk; lost on lock, expiry or exit.
     unlocked: dict[str, dict] = {}

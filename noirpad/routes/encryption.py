@@ -12,11 +12,12 @@ import secrets
 import time
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from ..crypto import (MAX_NOTE_PASSWORD, MIN_NOTE_PASSWORD, InvalidToken, decrypt_content,
                       decrypt_with_key, derive_key, encrypt_with_key, is_encrypted_content,
                       unlock_content)
+from ..errors import ApiError
 from ..images import extract_image_names
 from ..models import DecryptReq, LockReq, PasswordReq, SaveEncryptedReq
 from ..runtime import RUNTIME
@@ -31,9 +32,9 @@ UNLOCK_MAX_TTL = 12 * 60 * 60    # … and after 12 h no matter what
 
 def _check_new_password(password: str) -> None:
     if len(password) < MIN_NOTE_PASSWORD:
-        raise HTTPException(400, f"Password must be at least {MIN_NOTE_PASSWORD} characters")
+        raise ApiError(400, "password_too_short", min=MIN_NOTE_PASSWORD)
     if len(password) > MAX_NOTE_PASSWORD:
-        raise HTTPException(400, "Password is too long")
+        raise ApiError(400, "password_too_long")
 
 
 def _expired(entry: dict, now: float) -> bool:
@@ -56,7 +57,7 @@ def _key_for(token: Optional[str], note_id: str) -> dict:
     now = time.time()
     if entry is None or entry["note_id"] != note_id or _expired(entry, now):
         RUNTIME.unlocked.pop(token or "", None)
-        raise HTTPException(401, "Note is locked")
+        raise ApiError(401, "note_locked")
     entry["used"] = now
     return entry
 
@@ -70,7 +71,7 @@ def _forget_note_keys(note_id: str) -> None:
 def _stored_note(data: dict, note_id: str) -> str:
     content = data.get("notes", {}).get(note_id)
     if content is None or not note_exists(data, note_id):
-        raise HTTPException(404, "Note not found")
+        raise ApiError(404, "note_not_found")
     return content
 
 
@@ -84,7 +85,7 @@ async def encrypt_note(req: PasswordReq):
     def _mut(data: dict) -> None:
         content = _stored_note(data, req.id)
         if is_encrypted_content(content):
-            raise HTTPException(400, "Note is already encrypted")
+            raise ApiError(400, "note_already_encrypted")
         # Image names from the PLAINTEXT, so the trash cleanup still finds them.
         data.setdefault("note_images", {})[req.id] = extract_image_names(content)
         data["notes"][req.id] = encrypt_with_key(content, key, salt)
@@ -104,7 +105,7 @@ async def unlock_note(req: PasswordReq):
     try:
         text, key, salt = unlock_content(stored, req.password)
     except (InvalidToken, ValueError):
-        raise HTTPException(400, "Wrong password")
+        raise ApiError(400, "wrong_password")
     return {
         "content": text,
         "formats": data.get("note_formats", {}).get(req.id, []),
@@ -136,14 +137,14 @@ async def decrypt_note(req: DecryptReq):
     """Remove encryption for good (unlock token, or the password)."""
     entry = _key_for(req.unlock_token, req.id) if req.unlock_token else None
     if entry is None and not req.password:
-        raise HTTPException(400, "Password or unlock token required")
+        raise ApiError(400, "password_required")
     stored_before = read_data().get("notes", {}).get(req.id)
     key = entry["key"] if entry else None
     if key is None and stored_before is not None:
         try:
             unlock_content(stored_before, req.password)   # KDF outside the lock
         except (InvalidToken, ValueError):
-            raise HTTPException(400, "Wrong password or content is not encrypted")
+            raise ApiError(400, "wrong_password")
 
     def _mut(data: dict) -> None:
         stored = _stored_note(data, req.id)
@@ -151,7 +152,7 @@ async def decrypt_note(req: DecryptReq):
             text = (decrypt_with_key(stored, key) if key is not None
                     else decrypt_content(stored, req.password))
         except (InvalidToken, ValueError):
-            raise HTTPException(400, "Wrong password or content is not encrypted")
+            raise ApiError(400, "wrong_password")
         data["notes"][req.id] = text
         data.setdefault("note_images", {})[req.id] = extract_image_names(text)
 

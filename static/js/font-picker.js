@@ -10,20 +10,20 @@ window.NP = window.NP || {};
        Windows fonts; Inter/Outfit/Space Grotesk/Orbitron/Unbounded are
        loaded via Google Fonts in index.html). */
     var FONT_CATEGORIES = [
-        { name: "Monospace", fallback: "monospace", fonts: [
-            "Cascadia Code", "JetBrains Mono", "Consolas", "Courier New",
-            "Fira Code", "Source Code Pro", "Lucida Console"
+        { labelKey: "fontPicker.categories.monospace", fallback: "monospace", fonts: [
+            "Cascadia Code", "JetBrains Mono", "Consolas", "Courier New",   // i18n-ignore
+            "Fira Code", "Source Code Pro", "Lucida Console"   // i18n-ignore
         ] },
-        { name: "Sans-serif", fallback: "sans-serif", fonts: [
-            "Arial", "Calibri", "Helvetica", "Segoe UI", "Tahoma",
-            "Trebuchet MS", "Verdana", "Inter", "Outfit", "Space Grotesk"
+        { labelKey: "fontPicker.categories.sansSerif", fallback: "sans-serif", fonts: [
+            "Arial", "Calibri", "Helvetica", "Segoe UI", "Tahoma",   // i18n-ignore
+            "Trebuchet MS", "Verdana", "Inter", "Outfit", "Space Grotesk"   // i18n-ignore
         ] },
-        { name: "Serif", fallback: "serif", fonts: [
-            "Times New Roman", "Georgia", "Cambria", "Garamond",
-            "Palatino", "Book Antiqua"
+        { labelKey: "fontPicker.categories.serif", fallback: "serif", fonts: [
+            "Times New Roman", "Georgia", "Cambria", "Garamond",   // i18n-ignore
+            "Palatino", "Book Antiqua"   // i18n-ignore
         ] },
-        { name: "Display", fallback: "sans-serif", fonts: [
-            "Comic Sans MS", "Impact", "Orbitron", "Unbounded"
+        { labelKey: "fontPicker.categories.display", fallback: "sans-serif", fonts: [
+            "Comic Sans MS", "Impact", "Orbitron", "Unbounded"   // i18n-ignore
         ] }
     ];
 
@@ -152,9 +152,9 @@ window.NP = window.NP || {};
                 "padding:10px 16px;border-bottom:1px solid var(--border, #1a2e1a);flex-shrink:0;";
             header.innerHTML =
                 '<span style="font-size:14px;font-weight:bold;color:var(--fg-bright, #4cff7a);' +
-                'text-shadow:0 0 6px var(--glow, #00ff41);">V\u00ddB\u011aR FONTU</span>' +
+                'text-shadow:0 0 6px var(--glow, #00ff41);">' + NP.escapeHtml(NP.t("fontPicker.title")) + '</span>' +
                 '<button id="font-picker-close" style="font-size:18px;color:var(--fg-dim, #00bf30);' +
-                'cursor:pointer;background:none;border:none;padding:2px 8px;" title="Zav\u0159\u00edt">&times;</button>';
+                'cursor:pointer;background:none;border:none;padding:2px 8px;" title="' + NP.escapeHtml(NP.t("common.close")) + '">&times;</button>';
             modal.appendChild(header);
 
             /* Scrollable body — header stays fixed above, footer fixed
@@ -169,7 +169,7 @@ window.NP = window.NP || {};
             filterRow.style.cssText = "padding:8px 16px;border-bottom:1px solid var(--border, #1a2e1a);flex-shrink:0;";
             var filterInput = document.createElement("input");
             filterInput.type = "text";
-            filterInput.placeholder = "Filtrovat fonty...";
+            filterInput.placeholder = NP.t("fontPicker.filterPlaceholder");
             filterInput.style.cssText =
                 "width:100%;padding:4px 8px;font-size:12px;background:var(--bg-entry, #0d0d0d);" +
                 "border:1px solid var(--border, #1a2e1a);border-radius:4px;color:var(--fg, #00ff41);";
@@ -199,7 +199,7 @@ window.NP = window.NP || {};
                     if (matched.length === 0) continue;
 
                     var hdr = document.createElement("div");
-                    hdr.textContent = cat.name;
+                    hdr.textContent = NP.t(cat.labelKey);
                     hdr.style.cssText =
                         "padding:8px 16px 3px;font-size:10px;letter-spacing:1px;" +
                         "text-transform:uppercase;color:var(--fg-dim, #00bf30);" +
@@ -248,7 +248,7 @@ window.NP = window.NP || {};
                 "display:flex;align-items:center;gap:10px;padding:8px 16px;" +
                 "border-top:1px solid var(--border, #1a2e1a);flex-shrink:0;";
             sizeRow.innerHTML =
-                '<label style="font-size:12px;color:var(--fg-dim, #00bf30);">Velikost:</label>';
+                '<label style="font-size:12px;color:var(--fg-dim, #00bf30);">' + NP.escapeHtml(NP.t("fontPicker.sizeLabel")) + '</label>';
             var sizeInput = document.createElement("input");
             sizeInput.type = "number";
             sizeInput.min = MIN_SIZE;
@@ -270,7 +270,7 @@ window.NP = window.NP || {};
                 "padding:12px 16px;border-top:1px solid var(--border, #1a2e1a);flex-shrink:0;";
             var previewLabel = document.createElement("div");
             previewLabel.style.cssText = "font-size:11px;color:var(--fg-dim, #00bf30);margin-bottom:6px;";
-            previewLabel.textContent = "N\u00e1hled:";
+            previewLabel.textContent = NP.t("fontPicker.previewLabel");
             previewBox.appendChild(previewLabel);
 
             var previewArea = document.createElement("div");
@@ -278,7 +278,7 @@ window.NP = window.NP || {};
                 "padding:10px;background:var(--bg-entry, #0d0d0d);border:1px solid var(--border, #1a2e1a);" +
                 "border-radius:4px;color:var(--fg, #00ff41);min-height:48px;max-height:180px;" +
                 "overflow:auto;white-space:pre-wrap;";
-            previewArea.textContent = "The quick brown fox jumps over the lazy dog.\nABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789\n!@#$%^&*() {}<>[] =+-_";
+            previewArea.textContent = NP.t("fontPicker.previewSample") + "\nABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789\n!@#$%^&*() {}<>[] =+-_";
             previewBox.appendChild(previewArea);
             body.appendChild(previewBox);
 
@@ -300,7 +300,7 @@ window.NP = window.NP || {};
                 "border-top:1px solid var(--border, #1a2e1a);flex-shrink:0;";
 
             var cancelBtn = document.createElement("button");
-            cancelBtn.textContent = "Zru\u0161it";
+            cancelBtn.textContent = NP.t("common.cancel");
             cancelBtn.style.cssText =
                 "padding:5px 16px;font-size:12px;border-radius:4px;" +
                 "border:1px solid var(--border, #1a2e1a);color:var(--fg-dim, #00bf30);" +
@@ -308,7 +308,7 @@ window.NP = window.NP || {};
             btnRow.appendChild(cancelBtn);
 
             var applyBtn = document.createElement("button");
-            applyBtn.textContent = "Pou\u017e\u00edt";
+            applyBtn.textContent = NP.t("fontPicker.apply");
             applyBtn.style.cssText =
                 "padding:5px 16px;font-size:12px;border-radius:4px;" +
                 "border:1px solid var(--accent, #00ff41);color:var(--fg-bright, #4cff7a);" +

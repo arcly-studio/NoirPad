@@ -3,10 +3,11 @@
 import io
 from datetime import datetime
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import StreamingResponse
 
 from .. import config
+from ..errors import ApiError
 from ..export import attachment, build_html_zip, build_note_html, safe_filename
 from ..markdown_io import build_markdown_zip, import_files
 from ..storage import read_data
@@ -20,7 +21,7 @@ def _note_for_export(note_id: str) -> tuple[dict, str, str]:
     data = read_data()
     content = data.get("notes", {}).get(note_id)
     if content is None or not note_exists(data, note_id):
-        raise HTTPException(404, "Note not found")
+        raise ApiError(404, "note_not_found")
     item = find_item_by_id(data["tree"], note_id)
     return data, (item["name"] if item else note_id), content
 

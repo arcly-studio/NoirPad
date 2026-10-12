@@ -260,8 +260,8 @@ window.NP = window.NP || {};
                             NP.markdown.applyForLoadedNote(id, decContent);
                         }
                     }).catch(function (err) {
-                        alert("Could not unlock the note: " +
-                            (err && err.message ? err.message : err));
+                        alert(NP.t("editor.unlockFailed", {
+                            error: err && err.message ? err.message : err }));
                         NP.editor._showLockScreen();
                         /* STATE C: encrypted + locked */
                         NP.editor._refreshLockButton();
@@ -288,8 +288,8 @@ window.NP = window.NP || {};
                 console.error("loadNote error:", err);
                 if (NP.editor.el) {
                     NP.editor.el.innerHTML =
-                        "<p style='color:var(--fg-dim);'>Error loading note: " +
-                        NP.escapeHtml(err.message) + "</p>";
+                        "<p style='color:var(--fg-dim);'>" +
+                        NP.escapeHtml(NP.t("editor.loadError", { error: err.message })) + "</p>";
                 }
             });
         },
@@ -300,8 +300,8 @@ window.NP = window.NP || {};
             NP.editor.el.innerHTML =
                 "<div style='text-align:center;padding:80px 20px;'>" +
                 "<div style='font-size:48px;margin-bottom:16px;'>&#x1F512;</div>" +
-                "<div style='font-size:16px;color:var(--fg);margin-bottom:8px;'>This note is encrypted</div>" +
-                "<div style='font-size:12px;color:var(--fg-dim);'>Click on the note again to enter password</div>" +
+                "<div style='font-size:16px;color:var(--fg);margin-bottom:8px;'>" + NP.escapeHtml(NP.t("editor.lockScreen.title")) + "</div>" +
+                "<div style='font-size:12px;color:var(--fg-dim);'>" + NP.escapeHtml(NP.t("editor.lockScreen.hint")) + "</div>" +
                 "</div>";
             NP.editor.updateCharCount();
         },
@@ -357,13 +357,14 @@ window.NP = window.NP || {};
             html += "</div>";
 
             /* Subtitle */
-            html += "<p class='welcome-sub'>Your dark notebook</p>";
+            html += "<p class='welcome-sub'>" + NP.escapeHtml(NP.t("editor.welcome.subtitle")) + "</p>";
 
             /* Version */
-            html += "<p class='welcome-version'>v2.0 — web edition</p>";
+            html += "<p class='welcome-version'>" + NP.escapeHtml(NP.t("editor.welcome.version", { version: "2.0" })) + "</p>";
 
             /* Hint */
-            html += "<p class='welcome-hint'>Select a note to begin or press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> for commands</p>";
+            html += "<p class='welcome-hint'>" + NP.escapeHtml(NP.t("editor.welcome.hint")).replace("{keys}",
+                "<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>") + "</p>";
 
             html += "</div>";
 
@@ -387,7 +388,10 @@ window.NP = window.NP || {};
             var html = "";
             html += "<div style='padding:40px;max-width:600px;margin:0 auto;'>";
             html += "<h2 style='color:var(--fg-bright);margin:0 0 8px 0;'>&#128193; " + NP.escapeHtml(item.name) + "</h2>";
-            html += "<p style='color:var(--fg-dim);margin:0 0 24px 0;'>" + childCount + " direct items, " + totalCount + " total</p>";
+            html += "<p style='color:var(--fg-dim);margin:0 0 24px 0;'>" + NP.escapeHtml(NP.t("editor.overview.summary", {
+                direct: NP.t("editor.overview.directItems", { n: childCount }),
+                total: NP.t("editor.overview.totalItems", { n: totalCount })
+            })) + "</p>";
 
             if (item.children && item.children.length > 0) {
                 html += "<div>";
@@ -768,7 +772,7 @@ window.NP = window.NP || {};
                 formats = NP.editor._extractFormats();
             }
 
-            var key = id + " " + text + " " + JSON.stringify(formats);
+            var key = id + "\u0000" + text + "\u0000" + JSON.stringify(formats);
             if (silent && key === NP.editor._lastSavedKey) {
                 return Promise.resolve();
             }
@@ -783,7 +787,7 @@ window.NP = window.NP || {};
                 savePromise = NP.api.saveEncrypted(id, token, text, formats).catch(function (err) {
                     if (!(err && err.status === 401 && NP.encryption && NP.encryption.reunlock)) throw err;
                     return NP.encryption.reunlock(id).then(function (newToken) {
-                        if (!newToken) throw new Error("Note is locked; changes were not saved.");
+                        if (!newToken) throw new Error(NP.t("editor.lockedNotSaved"));
                         return NP.api.saveEncrypted(id, newToken, text, formats);
                     });
                 });
@@ -822,9 +826,9 @@ window.NP = window.NP || {};
             var lineEl = NP.$("#line-count");
 
             if (!NP.editor.el || NP.editor.el.contentEditable !== "true") {
-                if (charEl) charEl.textContent = "0 chars";
-                if (wordEl) wordEl.textContent = "0 words";
-                if (lineEl) lineEl.textContent = "0 lines";
+                if (charEl) charEl.textContent = NP.t("editor.count.chars", { n: 0 });
+                if (wordEl) wordEl.textContent = NP.t("editor.count.words", { n: 0 });
+                if (lineEl) lineEl.textContent = NP.t("editor.count.lines", { n: 0 });
                 return;
             }
 
@@ -834,9 +838,9 @@ window.NP = window.NP || {};
             var words = text.trim() ? text.trim().split(/\s+/).length : 0;
             var lines = text.split("\n").length;
 
-            if (charEl) charEl.textContent = chars + " chars";
-            if (wordEl) wordEl.textContent = words + " words";
-            if (lineEl) lineEl.textContent = lines + " lines";
+            if (charEl) charEl.textContent = NP.t("editor.count.chars", { n: chars });
+            if (wordEl) wordEl.textContent = NP.t("editor.count.words", { n: words });
+            if (lineEl) lineEl.textContent = NP.t("editor.count.lines", { n: lines });
         },
 
         /* ---- Auto-save ---- */

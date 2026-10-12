@@ -1,7 +1,8 @@
 """Note content, favorites, tags and the trash."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
+from ..errors import ApiError
 from ..images import delete_images, extract_image_names
 from ..models import IdReq, NoteBody, TagsBody
 from ..storage import read_data, update_data
@@ -19,7 +20,7 @@ async def get_note(note_id: str):
     data = read_data()
     content = data.get("notes", {}).get(note_id)
     if content is None or not note_exists(data, note_id):
-        raise HTTPException(404, "Note not found")
+        raise ApiError(404, "note_not_found")
     return {
         "content": content,
         "formats": data.get("note_formats", {}).get(note_id, []),
@@ -31,7 +32,7 @@ async def get_note(note_id: str):
 async def put_note(note_id: str, body: NoteBody):
     def _mut(data: dict) -> None:
         if not note_exists(data, note_id):
-            raise HTTPException(404, "Note not found")
+            raise ApiError(404, "note_not_found")
         data.setdefault("notes", {})[note_id] = body.content
         if body.formats:
             data.setdefault("note_formats", {})[note_id] = body.formats
@@ -56,7 +57,7 @@ async def put_note(note_id: str, body: NoteBody):
 async def toggle_favorite(req: IdReq):
     def _mut(data: dict) -> bool:
         if not note_exists(data, req.id):
-            raise HTTPException(404, "Note not found")
+            raise ApiError(404, "note_not_found")
         favs: list[str] = data.setdefault("favorites", [])
         if req.id in favs:
             favs.remove(req.id)
@@ -90,7 +91,7 @@ async def set_tags(item_id: str, body: TagsBody):
     def _mut(data: dict) -> None:
         item = find_item_by_id(data["tree"], item_id)
         if item is None:
-            raise HTTPException(404, "Item not found")
+            raise ApiError(404, "item_not_found")
         item["tags"] = body.tags
 
     update_data(_mut)
@@ -130,7 +131,7 @@ async def trash_restore(req: IdReq):
         try:
             restore_from_trash(data, req.id)
         except ValueError:
-            raise HTTPException(404, "Item not found in trash")
+            raise ApiError(404, "trash_item_not_found")
 
     update_data(_mut)
     return {"ok": True}
@@ -157,7 +158,7 @@ async def trash_delete_item(req: IdReq):
         trash = data.setdefault("trash", {"tree": [], "notes": {}})
         parent_list = find_parent_list(trash.get("tree") or [], req.id)
         if parent_list is None:
-            raise HTTPException(404, "Item not found in trash")
+            raise ApiError(404, "trash_item_not_found")
         item = next(i for i in parent_list if i["id"] == req.id)
         parent_list.remove(item)
         _purge(data, trash, collect_note_ids(item))

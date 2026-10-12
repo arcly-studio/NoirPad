@@ -31,13 +31,16 @@ window.NP = window.NP || {};
         var port = location.port || (location.protocol === "https:" ? "443" : "80");
 
         return [
-            { ok: "[ OK ]", msg: "Mounted /notes" },
-            { ok: "[ OK ]", msg: "Loaded tree: " + notes + " notes, " + folders + " folders" },
-            { ok: "[ OK ]", msg: "Initialized crypto subsystem (Fernet/PBKDF2)" },
-            { ok: "[ OK ]", msg: "Connected to backend at :" + port },
-            { ok: "[ OK ]", msg: "Theme: " + theme },
-            { ok: "[ OK ]", msg: "Reached target NoirPad.target" },
-            { ok: "[ OK ]", msg: "NoirPad ready" }
+            { ok: "[ OK ]", msg: NP.t("splash.mounted") },
+            { ok: "[ OK ]", msg: NP.t("splash.loadedTree", {
+                notes: NP.t("splash.notes", { n: notes }),
+                folders: NP.t("splash.folders", { n: folders })
+            }) },
+            { ok: "[ OK ]", msg: NP.t("splash.crypto") },
+            { ok: "[ OK ]", msg: NP.t("splash.backend", { port: port }) },
+            { ok: "[ OK ]", msg: NP.t("splash.theme", { theme: theme }) },
+            { ok: "[ OK ]", msg: NP.t("splash.target") },
+            { ok: "[ OK ]", msg: NP.t("splash.ready") }
         ];
     }
 
@@ -94,7 +97,7 @@ window.NP = window.NP || {};
             continueEl.style.cssText =
                 "font-family:monospace;font-size:14px;margin-top:24px;" +
                 "color:var(--fg-dim, #00bf30);opacity:0;transition:opacity 0.4s ease;";
-            continueEl.textContent = "[ Press any key or click to continue ]";
+            continueEl.textContent = NP.t("splash.continue");
             overlay.appendChild(continueEl);
 
             document.body.appendChild(overlay);

@@ -24,7 +24,7 @@ window.NP = window.NP || {};
 
         inputEl = document.createElement("input");
         inputEl.type = "text";
-        inputEl.placeholder = "Find...";
+        inputEl.placeholder = NP.t("search.placeholder");
         inputEl.style.cssText =
             "width:180px;padding:4px 8px;background:var(--bg,#000);color:var(--fg,#00ff41);" +
             "border:1px solid var(--fg-dim,#006b1d);border-radius:3px;" +
@@ -36,19 +36,19 @@ window.NP = window.NP || {};
 
         var prevBtn = document.createElement("button");
         prevBtn.textContent = "\u25B2";
-        prevBtn.title = "Previous (Shift+F3)";
+        prevBtn.title = NP.t("search.previous");
         styleBtn(prevBtn);
         prevBtn.addEventListener("click", function () { NP.search.prev(); });
 
         var nextBtn = document.createElement("button");
         nextBtn.textContent = "\u25BC";
-        nextBtn.title = "Next (F3)";
+        nextBtn.title = NP.t("search.next");
         styleBtn(nextBtn);
         nextBtn.addEventListener("click", function () { NP.search.next(); });
 
         var closeBtn = document.createElement("button");
         closeBtn.textContent = "\u2715";
-        closeBtn.title = "Close (Escape)";
+        closeBtn.title = NP.t("search.close");
         styleBtn(closeBtn);
         closeBtn.addEventListener("click", function () { NP.search.hide(); });
 
@@ -263,9 +263,9 @@ window.NP = window.NP || {};
         _updateCount: function () {
             if (!countEl) return;
             if (!NP.search.matches.length) {
-                countEl.textContent = inputEl && inputEl.value ? "0 of 0" : "";
+                countEl.textContent = inputEl && inputEl.value ? NP.t("search.count", { current: 0, total: 0 }) : "";
             } else {
-                countEl.textContent = (NP.search.currentIndex + 1) + " of " + NP.search.matches.length;
+                countEl.textContent = NP.t("search.count", { current: NP.search.currentIndex + 1, total: NP.search.matches.length });
             }
         }
     };

@@ -124,14 +124,15 @@ def _host_of(value: str) -> str:
     return value.rsplit(":", 1)[0] if value.count(":") == 1 else value
 
 
-def _deny(status: int, detail: str) -> JSONResponse:
-    return JSONResponse({"detail": detail}, status_code=status)
+def _deny(status: int, code: str) -> JSONResponse:
+    """Same body shape as errors.ApiError."""
+    return JSONResponse({"detail": {"code": code}}, status_code=status)
 
 
 def check_request(request: Request) -> Optional[JSONResponse]:
     """Host, CSRF, desktop token and password checks. None = allowed."""
     if _host_of(request.headers.get("host", "")) not in RUNTIME.allowed_hosts:
-        return _deny(400, "Invalid host header")
+        return _deny(400, "invalid_host")
 
     path = request.url.path
     is_api = path.startswith("/api/")
@@ -143,21 +144,21 @@ def check_request(request: Request) -> Optional[JSONResponse]:
         if origin is not None:
             authority = origin.split("://", 1)[-1]
             if authority.lower() != request.headers.get("host", "").lower():
-                return _deny(403, "Cross-origin request refused")
+                return _deny(403, "cross_origin")
         if RUNTIME.mode == "server" and request.headers.get(CSRF_HEADER) != "1":
-            return _deny(403, "Missing X-NoirPad-Request header")
+            return _deny(403, "csrf_header_missing")
 
     if RUNTIME.mode == "desktop":
         token = request.headers.get(TOKEN_HEADER)
         if not is_api:  # <img> can't send headers → cookie from /api/session/bind
             token = token or request.cookies.get(DESKTOP_COOKIE_NAME)
         if not _token_ok(token):
-            return _deny(403, "Missing or wrong NoirPad token")
+            return _deny(403, "token_invalid")
 
     if (request.method, path) not in PUBLIC_API and not is_authenticated(request):
-        return _deny(401, "Not authenticated")
+        return _deny(401, "not_authenticated")
     if (request.method, path) not in APP_LOCK_OPEN and not app_lock.is_unlocked(request):
-        return _deny(423, "App is locked")
+        return _deny(423, "app_locked")
     return None
 
 

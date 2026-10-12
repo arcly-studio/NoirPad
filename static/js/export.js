@@ -8,7 +8,7 @@ window.NP = window.NP || {};
         txt: function () {
             var noteId = NP.state && NP.state.currentNoteId;
             if (!noteId) {
-                alert("No note selected.");
+                alert(NP.t("export.noNoteSelected"));
                 return;
             }
             NP.api.exportTxt(noteId);
@@ -17,7 +17,7 @@ window.NP = window.NP || {};
         html: function () {
             var noteId = NP.state && NP.state.currentNoteId;
             if (!noteId) {
-                alert("No note selected.");
+                alert(NP.t("export.noNoteSelected"));
                 return;
             }
             NP.api.exportHtml(noteId);

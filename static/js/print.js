@@ -321,21 +321,22 @@ window.NP = window.NP || {};
             var overlay = document.createElement("div");
             overlay.className = "paste-image-overlay";
             overlay.id = "np-print-md-overlay";
+            function tx(key) { return NP.escapeHtml(NP.t(key)); }
             overlay.innerHTML =
                 '<div class="paste-image-modal">' +
-                    '<h3>Export Markdown to PDF</h3>' +
-                    '<p>How do you want this note to look in the PDF?</p>' +
+                    '<h3>' + tx("print.mdDialog.title") + '</h3>' +
+                    '<p>' + tx("print.mdDialog.message") + '</p>' +
                     '<div class="paste-image-buttons">' +
                         '<button id="np-print-rendered">' +
-                            'Markdown text' +
+                            tx("print.mdDialog.rendered") +
                         '</button>' +
                         '<button id="np-print-raw-light">' +
-                            'Raw text — light (black on white)' +
+                            tx("print.mdDialog.rawLight") +
                         '</button>' +
                         '<button id="np-print-raw-dark">' +
-                            'Raw text — dark (white on black)' +
+                            tx("print.mdDialog.rawDark") +
                         '</button>' +
-                        '<button id="np-print-cancel">Cancel</button>' +
+                        '<button id="np-print-cancel">' + tx("print.mdDialog.cancel") + '</button>' +
                     '</div>' +
                 '</div>';
             document.body.appendChild(overlay);
@@ -371,11 +372,11 @@ window.NP = window.NP || {};
     NP.print = {
         exportCurrentNote: function () {
             if (!NP.state || !NP.state.currentNoteId) {
-                alert("No note selected.");
+                alert(NP.t("print.noNoteSelected"));
                 return;
             }
             if (isCurrentNoteLocked()) {
-                alert("Unlock this note before exporting to PDF.");
+                alert(NP.t("print.unlockFirst"));
                 return;
             }
 

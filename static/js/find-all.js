@@ -101,7 +101,7 @@ window.NP = window.NP || {};
             var input = document.createElement("input");
             input.type = "text";
             input.value = initialQuery || "";
-            input.placeholder = "Search across all notes...";
+            input.placeholder = NP.t("findAll.placeholder");
             input.style.cssText =
                 "width:100%;box-sizing:border-box;padding:6px 10px;" +
                 "background:var(--bg);color:var(--fg);" +
@@ -122,11 +122,11 @@ window.NP = window.NP || {};
                 var hits = NP.findAll.search(query);
                 list.innerHTML = "";
                 if (!query) {
-                    list.innerHTML = '<div class="np-findall-empty">Type to search</div>';
+                    list.innerHTML = '<div class="np-findall-empty">' + NP.escapeHtml(NP.t("findAll.typeToSearch")) + '</div>';
                     return;
                 }
                 if (!hits.length) {
-                    list.innerHTML = '<div class="np-findall-empty">No matches</div>';
+                    list.innerHTML = '<div class="np-findall-empty">' + NP.escapeHtml(NP.t("findAll.noMatches")) + '</div>';
                     return;
                 }
                 hits.forEach(function (hit) {

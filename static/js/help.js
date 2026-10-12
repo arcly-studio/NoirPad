@@ -4,211 +4,217 @@ window.NP = window.NP || {};
 (function (NP) {
     "use strict";
 
+    /* The table holds i18n KEYS, not texts: dictionaries load after this
+       script is parsed, so NP.t() is called when a section is rendered.
+       Key caps, commands and "raw" bullets (theme names) stay as they are. */
     var HELP_SECTIONS = [
         {
-            title: "P\u0159ehled",
+            title: "help.overview.title",
             content: [
-                { type: "text", value: "NoirPad je pozn\u00e1mkov\u00e1 aplikace s hackerskou/termin\u00e1lovou estetikou. Zelen\u00fd text na \u010dern\u00e9m pozad\u00ed, monospace font, ASCII efekty." },
-                { type: "text", value: "Aplikace podporuje stromovou strukturu slo\u017eek a pozn\u00e1mek, \u0161ifrov\u00e1n\u00ed, export, tagy, t\u00e9mata a dal\u0161\u00ed funkce." }
+                { type: "text", value: "help.overview.p1" },
+                { type: "text", value: "help.overview.p2" }
             ]
         },
         {
-            title: "Kl\u00e1vesov\u00e9 zkratky",
+            title: "help.keys.title",
             content: [
-                { type: "header", value: "Z\u00e1kladn\u00ed zkratky" },
+                { type: "header", value: "help.keys.basic" },
                 { type: "shortcuts", value: [
-                    ["Ctrl+S", "Ulo\u017eit pozn\u00e1mku"],
-                    ["Ctrl+F", "Hled\u00e1n\u00ed v pozn\u00e1mce"],
-                    ["Ctrl+B", "Focus mode"],
-                    ["Ctrl+L", "P\u0159epnout orientaci str\u00e1nky"],
-                    ["Ctrl+I", "Kurz\u00edva"],
-                    ["Ctrl+U", "Podtr\u017een\u00ed"],
-                    ["Ctrl+Z", "Zp\u011bt (undo)"],
-                    ["Ctrl+Y", "Znovu (redo)"],
-                    ["Ctrl+V", "Vlo\u017eit (v\u010detn\u011b obr\u00e1zk\u016f)"],
-                    ["Ctrl+Shift+P", "Command bar"],
-                    ["Ctrl+Tab", "Dal\u0161\u00ed z\u00e1lo\u017eka"],
-                    ["Ctrl+Shift+Tab", "P\u0159edchoz\u00ed z\u00e1lo\u017eka"],
-                    ["Ctrl+W", "Zav\u0159\u00edt z\u00e1lo\u017eku"]
+                    ["Ctrl+S", "help.keys.save"],
+                    ["Ctrl+F", "help.keys.find"],
+                    ["Ctrl+B", "help.keys.focus"],
+                    ["Ctrl+L", "help.keys.orientation"],
+                    ["Ctrl+I", "help.keys.italic"],
+                    ["Ctrl+U", "help.keys.underline"],
+                    ["Ctrl+Z", "help.keys.undo"],
+                    ["Ctrl+Y", "help.keys.redo"],
+                    ["Ctrl+V", "help.keys.paste"],
+                    ["Ctrl+Shift+P", "help.keys.commandBar"],
+                    ["Ctrl+Tab", "help.keys.nextTab"],
+                    ["Ctrl+Shift+Tab", "help.keys.prevTab"],
+                    ["Ctrl+W", "help.keys.closeTab"]
                 ]},
-                { type: "header", value: "Funk\u010dn\u00ed kl\u00e1vesy" },
+                { type: "header", value: "help.keys.function" },
                 { type: "shortcuts", value: [
-                    ["F1", "N\u00e1pov\u011bda"],
-                    ["F2", "P\u0159ejmenovat"],
-                    ["F3", "Dal\u0161\u00ed v\u00fdsledek hled\u00e1n\u00ed"],
-                    ["Shift+F3", "P\u0159edchoz\u00ed v\u00fdsledek hled\u00e1n\u00ed"],
-                    ["F11", "Fullscreen"],
-                    ["Delete", "Smazat polo\u017eku"],
-                    ["Escape", "Zav\u0159\u00edt overlay"]
+                    ["F1", "help.keys.help"],
+                    ["F2", "help.keys.rename"],
+                    ["F3", "help.keys.findNext"],
+                    ["Shift+F3", "help.keys.findPrev"],
+                    ["F11", "help.keys.fullscreen"],
+                    ["Delete", "help.keys.delete"],
+                    ["Escape", "help.keys.closeOverlay"]
                 ]}
             ]
         },
         {
-            title: "Command bar",
+            title: "help.commands.title",
             content: [
-                { type: "text", value: "Otev\u0159ete p\u0159\u00edkazov\u00fd \u0159\u00e1dek pomoc\u00ed Ctrl+Shift+P. Zadejte p\u0159\u00edkaz za\u010d\u00ednaj\u00edc\u00ed dvojte\u010dkou." },
-                { type: "header", value: "Dostupn\u00e9 p\u0159\u00edkazy" },
+                { type: "text", value: "help.commands.intro" },
+                { type: "header", value: "help.commands.available" },
                 { type: "commands", value: [
-                    [":search", "Hledat v pozn\u00e1mk\u00e1ch"],
-                    [":new note", "Nov\u00e1 pozn\u00e1mka"],
-                    [":new folder", "Nov\u00e1 slo\u017eka"],
-                    [":theme", "Zm\u011bnit t\u00e9ma"],
-                    [":encrypt", "Za\u0161ifrovat pozn\u00e1mku"],
-                    [":decrypt", "De\u0161ifrovat pozn\u00e1mku"],
-                    [":fullscreen", "Cel\u00e1 obrazovka"],
-                    [":autosave", "Auto ukl\u00e1d\u00e1n\u00ed"],
-                    [":export", "Export jako text"],
-                    [":exportpdf", "Export jako PDF"],
-                    [":exporthtml", "Export jako HTML"],
-                    [":focus", "Focus mode"],
-                    [":tag", "P\u0159idat tag"],
-                    [":tags", "Filtr dle tag\u016f"],
-                    [":fontsize", "Velikost p\u00edsma"],
-                    [":font", "V\u00fdb\u011br fontu"],
-                    [":backup", "Z\u00e1loha dat"],
-                    [":import", "Import z\u00e1lohy"],
-                    [":fav", "P\u0159epnout obl\u00edben\u00e9"],
-                    [":emptytrash", "Vypr\u00e1zdnit ko\u0161"],
-                    [":orientation", "Orientace str\u00e1nky"],
-                    [":matrix", "Matrix rain efekt"],
-                    [":help", "Tato n\u00e1pov\u011bda"]
+                    [":search", "help.commands.search"],
+                    [":new note", "help.commands.newNote"],   // i18n-ignore (command)
+                    [":new folder", "help.commands.newFolder"],   // i18n-ignore (command)
+                    [":theme", "help.commands.theme"],
+                    [":encrypt", "help.commands.encrypt"],
+                    [":decrypt", "help.commands.decrypt"],
+                    [":fullscreen", "help.commands.fullscreen"],
+                    [":autosave", "help.commands.autosave"],
+                    [":export", "help.commands.export"],
+                    [":exportpdf", "help.commands.exportPdf"],
+                    [":exporthtml", "help.commands.exportHtml"],
+                    [":focus", "help.commands.focus"],
+                    [":tag", "help.commands.tag"],
+                    [":tags", "help.commands.tags"],
+                    [":fontsize", "help.commands.fontSize"],
+                    [":font", "help.commands.font"],
+                    [":backup", "help.commands.backup"],
+                    [":import", "help.commands.import"],
+                    [":fav", "help.commands.fav"],
+                    [":emptytrash", "help.commands.emptyTrash"],
+                    [":orientation", "help.commands.orientation"],
+                    [":matrix", "help.commands.matrix"],
+                    [":help", "help.commands.help"]
                 ]}
             ]
         },
         {
-            title: "Pozn\u00e1mky a slo\u017eky",
+            title: "help.notes.title",
             content: [
                 { type: "bullets", value: [
-                    "Stromov\u00e1 struktura slo\u017eek a pozn\u00e1mek v lev\u00e9m panelu",
-                    "P\u0159et\u00e1hn\u011bte polo\u017eky pro p\u0159esunut\u00ed (drag & drop)",
-                    "Prav\u00fdm tla\u010d\u00edtkem otev\u0159ete kontextov\u00e9 menu",
-                    "F2 pro p\u0159ejmenov\u00e1n\u00ed vybran\u00e9 polo\u017eky",
-                    "Delete pro smaz\u00e1n\u00ed (p\u0159esun do ko\u0161e)"
+                    "help.notes.tree",
+                    "help.notes.drag",
+                    "help.notes.contextMenu",
+                    "help.notes.rename",
+                    "help.notes.delete"
                 ]}
             ]
         },
         {
-            title: "Editor",
+            title: "help.editor.title",
             content: [
                 { type: "bullets", value: [
-                    "Monospace editor s podporou form\u00e1tov\u00e1n\u00ed",
-                    "Kurz\u00edva (Ctrl+I) a podtr\u017een\u00ed (Ctrl+U)",
-                    "Undo/Redo stack (Ctrl+Z / Ctrl+Y)",
-                    "Ctrl+L p\u0159ep\u00edn\u00e1 orientaci str\u00e1nky (landscape/portrait)"
+                    "help.editor.monospace",
+                    "help.editor.formatting",
+                    "help.editor.undo",
+                    "help.editor.orientation"
                 ]}
             ]
         },
         {
-            title: "\u0160ifrov\u00e1n\u00ed",
+            title: "help.encryption.title",
             content: [
-                { type: "text", value: "Pozn\u00e1mky lze za\u0161ifrovat heslem pomoc\u00ed AES (Fernet). \u0160ifrovan\u00e9 pozn\u00e1mky jsou ozna\u010deny ikonou z\u00e1mku." },
+                { type: "text", value: "help.encryption.intro" },
                 { type: "bullets", value: [
-                    "P\u0159\u00edkaz :encrypt pro za\u0161ifrov\u00e1n\u00ed",
-                    "P\u0159\u00edkaz :decrypt pro de\u0161ifrov\u00e1n\u00ed",
-                    "Heslo nen\u00ed ukl\u00e1d\u00e1no \u2014 p\u0159i ztr\u00e1t\u011b nelze obnovit"
+                    "help.encryption.encrypt",
+                    "help.encryption.decrypt",
+                    "help.encryption.password"
                 ]}
             ]
         },
         {
-            title: "Obr\u00e1zky",
+            title: "help.images.title",
             content: [
                 { type: "bullets", value: [
-                    "Vlo\u017ete obr\u00e1zek p\u0159es Ctrl+V ze schr\u00e1nky",
-                    "Obr\u00e1zky se ukl\u00e1daj\u00ed do slo\u017eky images/",
-                    "Zoom pomoc\u00ed Ctrl+kole\u010dko my\u0161i"
+                    "help.images.paste",
+                    "help.images.folder",
+                    "help.images.zoom"
                 ]}
             ]
         },
         {
-            title: "Export",
+            title: "help.export.title",
             content: [
                 { type: "bullets", value: [
-                    ":export \u2014 Export jako prost\u00fd text (.txt)",
-                    ":exportpdf \u2014 Export jako PDF (s volitelnou barvou)",
-                    ":exporthtml \u2014 Export jako HTML"
+                    "help.export.text",
+                    "help.export.pdf",
+                    "help.export.html"
                 ]}
             ]
         },
         {
-            title: "Tagy a obl\u00edben\u00e9",
+            title: "help.tags.title",
             content: [
                 { type: "bullets", value: [
-                    ":tag \u2014 P\u0159idat/odebrat tag pozn\u00e1mce",
-                    ":tags \u2014 Filtrovat pozn\u00e1mky dle tagu",
-                    ":fav \u2014 P\u0159epnout obl\u00edbenou pozn\u00e1mku",
-                    "Obl\u00edben\u00e9 se \u0159ad\u00ed na za\u010d\u00e1tek seznamu"
+                    "help.tags.tag",
+                    "help.tags.tags",
+                    "help.tags.fav",
+                    "help.tags.sorting"
                 ]}
             ]
         },
         {
-            title: "T\u00e9mata",
+            title: "help.themes.title",
             content: [
-                { type: "text", value: "12 barevn\u00fdch t\u00e9mat. Zm\u011b\u0148te p\u0159\u00edkazem :theme." },
-                { type: "bullets", value: [
+                { type: "text", value: "help.themes.intro" },
+                { type: "bullets", raw: true, value: [
                     "matrix, amber, cyan, red, purple, blue",
                     "pink, white, gold, lime, orange, ice"
                 ]}
             ]
         },
         {
-            title: "Z\u00e1loha",
+            title: "help.backup.title",
             content: [
                 { type: "bullets", value: [
-                    ":backup \u2014 Exportovat celou datab\u00e1zi jako .zip",
-                    ":import \u2014 Importovat z\u00e1lohu ze souboru .zip"
+                    "help.backup.backup",
+                    "help.backup.import"
                 ]}
             ]
         },
         {
-            title: "Efekty",
+            title: "help.effects.title",
             content: [
                 { type: "bullets", value: [
-                    ":matrix \u2014 Zapnout/vypnout Matrix rain animaci",
-                    "Splash screen p\u0159i spu\u0161t\u011bn\u00ed s ASCII art logem",
-                    "Vlastn\u00ed kruhov\u00fd kurzor s plynul\u00fdm blik\u00e1n\u00edm",
-                    "Focus mode (Ctrl+B) \u2014 skryje bo\u010dn\u00ed panel"
+                    "help.effects.matrix",
+                    "help.effects.splash",
+                    "help.effects.cursor",
+                    "help.effects.focus"
                 ]}
             ]
         },
         {
-            title: "Markdown",
+            title: "help.md.title",
             content: [
-                { type: "md-intro", value: "NoirPad supports Markdown formatting. Toggle Markdown mode using the MD button in the top bar (or Ctrl+M). Click any example below to copy it to clipboard." },
-                { type: "md-category", title: "Headings", items: [
-                    { syntax: "# Heading 1",   snippet: "# Heading 1",   desc: "Largest heading" },
-                    { syntax: "## Heading 2",  snippet: "## Heading 2",  desc: "Medium heading" },
-                    { syntax: "### Heading 3", snippet: "### Heading 3", desc: "Smallest heading" }
+                { type: "md-intro", value: "help.md.intro" },
+                /* Item id -> <id>.syntax, <id>.desc and, with snippet: true,
+                   <id>.snippet (the text copied); otherwise snippet = syntax. */
+                { type: "md-category", title: "help.md.headings", items: [
+                    { id: "help.md.h1" },
+                    { id: "help.md.h2" },
+                    { id: "help.md.h3" }
                 ]},
-                { type: "md-category", title: "Text formatting", items: [
-                    { syntax: "**bold text**",     snippet: "**bold text**",     desc: "Bold" },
-                    { syntax: "*italic text*",     snippet: "*italic text*",     desc: "Italic" },
-                    { syntax: "~~strikethrough~~", snippet: "~~strikethrough~~", desc: "Strikethrough" }
+                { type: "md-category", title: "help.md.textFormatting", items: [
+                    { id: "help.md.bold" },
+                    { id: "help.md.italic" },
+                    { id: "help.md.strike" }
                 ]},
-                { type: "md-category", title: "Lists", items: [
-                    { syntax: "- Item",   snippet: "- Item one\n- Item two\n- Item three", desc: "Unordered list (- or * or +)" },
-                    { syntax: "1. Item",  snippet: "1. First\n2. Second\n3. Third",        desc: "Numbered list" }
+                { type: "md-category", title: "help.md.lists", items: [
+                    { id: "help.md.ul", snippet: true },
+                    { id: "help.md.ol", snippet: true }
                 ]},
-                { type: "md-note", value: "Tip: Press Enter at the end of a list item to continue the list automatically." },
-                { type: "md-category", title: "Code", items: [
-                    { syntax: "`inline code`",     snippet: "`inline code`",                       desc: "Inline code" },
-                    { syntax: "```code block```",  snippet: "```\ncode block\nmultiple lines\n```", desc: "Multi-line code block" }
+                { type: "md-note", value: "help.md.tipList" },
+                { type: "md-category", title: "help.md.code", items: [
+                    { id: "help.md.inlineCode" },
+                    { id: "help.md.codeBlock", snippet: true }
                 ]},
-                { type: "md-note", value: "Tip: Backtick (`) on Czech keyboard = AltGr + \u00fd + space" },
-                { type: "md-category", title: "Links", items: [
-                    { syntax: "[text](url)", snippet: "[Link text](https://example.com)", desc: "Clickable link" }
+                { type: "md-note", value: "help.md.tipBacktick" },
+                { type: "md-category", title: "help.md.links", items: [
+                    { id: "help.md.link", snippet: true }
                 ]},
-                { type: "md-category", title: "Images", items: [
-                    { syntax: "![alt](url)", snippet: "![Image description](/images/example.png)", desc: "Embed image" }
+                { type: "md-category", title: "help.md.images", items: [
+                    { id: "help.md.image", snippet: true }
                 ]},
-                { type: "md-note", value: "Tip: Use +Img button or Ctrl+V to paste images directly. Click any image to view fullscreen, Ctrl+wheel to resize." },
-                { type: "md-category", title: "Other", items: [
-                    { syntax: "> Quote", snippet: "> Quote text\n> Multiple lines", desc: "Blockquote" }
+                { type: "md-note", value: "help.md.tipImages" },
+                { type: "md-category", title: "help.md.other", items: [
+                    { id: "help.md.quote", snippet: true }
                 ]},
-                { type: "md-shortcuts", title: "Keyboard shortcuts (in markdown mode)", items: [
-                    ["Ctrl+B", "Wrap selection in <code>**bold**</code>"],
-                    ["Ctrl+I", "Wrap selection in <code>*italic*</code>"],
-                    ["Ctrl+E", "Wrap selection in <code>`code`</code>"],
-                    ["Ctrl+K", "Wrap selection in <code>[link](url)</code>"]
+                /* Row: [key cap, key of the markdown sample shown in <code>] */
+                { type: "md-shortcuts", title: "help.md.shortcuts", items: [
+                    ["Ctrl+B", "help.md.wrap.bold"],
+                    ["Ctrl+I", "help.md.wrap.italic"],
+                    ["Ctrl+E", "help.md.wrap.code"],
+                    ["Ctrl+K", "help.md.wrap.link"]
                 ]}
             ]
         }
@@ -234,7 +240,7 @@ window.NP = window.NP || {};
             html += '<div class="help-nav-item" data-idx="' + i + '" style="padding:6px 16px;cursor:pointer;' +
                 'font-size:12px;color:var(--fg-dim, #00bf30);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' +
                 'transition:background 0.15s ease, color 0.15s ease;">' +
-                NP.escapeHtml(HELP_SECTIONS[i].title) + '</div>';
+                NP.escapeHtml(NP.t(HELP_SECTIONS[i].title)) + '</div>';
         }
         html += '</div>';
 
@@ -245,9 +251,10 @@ window.NP = window.NP || {};
         html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;' +
             'border-bottom:1px solid var(--border, #1a2e1a);flex-shrink:0;">';
         html += '<span style="font-size:14px;font-weight:bold;color:var(--fg-bright, #4cff7a);' +
-            'text-shadow:0 0 6px var(--glow, #00ff41);">N\u00c1POV\u011aDA</span>';
+            'text-shadow:0 0 6px var(--glow, #00ff41);">' + NP.escapeHtml(NP.t("help.title")) + '</span>';
         html += '<button id="help-close-btn" style="font-size:18px;color:var(--fg-dim, #00bf30);' +
-            'cursor:pointer;background:none;border:none;padding:2px 8px;" title="Zav\u0159\u00edt (Esc)">&times;</button>';
+            'cursor:pointer;background:none;border:none;padding:2px 8px;" title="' +
+            NP.escapeHtml(NP.t("help.close")) + '">&times;</button>';
         html += '</div>';
 
         /* Content area */
@@ -267,23 +274,23 @@ window.NP = window.NP || {};
         if (!section) return "";
 
         var html = '<h2 style="margin:0 0 12px 0;font-size:16px;color:var(--fg-bright, #4cff7a);' +
-            'text-shadow:0 0 4px var(--glow, #00ff41);">' + NP.escapeHtml(section.title) + '</h2>';
+            'text-shadow:0 0 4px var(--glow, #00ff41);">' + NP.escapeHtml(NP.t(section.title)) + '</h2>';
 
         for (var i = 0; i < section.content.length; i++) {
             var block = section.content[i];
             switch (block.type) {
                 case "text":
-                    html += '<p style="margin:0 0 10px 0;">' + NP.escapeHtml(block.value) + '</p>';
+                    html += '<p style="margin:0 0 10px 0;">' + NP.escapeHtml(NP.t(block.value)) + '</p>';
                     break;
                 case "header":
                     html += '<h3 style="margin:16px 0 8px 0;font-size:13px;color:var(--fg-bright, #4cff7a);">' +
-                        NP.escapeHtml(block.value) + '</h3>';
+                        NP.escapeHtml(NP.t(block.value)) + '</h3>';
                     break;
                 case "bullets":
                     html += '<ul style="margin:0 0 10px 0;padding-left:20px;">';
                     for (var b = 0; b < block.value.length; b++) {
                         html += '<li style="margin:2px 0;color:var(--fg, #00ff41);">' +
-                            NP.escapeHtml(block.value[b]) + '</li>';
+                            NP.escapeHtml(block.raw ? block.value[b] : NP.t(block.value[b])) + '</li>';
                     }
                     html += '</ul>';
                     break;
@@ -298,41 +305,42 @@ window.NP = window.NP || {};
                             NP.escapeHtml(row[0]) + '</td>';
                         html += '<td style="padding:3px 0;color:var(--fg-dim, #00bf30);font-size:12px;' +
                             'border-bottom:1px solid var(--border, #1a2e1a);">' +
-                            NP.escapeHtml(row[1]) + '</td>';
+                            NP.escapeHtml(NP.t(row[1])) + '</td>';
                         html += '</tr>';
                     }
                     html += '</table>';
                     break;
                 case "md-intro":
-                    html += '<p class="help-section-intro">' + NP.escapeHtml(block.value) + '</p>';
+                    html += '<p class="help-section-intro">' + NP.escapeHtml(NP.t(block.value)) + '</p>';
                     break;
                 case "md-category":
                     html += '<div class="md-help-category">';
-                    html += '<h3 class="md-help-cat-title">' + NP.escapeHtml(block.title) + '</h3>';
+                    html += '<h3 class="md-help-cat-title">' + NP.escapeHtml(NP.t(block.title)) + '</h3>';
                     html += '<div class="md-help-grid">';
                     for (var mi = 0; mi < block.items.length; mi++) {
                         var it = block.items[mi];
-                        html += '<div class="md-help-item" data-snippet="' + NP.escapeHtml(it.snippet) + '">' +
-                            '<code class="md-help-syntax">' + NP.escapeHtml(it.syntax) + '</code>' +
-                            '<span class="md-help-desc">' + NP.escapeHtml(it.desc) + '</span>' +
+                        var syntax = NP.t(it.id + ".syntax");
+                        var snippet = it.snippet ? NP.t(it.id + ".snippet") : syntax;
+                        html += '<div class="md-help-item" data-snippet="' + NP.escapeHtml(snippet) + '">' +
+                            '<code class="md-help-syntax">' + NP.escapeHtml(syntax) + '</code>' +
+                            '<span class="md-help-desc">' + NP.escapeHtml(NP.t(it.id + ".desc")) + '</span>' +
                             '</div>';
                     }
                     html += '</div></div>';
                     break;
                 case "md-note":
-                    html += '<p class="md-help-note">' + NP.escapeHtml(block.value) + '</p>';
+                    html += '<p class="md-help-note">' + NP.escapeHtml(NP.t(block.value)) + '</p>';
                     break;
                 case "md-shortcuts":
                     html += '<div class="md-help-category">';
-                    html += '<h3 class="md-help-cat-title">' + NP.escapeHtml(block.title) + '</h3>';
+                    html += '<h3 class="md-help-cat-title">' + NP.escapeHtml(NP.t(block.title)) + '</h3>';
                     html += '<div class="md-help-shortcuts">';
                     for (var sr = 0; sr < block.items.length; sr++) {
                         var row2 = block.items[sr];
-                        /* row2[1] is trusted static HTML (contains <code>) so
-                           it's inserted verbatim, unlike user-derived content. */
                         html += '<div class="md-help-shortcut-row">' +
                             '<kbd class="md-help-kbd">' + NP.escapeHtml(row2[0]) + '</kbd>' +
-                            '<span>' + row2[1] + '</span>' +
+                            '<span>' + NP.escapeHtml(NP.t("help.md.wrapSelection")) +
+                            ' <code>' + NP.escapeHtml(NP.t(row2[1])) + '</code></span>' +
                             '</div>';
                     }
                     html += '</div></div>';
@@ -383,7 +391,7 @@ window.NP = window.NP || {};
             el.dataset.origDesc = descEl.textContent;
         }
         el.classList.add("md-help-copied");
-        descEl.textContent = "Copied!";
+        descEl.textContent = NP.t("help.copied");
 
         /* Cancel any pending revert so rapid clicks restart the timer. */
         if (el._revertTimer) clearTimeout(el._revertTimer);

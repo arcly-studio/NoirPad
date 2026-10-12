@@ -7,11 +7,12 @@ config.get_data_dir), so ``uvicorn noirpad.app:app`` works on its own.
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import config, images, server_auth, storage
+from .errors import ApiError
 from .routes import ROUTERS
 
 log = logging.getLogger("noirpad")
@@ -51,7 +52,7 @@ async def _http_guard(request: Request, call_next):
 async def root():
     index = config.STATIC_DIR / "index.html"
     if not index.exists():
-        raise HTTPException(404, "index.html not found in static/")
+        raise ApiError(404, "index_missing")
     return index.read_text(encoding="utf-8")
 
 

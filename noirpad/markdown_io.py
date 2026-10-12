@@ -16,10 +16,10 @@ import zipfile
 from pathlib import PurePosixPath
 from typing import Optional
 
-from fastapi import HTTPException
 
 from . import config, storage
 from .crypto import is_encrypted_content
+from .errors import ApiError
 from .export import UniqueNames, safe_filename
 from .images import IMAGE_NAME_RE, safe_image_path, sniff_image
 from .tree import find_item_by_id
@@ -139,7 +139,7 @@ class _Importer:
         try:
             zf = zipfile.ZipFile(io.BytesIO(raw))
         except zipfile.BadZipFile:
-            raise HTTPException(400, "Uploaded file is not a valid zip")
+            raise ApiError(400, "not_a_zip")
         with zf:
             check_archive_size(zf)
             entries = [n for n in zf.namelist()
@@ -218,5 +218,5 @@ def import_files(files: list[tuple[str, bytes]]) -> dict:
         elif lower.endswith(MD_SUFFIXES):
             importer.add_note([], _note_name(filename), _decode(raw))
         else:
-            raise HTTPException(415, "Only .md files and .zip archives can be imported")
+            raise ApiError(415, "import_unsupported_file")
     return importer.apply()

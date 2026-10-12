@@ -215,14 +215,29 @@ window.NP = window.NP || {};
         document.body.classList.toggle("orientation-landscape", !portrait);
     }
 
-    function formatBytes(bytes) {
-        if (!bytes || bytes < 0) return "0 B";
-        if (bytes < 1024) return bytes + " B";
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-        if (bytes < 1024 * 1024 * 1024) {
-            return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+    /* Number with a fixed count of decimals in the UI language's format
+       ("1.5" in English, "1,5" in Czech). */
+    function formatDecimal(value, digits) {
+        try {
+            return value.toLocaleString(NP.i18n ? NP.i18n.lang() : "en", {
+                minimumFractionDigits: digits,
+                maximumFractionDigits: digits
+            });
+        } catch (e) {
+            return value.toFixed(digits);
         }
-        return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+    }
+
+    function formatBytes(bytes) {
+        if (!bytes || bytes < 0) return NP.t("settings.size.bytes", { n: 0 });
+        if (bytes < 1024) return NP.t("settings.size.bytes", { n: bytes });
+        if (bytes < 1024 * 1024) {
+            return NP.t("settings.size.kb", { n: formatDecimal(bytes / 1024, 1) });
+        }
+        if (bytes < 1024 * 1024 * 1024) {
+            return NP.t("settings.size.mb", { n: formatDecimal(bytes / (1024 * 1024), 2) });
+        }
+        return NP.t("settings.size.gb", { n: formatDecimal(bytes / (1024 * 1024 * 1024), 2) });
     }
 
     /* About → Storage used. Refreshed each time Settings opens (no
@@ -230,14 +245,14 @@ window.NP = window.NP || {};
     function refreshStorageUsed() {
         var el = document.getElementById("setting-storage-used");
         if (!el) return;
-        el.textContent = "Loading...";
+        el.textContent = NP.t("common.loading");
         NP.api.fetch("/api/storage")
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 el.textContent = formatBytes(data.total_size) + " / ∞";
             })
             .catch(function () {
-                el.textContent = "— (error)";
+                el.textContent = NP.t("settings.storageError");
             });
     }
 
@@ -403,6 +418,19 @@ window.NP = window.NP || {};
             function (v) { saveSetting({ confirm_delete: v }); }
         );
 
+        /* Language: stored with the settings; reload so every module
+           (and the lock screen next time) renders in it. */
+        var langDd = document.getElementById("setting-language");
+        if (langDd) {
+            langDd.addEventListener("np-dropdown-change", function (e) {
+                var value = e.detail.value;   /* "auto" | "en" | "cs" */
+                if (NP.state && NP.state.data) NP.state.data.language = value;
+                NP.api.saveSettings({ language: value }).then(function () {
+                    window.location.reload();
+                });
+            });
+        }
+
         var idleDd = document.getElementById("setting-idle-lock");
         if (idleDd) {
             idleDd.addEventListener("np-dropdown-change", function (e) {
@@ -459,7 +487,7 @@ window.NP = window.NP || {};
                    server-side zip build (vs. window.location.href which
                    gives no feedback). */
                 var originalText = exportAll.textContent;
-                exportAll.textContent = "Exporting...";
+                exportAll.textContent = NP.t("settings.exporting");
                 exportAll.disabled = true;
 
                 NP.api.download("/api/notes/export")
@@ -477,8 +505,7 @@ window.NP = window.NP || {};
                 NP.api.download("/api/notes/export-md").then(function (headers) {
                     var skipped = headers ? parseInt(headers.get("x-noirpad-skipped"), 10) : 0;
                     if (skipped > 0) {
-                        alert(skipped + " locked note(s) were skipped. Unlock and remove " +
-                            "their encryption first if you want them in the export.");
+                        alert(NP.t("settings.exportMdSkipped", { n: skipped }));
                     }
                 }).finally(function () { exportMd.disabled = false; });
             });
@@ -496,14 +523,19 @@ window.NP = window.NP || {};
                     NP.api.importMarkdown(input.files).then(function (res) {
                         return NP.state.init().then(function () {
                             if (NP.tree && NP.tree.render) NP.tree.render();
-                            var msg = "Imported " + res.notes + " note(s)";
-                            if (res.images) msg += " and " + res.images + " image(s)";
-                            msg += ". Nothing existing was changed.";
-                            if (res.skipped) msg += "\n" + res.skipped + " file(s) were too large and skipped.";
+                            var msg = res.images
+                                ? NP.t("settings.importDoneWithImages", {
+                                    notes: NP.t("settings.importNotes", { n: res.notes }),
+                                    images: NP.t("settings.importImages", { n: res.images })
+                                })
+                                : NP.t("settings.importDone", {
+                                    notes: NP.t("settings.importNotes", { n: res.notes })
+                                });
+                            if (res.skipped) msg += "\n" + NP.t("settings.importSkipped", { n: res.skipped });
                             alert(msg);
                         });
                     }).catch(function (err) {
-                        alert("Import failed: " + (err && err.message ? err.message : err));
+                        alert(NP.t("settings.importFailed", { error: err && err.message ? err.message : err }));
                     });
                 });
                 input.click();
@@ -522,17 +554,14 @@ window.NP = window.NP || {};
         if (resetAll) {
             resetAll.addEventListener("click", function () {
                 var ok = window.confirm(
-                    "Reset all settings to defaults?\n\n" +
-                    "This restores theme, fonts, toggles, idle-lock, and " +
-                    "custom shortcuts. Your notes, folders, and trash will " +
-                    "NOT be affected."
+                    NP.t("settings.resetConfirm") + "\n\n" + NP.t("settings.resetConfirmDetail")
                 );
                 if (!ok) return;
 
                 NP.api.fetch("/api/settings/reset", { method: "POST" })
                     .then(function (r) {
                         if (!r.ok) {
-                            throw new Error("Server error " + r.status);
+                            throw new Error(NP.t("settings.serverError", { status: r.status }));
                         }
                         return r.json();
                     })
@@ -544,8 +573,9 @@ window.NP = window.NP || {};
                         window.location.reload();
                     })
                     .catch(function (err) {
-                        alert("Failed to reset settings: " +
-                            (err && err.message ? err.message : err));
+                        alert(NP.t("settings.resetFailed", {
+                            error: err && err.message ? err.message : err
+                        }));
                     });
             });
         }
@@ -558,7 +588,7 @@ window.NP = window.NP || {};
         var logoutBtn = document.getElementById("settings-logout-btn");
         if (logoutBtn) {
             logoutBtn.addEventListener("click", function () {
-                var ok = window.confirm("Log out of NoirPad?");
+                var ok = window.confirm(NP.t("settings.logoutConfirm"));
                 if (!ok) return;
                 if (NP.auth && NP.auth.logout) {
                     NP.auth.logout();
@@ -741,6 +771,8 @@ window.NP = window.NP || {};
                 selectOption(idleDd, String(sget("idle_lock_minutes", "off")),
                     false);
             }
+            var langDd = document.getElementById("setting-language");
+            if (langDd) selectOption(langDd, String(sget("language", "auto")), false);
 
             syncRadioGroup("page-orientation",
                 sget("page_orientation", "landscape"));

@@ -17,7 +17,7 @@ window.NP = window.NP || {};
         },
 
         empty: function () {
-            var ok = confirm("Permanently delete all items in trash? This cannot be undone.");
+            var ok = confirm(NP.t("trash.confirmEmpty"));
             if (!ok) return Promise.resolve();
 
             return NP.api.emptyTrash().then(function () {

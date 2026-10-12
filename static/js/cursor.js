@@ -131,9 +131,9 @@ window.NP = window.NP || {};
             var leftEdge = Math.max(0, Math.round(caretX) - GLOW_WIDTH);
             var rightEdge = Math.round(caretX) + GLOW_WIDTH;
             this.el.style.background =
-                "linear-gradient(to right," +
+                "linear-gradient(to right," +   // i18n-ignore (CSS value)
                 "transparent " + leftEdge + "px," +
-                "color-mix(in srgb, var(--accent) 12%, transparent) " + Math.round(caretX) + "px," +
+                "color-mix(in srgb, var(--accent) 12%, transparent) " + Math.round(caretX) + "px," +   // i18n-ignore (CSS value)
                 "transparent " + rightEdge + "px)";
             this.el.style.boxShadow = "none";
 

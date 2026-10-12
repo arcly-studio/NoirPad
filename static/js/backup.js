@@ -18,12 +18,7 @@ window.NP = window.NP || {};
             input.addEventListener("change", function () {
                 var file = input.files && input.files[0];
                 if (!file) return;
-                var ok = window.confirm(
-                    "Import \"" + file.name + "\"?\n\n" +
-                    "This REPLACES ALL your notes, folders and trash with the " +
-                    "contents of the backup. Your current notes are saved first " +
-                    "to the backups folder (pre-import-….zip) in the NoirPad " +
-                    "data directory.\n\nSettings are not changed.");
+                var ok = window.confirm(NP.t("backup.importConfirm", { name: file.name }));
                 if (!ok) {
                     document.body.removeChild(input);
                     return;
@@ -37,9 +32,9 @@ window.NP = window.NP || {};
                     if (NP.themes && NP.themes.apply && NP.state.data) {
                         NP.themes.apply(NP.state.data.theme);
                     }
-                    alert("Backup imported successfully.");
+                    alert(NP.t("backup.importSuccess"));
                 }).catch(function (err) {
-                    alert("Import failed: " + err.message);
+                    alert(NP.t("backup.importFailed", { error: err.message }));
                 }).finally(function () {
                     document.body.removeChild(input);
                 });

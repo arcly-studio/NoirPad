@@ -6,10 +6,11 @@ import json
 import zipfile
 from typing import Any
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import StreamingResponse
 
 from .. import config, storage
+from ..errors import ApiError
 from ..images import image_ext_ok, referenced_images, safe_image_path
 from ..tree import collect_note_ids, strip_user_ids
 from ..uploads import check_archive_size, read_upload_limited
@@ -55,11 +56,11 @@ async def backup_import(file: UploadFile = File(...)):
             check_archive_size(zf)
             names = zf.namelist()
             if "notes_data.json" not in names:
-                raise HTTPException(400, "Invalid backup: notes_data.json missing")
+                raise ApiError(400, "backup_missing_data")
             try:
                 imported = json.loads(zf.read("notes_data.json"))
             except json.JSONDecodeError:
-                raise HTTPException(400, "Invalid backup: corrupt notes_data.json")
+                raise ApiError(400, "backup_corrupt_data")
 
             # K5: every images/ entry must be a real image under a name the
             # upload endpoint could have produced. Checked before anything
@@ -69,9 +70,9 @@ async def backup_import(file: UploadFile = File(...)):
             for name in image_entries:
                 rel = name.split("/", 1)[1]
                 if safe_image_path(rel) is None:
-                    raise HTTPException(400, f"Unsafe path in backup archive: {name!r}")
+                    raise ApiError(400, "backup_unsafe_path", name=name)
                 if not image_ext_ok(rel, zf.read(name)[:16]):
-                    raise HTTPException(415, f"Backup contains a non-image file: {name!r}")
+                    raise ApiError(415, "backup_not_image", name=name)
 
             imp_trash = imported.get("trash") or {}
             imp_tree = strip_user_ids(copy.deepcopy(imported.get("tree") or []))
@@ -118,6 +119,6 @@ async def backup_import(file: UploadFile = File(...)):
                 with storage.file_lock:
                     dest.write_bytes(zf.read(name))
     except zipfile.BadZipFile:
-        raise HTTPException(400, "Uploaded file is not a valid zip")
+        raise ApiError(400, "not_a_zip")
 
     return {"ok": True}

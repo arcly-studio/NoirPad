@@ -2,9 +2,10 @@
 
 import time
 
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Request, Response
 
 from .. import app_lock
+from ..errors import ApiError
 from ..models import AppLockReq
 from ..runtime import RUNTIME
 from ..server_auth import LOGIN_MAX_FAILURES, LOGIN_WINDOW, SESSION_COOKIE_SECURE
@@ -19,10 +20,10 @@ def _check_password(password: str) -> None:
     RUNTIME.app_lock_failures[:] = [t for t in RUNTIME.app_lock_failures
                                     if t > now - LOGIN_WINDOW]
     if len(RUNTIME.app_lock_failures) >= LOGIN_MAX_FAILURES:
-        raise HTTPException(429, "Too many attempts, try again in a minute")
+        raise ApiError(429, "too_many_attempts")
     if not app_lock.verify(RUNTIME.app_lock, password):
         RUNTIME.app_lock_failures.append(now)
-        raise HTTPException(401, "Wrong password")
+        raise ApiError(401, "wrong_password")
 
 
 def _store(record) -> None:
@@ -60,7 +61,7 @@ async def enable(req: AppLockReq, response: Response):
     if app_lock.enabled():
         _check_password(req.current_password or "")
     if len(req.password) < app_lock.MIN_PASSWORD:
-        raise HTTPException(400, f"Password must be at least {app_lock.MIN_PASSWORD} characters")
+        raise ApiError(400, "password_too_short", min=app_lock.MIN_PASSWORD)
     _store(app_lock.make_record(req.password))
     app_lock.grant(response, SESSION_COOKIE_SECURE)   # the client that set it stays in
     return {"ok": True}

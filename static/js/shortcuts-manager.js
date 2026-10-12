@@ -35,12 +35,16 @@ window.NP = window.NP || {};
             if (isCustom) customCount++;
 
             if (filterCustomizedOnly && !isCustom) continue;
-            if (searchQuery && item.label.toLowerCase()
+            var label = NP.shortcuts.label(id);
+            if (searchQuery && label.toLowerCase()
                 .indexOf(searchQuery.toLowerCase()) === -1) continue;
 
-            var cat = item.category || "Other";
+            var cat = item.categoryKey ? NP.shortcuts.categoryLabel(id)
+                : NP.t("shortcutsManager.otherCategory");
             if (!byCategory[cat]) { byCategory[cat] = []; order.push(cat); }
-            byCategory[cat].push({ id: id, info: item, isCustom: isCustom });
+            byCategory[cat].push({
+                id: id, info: item, label: label, isCustom: isCustom
+            });
         }
 
         var html = "";
@@ -51,16 +55,19 @@ window.NP = window.NP || {};
                 html += '<div class="shortcuts-row" data-shortcut-id="' +
                     NP.escapeHtml(entry.id) + '">' +
                     '<span class="shortcuts-row-label">' +
-                    NP.escapeHtml(entry.info.label) + "</span>" +
+                    NP.escapeHtml(entry.label) + "</span>" +
                     '<span class="shortcuts-row-key' +
                     (entry.isCustom ? " custom" : "") +
                     '" data-role="display">' +
                     NP.escapeHtml(entry.info.current || "—") + "</span>" +
                     '<button class="shortcuts-row-btn" data-role="record">' +
-                    "Record</button>" +
+                    NP.escapeHtml(NP.t("shortcutsManager.record")) +
+                    "</button>" +
                     '<button class="shortcuts-row-btn reset-mini' +
                     (entry.isCustom ? "" : " hidden") +
-                    '" data-role="reset" aria-label="Reset to default">' +
+                    '" data-role="reset" aria-label="' +
+                    NP.escapeHtml(NP.t("shortcutsManager.resetToDefault")) +
+                    '">' +
                     "↻</button>" +
                     "</div>";
             });
@@ -68,7 +75,8 @@ window.NP = window.NP || {};
 
         if (order.length === 0) {
             html = '<div style="text-align:center;color:var(--fg-dim);' +
-                'padding:30px;font-size:12px;">No shortcuts found.</div>';
+                'padding:30px;font-size:12px;">' +
+                NP.escapeHtml(NP.t("shortcutsManager.noneFound")) + "</div>";
         }
 
         body.innerHTML = html;
@@ -78,14 +86,19 @@ window.NP = window.NP || {};
         updateSettingsSummary(totalCount, customCount);
     }
 
+    function countsText(total, custom) {
+        return NP.t("shortcutsManager.totalCount", { n: total }) + " · " +
+            NP.t("shortcutsManager.customCount", { n: custom });
+    }
+
     function updateFooter(total, custom) {
         var f = document.getElementById("shortcuts-footer-info");
-        if (f) f.textContent = total + " shortcuts · " + custom + " customized";
+        if (f) f.textContent = countsText(total, custom);
     }
 
     function updateSettingsSummary(total, custom) {
         var s = document.getElementById("shortcuts-summary");
-        if (s) s.textContent = total + " shortcuts · " + custom + " customized";
+        if (s) s.textContent = countsText(total, custom);
     }
 
     function bindRowHandlers() {
@@ -138,9 +151,9 @@ window.NP = window.NP || {};
             originalBtnText: recordBtn.textContent
         };
 
-        displayEl.textContent = "Press keys...";
+        displayEl.textContent = NP.t("shortcutsManager.pressKeys");
         displayEl.classList.add("recording");
-        recordBtn.textContent = "Cancel";
+        recordBtn.textContent = NP.t("common.cancel");
         recordBtn.classList.add("recording-cancel");
 
         NP.shortcuts._recordingActive = true;
@@ -183,7 +196,7 @@ window.NP = window.NP || {};
             setTimeout(function () {
                 if (recordingState) {
                     recordingState.displayEl.classList.remove("error");
-                    recordingState.displayEl.textContent = "Press keys...";
+                    recordingState.displayEl.textContent = NP.t("shortcutsManager.pressKeys");
                 }
             }, 2000);
             return;
@@ -191,10 +204,10 @@ window.NP = window.NP || {};
 
         var conflict = NP.shortcuts.findConflict(keystroke, recordingState.id);
         if (conflict) {
-            if (!confirm('Shortcut "' + keystroke +
-                '" is already used by "' + conflict.label +
-                '". Override?')) {
-                recordingState.displayEl.textContent = "Press keys...";
+            if (!confirm(NP.t("shortcutsManager.conflictConfirm", {
+                keys: keystroke, label: conflict.label
+            }))) {
+                recordingState.displayEl.textContent = NP.t("shortcutsManager.pressKeys");
                 return;
             }
             NP.shortcuts.setCurrent(conflict.id, "");
@@ -264,7 +277,7 @@ window.NP = window.NP || {};
             var resetAllBtn = document.getElementById("shortcuts-reset-all");
             if (resetAllBtn) {
                 resetAllBtn.addEventListener("click", function () {
-                    if (confirm("Reset ALL shortcuts to their defaults?")) {
+                    if (confirm(NP.t("shortcutsManager.resetAllConfirm"))) {
                         NP.shortcuts.resetAll();
                         renderList();
                     }

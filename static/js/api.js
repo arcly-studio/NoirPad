@@ -41,20 +41,26 @@ window.NP = window.NP || {};
 
     var reloadingForLock = false;
 
+    /* The API answers errors with {"detail": {"code", "params"}} (see
+       noirpad/errors.py); the text comes from the locale files. */
     function errorFrom(res) {
         return res.text().then(function (txt) {
-            var msg = txt;
+            var code = null;
+            var params = null;
             try {
-                var obj = JSON.parse(txt);
-                if (obj && typeof obj.detail === "string") {
-                    msg = obj.detail;
-                } else if (obj && Array.isArray(obj.detail)) {
-                    /* FastAPI validation error list (e.g. name too long) */
-                    msg = obj.detail.map(function (d) { return d.msg; }).join("; ");
+                var detail = JSON.parse(txt).detail;
+                if (detail && typeof detail.code === "string") {
+                    code = detail.code;
+                    params = detail.params || null;
+                } else if (Array.isArray(detail)) {
+                    code = "invalid_input";     /* FastAPI validation errors */
                 }
-            } catch (e) { /* not json — keep raw */ }
-            var e = new Error(msg || ("API " + res.status));
+            } catch (e) { /* not JSON (proxy error page, …) */ }
+            var msg = code ? NP.t("errors." + code, params)
+                : NP.t("errors.generic", { status: res.status });
+            var e = new Error(msg);
             e.status = res.status;
+            e.code = code;
             /* 423 = app lock engaged (another window locked it, or the
                password changed): reload into the lock screen. */
             if (res.status === 423 && !reloadingForLock) {
@@ -115,7 +121,7 @@ window.NP = window.NP || {};
                 return res.headers;
             });
         }).catch(function (err) {
-            alert("Download failed: " + (err && err.message ? err.message : err));
+            alert(NP.t("api.downloadFailed", { error: err && err.message ? err.message : err }));
         });
     }
 

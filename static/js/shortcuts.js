@@ -108,50 +108,50 @@ window.NP = window.NP || {};
            toggle-sidebar's Ctrl+B). MD handlers return false when the MD
            textarea isn't focused, and the dispatcher's "continue on
            passthrough" semantics let the next matching binding fire. */
-        "md-h1":                { default: "",              current: "",              label: "Markdown: H1 heading",        category: "Markdown" },
-        "md-h2":                { default: "",              current: "",              label: "Markdown: H2 heading",        category: "Markdown" },
-        "md-h3":                { default: "",              current: "",              label: "Markdown: H3 heading",        category: "Markdown" },
-        "md-bold":              { default: "Ctrl+B",        current: "Ctrl+B",        label: "Markdown: Bold",              category: "Markdown" },
-        "md-italic":            { default: "Ctrl+I",        current: "Ctrl+I",        label: "Markdown: Italic",            category: "Markdown" },
-        "md-code-inline":       { default: "Ctrl+E",        current: "Ctrl+E",        label: "Markdown: Inline code",       category: "Markdown" },
-        "md-strikethrough":     { default: "",              current: "",              label: "Markdown: Strikethrough",     category: "Markdown" },
-        "md-code-block":        { default: "Ctrl+Shift+E",  current: "Ctrl+Shift+E",  label: "Markdown: Code block",        category: "Markdown" },
-        "md-quote":             { default: "",              current: "",              label: "Markdown: Quote",             category: "Markdown" },
-        "md-list-bullet":       { default: "",              current: "",              label: "Markdown: Bullet list",       category: "Markdown" },
-        "md-list-numbered":     { default: "",              current: "",              label: "Markdown: Numbered list",     category: "Markdown" },
-        "md-horizontal-rule":   { default: "",              current: "",              label: "Markdown: Horizontal rule",   category: "Markdown" },
-        "md-link":              { default: "Ctrl+K",        current: "Ctrl+K",        label: "Markdown: Link",              category: "Markdown" },
-        "md-image":             { default: "",              current: "",              label: "Markdown: Image",             category: "Markdown" },
+        "md-h1":                { default: "",              current: "",              labelKey: "shortcuts.labels.mdH1",        categoryKey: "shortcuts.categories.markdown" },
+        "md-h2":                { default: "",              current: "",              labelKey: "shortcuts.labels.mdH2",        categoryKey: "shortcuts.categories.markdown" },
+        "md-h3":                { default: "",              current: "",              labelKey: "shortcuts.labels.mdH3",        categoryKey: "shortcuts.categories.markdown" },
+        "md-bold":              { default: "Ctrl+B",        current: "Ctrl+B",        labelKey: "shortcuts.labels.mdBold",              categoryKey: "shortcuts.categories.markdown" },
+        "md-italic":            { default: "Ctrl+I",        current: "Ctrl+I",        labelKey: "shortcuts.labels.mdItalic",            categoryKey: "shortcuts.categories.markdown" },
+        "md-code-inline":       { default: "Ctrl+E",        current: "Ctrl+E",        labelKey: "shortcuts.labels.mdCodeInline",       categoryKey: "shortcuts.categories.markdown" },
+        "md-strikethrough":     { default: "",              current: "",              labelKey: "shortcuts.labels.mdStrikethrough",     categoryKey: "shortcuts.categories.markdown" },
+        "md-code-block":        { default: "Ctrl+Shift+E",  current: "Ctrl+Shift+E",  labelKey: "shortcuts.labels.mdCodeBlock",        categoryKey: "shortcuts.categories.markdown" },
+        "md-quote":             { default: "",              current: "",              labelKey: "shortcuts.labels.mdQuote",             categoryKey: "shortcuts.categories.markdown" },
+        "md-list-bullet":       { default: "",              current: "",              labelKey: "shortcuts.labels.mdListBullet",       categoryKey: "shortcuts.categories.markdown" },
+        "md-list-numbered":     { default: "",              current: "",              labelKey: "shortcuts.labels.mdListNumbered",     categoryKey: "shortcuts.categories.markdown" },
+        "md-horizontal-rule":   { default: "",              current: "",              labelKey: "shortcuts.labels.mdHorizontalRule",   categoryKey: "shortcuts.categories.markdown" },
+        "md-link":              { default: "Ctrl+K",        current: "Ctrl+K",        labelKey: "shortcuts.labels.mdLink",              categoryKey: "shortcuts.categories.markdown" },
+        "md-image":             { default: "",              current: "",              labelKey: "shortcuts.labels.mdImage",             categoryKey: "shortcuts.categories.markdown" },
 
         /* Editor */
-        "save":                 { default: "Ctrl+S",        current: "Ctrl+S",        label: "Save note",              category: "Editor" },
-        "find":                 { default: "Ctrl+F",        current: "Ctrl+F",        label: "Find in note",           category: "Editor" },
-        "find-next":            { default: "F3",            current: "F3",            label: "Find next",              category: "Editor" },
-        "find-prev":            { default: "Shift+F3",      current: "Shift+F3",      label: "Find previous",          category: "Editor" },
-        "insert-image":         { default: "Ctrl+Shift+I",  current: "Ctrl+Shift+I",  label: "Insert image",           category: "Editor" },
-        "toggle-markdown":      { default: "Ctrl+M",        current: "Ctrl+M",        label: "Toggle markdown mode",   category: "Editor" },
+        "save":                 { default: "Ctrl+S",        current: "Ctrl+S",        labelKey: "shortcuts.labels.save",              categoryKey: "shortcuts.categories.editor" },
+        "find":                 { default: "Ctrl+F",        current: "Ctrl+F",        labelKey: "shortcuts.labels.find",           categoryKey: "shortcuts.categories.editor" },
+        "find-next":            { default: "F3",            current: "F3",            labelKey: "shortcuts.labels.findNext",              categoryKey: "shortcuts.categories.editor" },
+        "find-prev":            { default: "Shift+F3",      current: "Shift+F3",      labelKey: "shortcuts.labels.findPrev",          categoryKey: "shortcuts.categories.editor" },
+        "insert-image":         { default: "Ctrl+Shift+I",  current: "Ctrl+Shift+I",  labelKey: "shortcuts.labels.insertImage",           categoryKey: "shortcuts.categories.editor" },
+        "toggle-markdown":      { default: "Ctrl+M",        current: "Ctrl+M",        labelKey: "shortcuts.labels.toggleMarkdown",   categoryKey: "shortcuts.categories.editor" },
 
         /* Notes */
-        "new-folder":           { default: "Ctrl+Shift+F",  current: "Ctrl+Shift+F",  label: "New folder",             category: "Notes" },
-        "new-note":             { default: "Ctrl+Shift+N",  current: "Ctrl+Shift+N",  label: "New note",               category: "Notes" },
-        "delete":               { default: "Delete",        current: "Delete",        label: "Delete selected",        category: "Notes" },
-        "rename":               { default: "F2",            current: "F2",            label: "Rename selected",        category: "Notes" },
-        "toggle-favorite":      { default: "Ctrl+D",        current: "Ctrl+D",        label: "Toggle favorite",        category: "Notes" },
-        "toggle-lock":          { default: "Ctrl+Shift+L",  current: "Ctrl+Shift+L",  label: "Lock/unlock note",       category: "Notes" },
+        "new-folder":           { default: "Ctrl+Shift+F",  current: "Ctrl+Shift+F",  labelKey: "shortcuts.labels.newFolder",             categoryKey: "shortcuts.categories.notes" },
+        "new-note":             { default: "Ctrl+Shift+N",  current: "Ctrl+Shift+N",  labelKey: "shortcuts.labels.newNote",               categoryKey: "shortcuts.categories.notes" },
+        "delete":               { default: "Delete",        current: "Delete",        labelKey: "shortcuts.labels.delete",        categoryKey: "shortcuts.categories.notes" },
+        "rename":               { default: "F2",            current: "F2",            labelKey: "shortcuts.labels.rename",        categoryKey: "shortcuts.categories.notes" },
+        "toggle-favorite":      { default: "Ctrl+D",        current: "Ctrl+D",        labelKey: "shortcuts.labels.toggleFavorite",        categoryKey: "shortcuts.categories.notes" },
+        "toggle-lock":          { default: "Ctrl+Shift+L",  current: "Ctrl+Shift+L",  labelKey: "shortcuts.labels.toggleLock",       categoryKey: "shortcuts.categories.notes" },
 
         /* UI */
-        "toggle-sidebar":       { default: "Ctrl+B",        current: "Ctrl+B",        label: "Toggle sidebar/focus",   category: "UI" },
-        "toggle-orientation":   { default: "Ctrl+L",        current: "Ctrl+L",        label: "Toggle page orientation",category: "UI" },
-        "open-settings":        { default: "Ctrl+,",        current: "Ctrl+,",        label: "Open settings",          category: "UI" },
-        "open-help":            { default: "F1",            current: "F1",            label: "Open help",              category: "UI" },
-        "open-command-palette": { default: "Ctrl+Shift+P",  current: "Ctrl+Shift+P",  label: "Open command palette",   category: "UI" },
-        "open-font-picker":     { default: "Ctrl+Shift+T",  current: "Ctrl+Shift+T",  label: "Open font picker",       category: "UI" },
-        "fullscreen":           { default: "F11",           current: "F11",           label: "Toggle fullscreen",      category: "UI" },
+        "toggle-sidebar":       { default: "Ctrl+B",        current: "Ctrl+B",        labelKey: "shortcuts.labels.toggleSidebar",   categoryKey: "shortcuts.categories.ui" },
+        "toggle-orientation":   { default: "Ctrl+L",        current: "Ctrl+L",        labelKey: "shortcuts.labels.toggleOrientation",categoryKey: "shortcuts.categories.ui" },
+        "open-settings":        { default: "Ctrl+,",        current: "Ctrl+,",        labelKey: "shortcuts.labels.openSettings",          categoryKey: "shortcuts.categories.ui" },
+        "open-help":            { default: "F1",            current: "F1",            labelKey: "shortcuts.labels.openHelp",              categoryKey: "shortcuts.categories.ui" },
+        "open-command-palette": { default: "Ctrl+Shift+P",  current: "Ctrl+Shift+P",  labelKey: "shortcuts.labels.openCommandPalette",   categoryKey: "shortcuts.categories.ui" },
+        "open-font-picker":     { default: "Ctrl+Shift+T",  current: "Ctrl+Shift+T",  labelKey: "shortcuts.labels.openFontPicker",       categoryKey: "shortcuts.categories.ui" },
+        "fullscreen":           { default: "F11",           current: "F11",           labelKey: "shortcuts.labels.fullscreen",      categoryKey: "shortcuts.categories.ui" },
 
         /* Tabs */
-        "next-tab":             { default: "Ctrl+Tab",      current: "Ctrl+Tab",      label: "Next tab",               category: "Tabs" },
-        "prev-tab":             { default: "Ctrl+Shift+Tab",current: "Ctrl+Shift+Tab",label: "Previous tab",           category: "Tabs" },
-        "close-tab":            { default: "Ctrl+W",        current: "Ctrl+W",        label: "Close tab",              category: "Tabs" }
+        "next-tab":             { default: "Ctrl+Tab",      current: "Ctrl+Tab",      labelKey: "shortcuts.labels.nextTab",               categoryKey: "shortcuts.categories.tabs" },
+        "prev-tab":             { default: "Ctrl+Shift+Tab",current: "Ctrl+Shift+Tab",labelKey: "shortcuts.labels.prevTab",           categoryKey: "shortcuts.categories.tabs" },
+        "close-tab":            { default: "Ctrl+W",        current: "Ctrl+W",        labelKey: "shortcuts.labels.closeTab",              categoryKey: "shortcuts.categories.tabs" }
     };
 
     var handlers = {}; /* id -> function (may return false = passthrough) */
@@ -166,6 +166,16 @@ window.NP = window.NP || {};
 
         getAll: function () {
             return registry;
+        },
+
+        /* Display texts. The registry is built at load time (before the
+           dictionaries arrive), so it stores keys; resolve them here. */
+        label: function (id) {
+            return registry[id] ? NP.t(registry[id].labelKey) : "";
+        },
+
+        categoryLabel: function (id) {
+            return registry[id] ? NP.t(registry[id].categoryKey) : "";
         },
 
         getCurrent: function (id) {
@@ -222,7 +232,7 @@ window.NP = window.NP || {};
         validate: function (keystroke) {
             keystroke = normKs(keystroke);
             if (!keystroke) {
-                return { ok: false, reason: "Empty keystroke" };
+                return { ok: false, reason: NP.t("shortcuts.errors.empty") };
             }
             var hasModifier = /^(Ctrl|Alt|Shift)\+/.test(keystroke);
             var standalone = /^(F\d+|Delete|Insert|Home|End|PageUp|PageDown|Escape)$/
@@ -230,15 +240,14 @@ window.NP = window.NP || {};
             if (!hasModifier && !standalone) {
                 return {
                     ok: false,
-                    reason: "Shortcut must include Ctrl, Alt, or Shift"
+                    reason: NP.t("shortcuts.errors.needsModifier")
                 };
             }
             for (var i = 0; i < BLACKLIST.length; i++) {
                 if (normKs(BLACKLIST[i]) === keystroke) {
                     return {
                         ok: false,
-                        reason: "This shortcut is reserved by your " +
-                            "browser and cannot be used"
+                        reason: NP.t("shortcuts.errors.reserved")
                     };
                 }
             }
@@ -251,7 +260,7 @@ window.NP = window.NP || {};
                 if (id === excludeId) continue;
                 if (registry[id].current &&
                     normKs(registry[id].current) === keystroke) {
-                    return { id: id, label: registry[id].label };
+                    return { id: id, label: NP.shortcuts.label(id) };
                 }
             }
             return null;
@@ -290,7 +299,7 @@ window.NP = window.NP || {};
                         result = handler(e);
                     } catch (err) {
                         console.error(
-                            "Shortcut handler error for " + id + ":", err
+                            "Shortcut handler error for " + id + ":", err  // i18n-ignore (console log)
                         );
                     }
                     if (result === false) {

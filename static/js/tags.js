@@ -61,7 +61,7 @@ window.NP = window.NP || {};
 
         var removeBtn = document.createElement("span");
         removeBtn.textContent = "\u00D7";
-        removeBtn.title = "Remove tag";
+        removeBtn.title = NP.t("tags.remove");
         removeBtn.style.cssText =
             "cursor:pointer;opacity:0;transition:opacity 0.15s;font-size:14px;line-height:1;";
         removeBtn.addEventListener("click", function () {
@@ -142,7 +142,7 @@ window.NP = window.NP || {};
             NP.api.getTags().then(function (res) {
                 /* Server returns { tags: ["foo", "bar", ...] } */
                 var list = (res && Array.isArray(res.tags)) ? res.tags : [];
-                var msg = "All tags:\n\n" + (list.length ? list.sort().join(", ") : "(none)");
+                var msg = NP.t("tags.allTags") + "\n\n" + (list.length ? list.sort().join(", ") : NP.t("tags.none"));
                 alert(msg);
             }).catch(function (err) {
                 console.error("Failed to get tags:", err);

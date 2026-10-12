@@ -21,20 +21,19 @@ window.NP = window.NP || {};
     function askNew(title) {
         return NP.passwordDialog.ask({
             title: title,
-            message: "Choose a password of at least " + MIN_PASSWORD + " characters.",
-            warning: "NoirPad cannot reset a forgotten app-lock password. " +
-                "The lock does not encrypt your notes.",
+            message: NP.t("appLock.chooseMessage", { min: MIN_PASSWORD }),
+            warning: NP.t("appLock.chooseWarning"),
             confirm: true,
             minLength: MIN_PASSWORD,
-            okLabel: "Set password"
+            okLabel: NP.t("appLock.setPassword")
         });
     }
 
     function askCurrent(title) {
         return NP.passwordDialog.ask({
             title: title,
-            message: "Enter the current app-lock password.",
-            okLabel: "Continue"
+            message: NP.t("appLock.currentMessage"),
+            okLabel: NP.t("appLock.continue")
         });
     }
 
@@ -67,31 +66,31 @@ window.NP = window.NP || {};
         },
 
         enable: function () {
-            return askNew("Turn on app lock").then(function (password) {
+            return askNew(NP.t("appLock.enableTitle")).then(function (password) {
                 if (!password) return;
                 return NP.api.appLockEnable(password).then(function () {
                     NP.appLock.enabled = true;
                 });
-            }).catch(function (err) { alert("App lock: " + message(err)); });
+            }).catch(function (err) { alert(NP.t("appLock.failed", { error: message(err) })); });
         },
 
         change: function () {
-            return askCurrent("Change app-lock password").then(function (current) {
+            return askCurrent(NP.t("appLock.changeTitle")).then(function (current) {
                 if (!current) return;
-                return askNew("New app-lock password").then(function (password) {
+                return askNew(NP.t("appLock.newTitle")).then(function (password) {
                     if (!password) return;
                     return NP.api.appLockEnable(password, current);
                 });
-            }).catch(function (err) { alert("App lock: " + message(err)); });
+            }).catch(function (err) { alert(NP.t("appLock.failed", { error: message(err) })); });
         },
 
         disable: function () {
-            return askCurrent("Turn off app lock").then(function (password) {
+            return askCurrent(NP.t("appLock.disableTitle")).then(function (password) {
                 if (!password) return;
                 return NP.api.appLockDisable(password).then(function () {
                     NP.appLock.enabled = false;
                 });
-            }).catch(function (err) { alert("App lock: " + message(err)); });
+            }).catch(function (err) { alert(NP.t("appLock.failed", { error: message(err) })); });
         },
 
         /* Save, lock (the server also forgets unlocked note keys), and

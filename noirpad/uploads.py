@@ -2,9 +2,10 @@
 
 import zipfile
 
-from fastapi import HTTPException, UploadFile
+from fastapi import UploadFile
 
 from . import config
+from .errors import ApiError
 
 
 async def read_upload_limited(file: UploadFile, max_bytes: int) -> bytes:
@@ -17,7 +18,7 @@ async def read_upload_limited(file: UploadFile, max_bytes: int) -> bytes:
             break
         total += len(chunk)
         if total > max_bytes:
-            raise HTTPException(413, f"File too large (max {max_bytes // (1024 * 1024)} MB)")
+            raise ApiError(413, "file_too_large", max_mb=max_bytes // (1024 * 1024))
         chunks.append(chunk)
     return b"".join(chunks)
 
@@ -27,4 +28,4 @@ def check_archive_size(zf: zipfile.ZipFile) -> None:
     infos = zf.infolist()
     if (len(infos) > config.MAX_BACKUP_FILES
             or sum(i.file_size for i in infos) > config.MAX_BACKUP_UNCOMPRESSED):
-        raise HTTPException(413, "Backup archive is too large")
+        raise ApiError(413, "archive_too_large")

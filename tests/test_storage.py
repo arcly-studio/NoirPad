@@ -34,7 +34,8 @@ def test_d8_corrupt_file_recovers_from_backup(client, np_backend, payload):
     assert len(corrupt) == 1 and corrupt[0].read_bytes() == payload
 
     notice = client.get("/api/session").json()["data_notice"]
-    assert notice and "corrupt" in notice.lower()
+    assert notice["code"] == "data_restored"
+    assert notice["params"]["file"] == corrupt[0].name
 
 
 def test_d8_corrupt_file_without_backup_is_kept(client, np_backend):

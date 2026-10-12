@@ -12,12 +12,6 @@ window.NP = window.NP || {};
 
     var MIN_PASSWORD = 8;   // same rule as the backend (MIN_NOTE_PASSWORD)
 
-    var LOCK_WARNING =
-        "Forgotten password = this note can never be opened again. " +
-        "There is no recovery.\n" +
-        "Only the note text is encrypted. Its title, tags and images " +
-        "stay unencrypted on disk.";
-
     var reunlockPending = null;
     var unlockPending = {};   // noteId -> promise of the open unlock dialog
 
@@ -28,21 +22,21 @@ window.NP = window.NP || {};
         encrypt: function () {
             var noteId = NP.state && NP.state.currentNoteId;
             if (!noteId) {
-                alert("No note selected.");
+                alert(NP.t("encryption.noNoteSelected"));
                 return Promise.resolve();
             }
             if (NP.encryption.isEncrypted(noteId) || (editor() && editor()._currentNoteEncrypted)) {
-                alert("Note is already encrypted.");
+                alert(NP.t("encryption.alreadyEncrypted"));
                 return Promise.resolve();
             }
 
             return NP.passwordDialog.ask({
-                title: "Lock note with a password",
-                message: "Choose a password of at least " + MIN_PASSWORD + " characters.",
-                warning: LOCK_WARNING,
+                title: NP.t("encryption.lockTitle"),
+                message: NP.t("encryption.lockMessage", { n: MIN_PASSWORD }),
+                warning: NP.t("encryption.lockWarning"),
                 confirm: true,
                 minLength: MIN_PASSWORD,
-                okLabel: "Lock"
+                okLabel: NP.t("encryption.lock")
             }).then(function (password) {
                 if (!password) return;
                 var ed = editor();
@@ -61,7 +55,7 @@ window.NP = window.NP || {};
                     NP.encryption.updateLockButtonState();
                 });
             }).catch(function (err) {
-                alert("Encryption failed: " + (err && err.message ? err.message : err));
+                alert(NP.t("encryption.encryptFailed", { error: err && err.message ? err.message : err }));
             });
         },
 
@@ -69,7 +63,7 @@ window.NP = window.NP || {};
         decrypt: function () {
             var noteId = NP.state && NP.state.currentNoteId;
             if (!noteId) {
-                alert("No note selected.");
+                alert(NP.t("encryption.noNoteSelected"));
                 return Promise.resolve();
             }
             var ed = editor();
@@ -77,20 +71,20 @@ window.NP = window.NP || {};
                 return NP.encryption.removeEncryption();
             }
             if (!NP.encryption.isEncrypted(noteId)) {
-                alert("Note is not encrypted.");
+                alert(NP.t("encryption.notEncrypted"));
                 return Promise.resolve();
             }
             return NP.passwordDialog.ask({
-                title: "Remove encryption",
-                message: "Enter the note's password. The note will be stored as plain text.",
-                okLabel: "Remove encryption"
+                title: NP.t("encryption.removeTitle"),
+                message: NP.t("encryption.removeMessage"),
+                okLabel: NP.t("encryption.removeOk")
             }).then(function (password) {
                 if (!password) return;
                 return NP.api.decrypt(noteId, { password: password }).then(function () {
                     if (ed && ed.loadNote) return ed.loadNote(noteId);
                 });
             }).catch(function (err) {
-                alert("Decryption failed: " + (err && err.message ? err.message : err));
+                alert(NP.t("encryption.decryptFailed", { error: err && err.message ? err.message : err }));
             });
         },
 
@@ -108,14 +102,14 @@ window.NP = window.NP || {};
 
         _askAndUnlock: function (noteId, message) {
             return NP.passwordDialog.ask({
-                title: "Unlock note",
-                message: message || "This note is encrypted. Enter its password.",
-                okLabel: "Unlock"
+                title: NP.t("encryption.unlockTitle"),
+                message: message || NP.t("encryption.unlockMessage"),
+                okLabel: NP.t("encryption.unlock")
             }).then(function (password) {
                 if (!password) return null;
                 return NP.api.unlock(noteId, password).catch(function (err) {
                     if (err && err.status === 400) {
-                        return NP.encryption._askAndUnlock(noteId, "Wrong password. Try again.");
+                        return NP.encryption._askAndUnlock(noteId, NP.t("encryption.wrongPassword"));
                     }
                     throw err;
                 });
@@ -128,7 +122,7 @@ window.NP = window.NP || {};
         reunlock: function (noteId) {
             if (reunlockPending) return reunlockPending;
             reunlockPending = NP.encryption.askAndUnlock(noteId,
-                "The note was locked. Enter its password to save your changes."
+                NP.t("encryption.reunlockMessage")
             ).then(function (res) {
                 var ed = editor();
                 var token = res && res.unlock_token;
@@ -155,7 +149,7 @@ window.NP = window.NP || {};
             var ed = editor();
             var id = ed && ed._currentNoteId;
             if (!id) {
-                alert("No note selected.");
+                alert(NP.t("encryption.noNoteSelected"));
                 return;
             }
 
@@ -184,15 +178,11 @@ window.NP = window.NP || {};
             var id = ed && ed._currentNoteId;
             if (!id) return Promise.resolve();
             if (!ed._unlockToken) {
-                alert("Unlock this note first, then remove encryption.");
+                alert(NP.t("encryption.unlockFirst"));
                 return Promise.resolve();
             }
 
-            var ok = window.confirm(
-                "Remove encryption from this note?\n\n" +
-                "The password protection will be permanently removed and " +
-                "the content saved as plain text."
-            );
+            var ok = window.confirm(NP.t("encryption.removeConfirm"));
             if (!ok) return Promise.resolve();
 
             /* Stop autosave up front: an encrypted autosave firing during
@@ -209,8 +199,7 @@ window.NP = window.NP || {};
                 if (ed.loadNote) return ed.loadNote(id);
             }).catch(function (err) {
                 if (ed.startAutosave) ed.startAutosave();
-                alert("Failed to remove encryption: " +
-                    (err && err.message ? err.message : err));
+                alert(NP.t("encryption.removeFailed", { error: err && err.message ? err.message : err }));
             });
         },
 
@@ -223,14 +212,14 @@ window.NP = window.NP || {};
             var id = ed && ed._currentNoteId;
 
             if (!id || !ed._currentNoteEncrypted) {
-                btn.textContent = "Lock";
-                btn.title = "Encrypt this note with a password";
+                btn.textContent = NP.t("encryption.lock");
+                btn.title = NP.t("encryption.lockButtonTitle");
             } else if (ed._unlockToken) {
-                btn.textContent = "Remove lock";
-                btn.title = "Remove encryption from this note";
+                btn.textContent = NP.t("encryption.removeLock");
+                btn.title = NP.t("encryption.removeLockButtonTitle");
             } else {
-                btn.textContent = "Unlock";
-                btn.title = "Enter password to view this note";
+                btn.textContent = NP.t("encryption.unlock");
+                btn.title = NP.t("encryption.unlockButtonTitle");
             }
         },
 
