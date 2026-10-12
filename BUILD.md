@@ -1,79 +1,66 @@
-# NoirPad — desktop build
+# Building NoirPad
 
-## Run modes
+Releases are built by `build.ps1`, locally or in GitHub Actions — the same steps either way.
 
-| Mode | Command | What it does |
-|------|---------|--------------|
-| Web (existing) | `python NoirPad-web.py` | Plain FastAPI on `http://127.0.0.1:8000`. Unchanged. |
-| Desktop (dev) | `python desktop.py` | Same backend on a free loopback port + pywebview window. |
-| Desktop (bundled) | `dist/NoirPad/NoirPad.exe` | After `pyinstaller noirpad.spec`. |
+## Requirements (Windows 10/11, x64)
 
-## Data location
+| Tool | Version | Notes |
+|---|---|---|
+| Python | 3.14 (`.python-version`) | from python.org or the `py` launcher; other versions are untested |
+| Node.js | 22+ | only for the JS tests (vitest); the app has no JS build step |
+| Inno Setup | 6 | `ISCC.exe` on PATH or in the default install folder (`choco install innosetup`) |
+| Git | any | the build refuses to run on a dirty tree |
 
-| Mode | `notes_data.json` + images live in |
-|------|------------------------------------|
-| Web / desktop dev | project directory (unchanged) |
-| Frozen bundle | `%LOCALAPPDATA%\NoirPad\` (per `platformdirs.user_data_dir`) |
+All Python packages are pinned: `requirements.txt` (runtime) and `requirements-dev.txt`
+(tests + PyInstaller). JS dev packages are pinned in `package-lock.json`.
 
-The bundle never writes next to the `.exe`. Frozen mode starts with an empty
-data dir on first launch — there is no automatic migration from a dev install.
-
-## Build
+## One command
 
 ```powershell
-pip install -r requirements.txt
-pyinstaller --clean --noconfirm noirpad.spec
+git clone https://github.com/krystof2-ops/NoirPad-web.git
+cd NoirPad-web
+powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-Output: `dist/NoirPad/NoirPad.exe` (one-dir layout).
+`build.ps1`:
 
-The first build is intentionally console-on so errors are visible. Once it
-launches cleanly, flip `CONSOLE = True` to `False` at the top of
-`noirpad.spec` and rebuild for the windowed (no terminal flash) version.
+1. stops if `git status` is not clean — what ships is exactly a commit;
+2. creates `.venv` (Python 3.14) if missing and installs `requirements-dev.txt`;
+3. `npm ci`, then `pytest` and `vitest` — any failure stops the build;
+4. PyInstaller with `noirpad.spec` → `dist\NoirPad\NoirPad.exe` (onedir; ~45 MB);
+5. Inno Setup with `installer.iss` → `dist\installer\NoirPad-Setup-<version>.exe` (~19 MB)
+   and `NoirPad-Setup-<version>.exe.sha256`.
 
-### --onefile alternative
+Options: `-Python C:\path\to\python.exe` (interpreter for the venv), `-Iscc C:\path\to\ISCC.exe`.
 
-`noirpad.spec` includes a commented-out `--onefile` block. It produces a
-single `NoirPad.exe` but unpacks to `%TEMP%` on every launch (slower start,
-harder to debug). Default is onedir.
+## Version
 
-## Runtime requirement
+The version lives **only** in `noirpad/__version__.py` (`__version__`, plus `PROJECT_URL`). The API
+(`/api/version`), the About box, the exe's version resource (spec) and the installer
+(`/DAppVersion`, passed by `build.ps1`) all read it from there. A test fails if the version string
+appears anywhere else.
 
-The target machine needs the **WebView2 Runtime**. Windows 11 and recent
-Windows 10 builds ship it with Edge; on stripped systems install it from
-<https://developer.microsoft.com/microsoft-edge/webview2/>.
+## Releasing
 
-## Installer (Inno Setup)
+1. Update `__version__` and add a section to `CHANGELOG.md` (`## [x.y.z] – date`).
+2. Commit, then tag and push: `git tag v1.2.3 && git push origin v1.2.3`.
+3. `.github/workflows/release.yml` checks that the tag matches `__version__`, runs `build.ps1` on
+   `windows-latest` and creates a **draft** release with the installer, its `.sha256` and the
+   changelog section. Review it and publish.
 
-`installer.iss` wraps the PyInstaller `dist\NoirPad\` output into a
-per-user installer. No admin rights, no UAC prompt — installs into
-`%LOCALAPPDATA%\Programs\NoirPad`.
+`.github/workflows/test.yml` runs pytest + vitest on every push and pull request.
 
-Prereq: install **Inno Setup 6** from <https://jrsoftware.org/isdl.php>.
+## Notes
 
-```powershell
-# 1. Build the app first
-pyinstaller --clean --noconfirm noirpad.spec
-
-# 2. Compile the installer
-& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
-```
-
-Output: `dist\installer\NoirPad-Setup-<version>.exe`.
-
-The version comes from `MyAppVersion` near the top of `installer.iss` —
-bump it for each release.
-
-### What the installer does
-
-- Drops `NoirPad.exe` + `_internal\` together under
-  `%LOCALAPPDATA%\Programs\NoirPad\` (so `python314.dll` is always findable).
-- Adds a Start Menu entry; optional Desktop icon via a wizard checkbox.
-- Registers an uninstaller in "Apps & features".
-- Leaves user data (`%LOCALAPPDATA%\NoirPad\notes_data.json` + images)
-  alone on uninstall.
-
-## Out of scope (per spec)
-
-Single-instance lock, auto-update, code signing — not implemented in
-this pass.
+- **Data directory:** both the exe and `python desktop.py` / `python NoirPad-web.py` use
+  `%LOCALAPPDATA%\NoirPad`. For testing, set `NOIRPAD_DATA_DIR` to a scratch folder so real notes
+  are never touched. `tools/demo_data.py <dir>` fills a folder with demo notes;
+  `tools/take_screenshots.py` regenerates `docs/screenshots/` from them (needs `pip install playwright`).
+- **Console:** the exe is windowed (no console). Diagnostics go to
+  `%LOCALAPPDATA%\NoirPad\logs\noirpad.log`; start-up failures also show a message box.
+- **Code signing:** builds are not signed, so SmartScreen warns on first run (see README).
+- **Installer:** per-user (`%LOCALAPPDATA%\Programs\NoirPad`), no admin rights. The `AppId` GUID in
+  `installer.iss` must never change, or upgrades and uninstall break. `AppMutex` must stay equal to
+  `APP_MUTEX` in `desktop.py`.
+- **Single instance:** a lock file in the data directory allows one NoirPad (desktop or web) per
+  data folder; a second desktop launch brings the running window to the front.

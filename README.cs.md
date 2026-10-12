@@ -1,190 +1,153 @@
 [English](README.md) | **Čeština**
 
-# 🌃 NoirPad
+# NoirPad
 
-> Note-taking aplikace v hacker/terminal estetice — Markdown, syntax highlighting, šifrování a 17 témat. FastAPI backend + vanilla JS frontend, bez build kroku.
+Poznámková aplikace pro Windows v terminálovém stylu – s Markdownem, poznámkami zamčenými heslem a 17 motivy.
 
-[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/krystof2-ops/NoirPad-web?include_prereleases)](https://github.com/krystof2-ops/NoirPad-web/releases)
+[![Tests](https://github.com/krystof2-ops/NoirPad-web/actions/workflows/test.yml/badge.svg)](https://github.com/krystof2-ops/NoirPad-web/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-NoirPad je lokální single-user desktop-style aplikace pro psaní poznámek inspirovaná estetikou terminálu. Spojuje čistý FastAPI backend s vanilla-JS frontendem (žádný build krok), takže ji naklonuješ, nainstaluješ a spustíš pod minutu. Poznámky žijí v jednom JSON souboru vedle aplikace — žádná databáze, žádný cloud, žádná telemetrie.
+![NoirPad s poznámkou v Markdownu](docs/screenshots/markdown.png)
 
-## 📸 Screenshoty
+**Žádný účet, žádný cloud, žádná telemetrie – vaše poznámky zůstávají ve vašem PC.**
+NoirPad sám nic po síti neposílá: písma, vykreslování Markdownu i zvýrazňování kódu jsou součástí
+aplikace. Ven vedou jen odkazy, na které sami kliknete.
 
-| Welcome Screen | Markdown + Syntax Highlighting |
-|:---:|:---:|
-| ![Welcome](docs/screenshots/welcome.png) | ![Markdown](docs/screenshots/markdown.png) |
+| Úvod | Motivy | Zamčená poznámka |
+|:---:|:---:|:---:|
+| ![Úvod](docs/screenshots/welcome.png) | ![Motivy](docs/screenshots/themes.png) | ![Zamčená poznámka](docs/screenshots/encryption.png) |
 
-| Témata | Šifrování |
-|:---:|:---:|
-| ![Themes](docs/screenshots/themes.png) | ![Encryption](docs/screenshots/encryption.png) |
+## Funkce
 
-| PDF Export | Mobilní layout |
-|:---:|:---:|
-| ![PDF](docs/screenshots/pdf.png) | ![Mobile](docs/screenshots/mobile.png) |
+- **Poznámky a složky** – strom s přetahováním, karty, štítky, oblíbené, koš s obnovou.
+- **Dva režimy pro každou poznámku** – formátovaný text, nebo Markdown s živým náhledem, tabulkami
+  a zvýrazněnými bloky kódu.
+- **Zamčené poznámky** – šifrování jednotlivé poznámky vlastním heslem (podrobnosti níže).
+- **Zámek aplikace** (volitelně) – heslo při každém spuštění a po nečinnosti.
+- **Hledání** – v poznámce, napříč všemi poznámkami, příkazová lišta (`Ctrl+Shift+P`).
+- **Obrázky** – vložení ze schránky, přetažením nebo tlačítkem; zoom přes `Ctrl`+kolečko.
+- **Export** – poznámka jako TXT, HTML nebo PDF; vše jako soubory Markdown nebo HTML v ZIPu.
+- **Import** – soubory Markdown nebo jejich ZIP (poznámky přidá, nic nemaže).
+- **Vzhled** – 17 motivů, písmo rozhraní i editoru, záře, CRT řádkování, Matrix rain, režim soustředění.
+- **Klávesnice na prvním místě** – každou zkratku jde přemapovat; nápověda přes `F1`.
+- **Čeština a angličtina** – podle jazyka systému, přepnout jde v Nastavení.
 
-## ✨ Funkce
+## Stažení
 
-### 📁 Poznámky a struktura
-- Hierarchické folders + notes s drag & drop
-- Multi-tab editor (víc otevřených poznámek)
-- Per-note režim: rich-text nebo markdown
-- Auto-save (interval 5s / 30s / 1m / 5m)
+Stáhněte **`NoirPad-Setup-<verze>.exe`** z **[Releases](https://github.com/krystof2-ops/NoirPad-web/releases)**.
+Instaluje se jen pro vašeho uživatele (bez práv správce) do `%LOCALAPPDATA%\Programs\NoirPad`.
 
-### ✍️ Markdown
-- Split-pane editor — raw source vlevo, rendered preview vpravo
-- Block-level rendering: H1-H3, blockquotes, listy, code blocks
-- **Shiki syntax highlighting** s automatickou detekcí jazyka
-- Markdown klávesové zkratky (toggle přes `Ctrl+M`)
+NoirPad potřebuje **Microsoft Edge WebView2 Runtime**. Windows 11 ho mají; na starších systémech
+instalátor nabídne jeho stažení od Microsoftu.
 
-### 🔒 Šifrování
-- Per-note password encryption (Fernet + PBKDF2HMAC)
-- Default-encrypted volba pro nové poznámky
-- Auto-lock po nečinnosti (5 / 30 / 60 min)
+**Windows SmartScreen:** instalátor není digitálně podepsaný, takže Windows může ukázat „Systém
+Windows ochránil váš počítač“. Klikněte na **Další informace → Přesto spustit**. Abyste měli jistotu,
+že jde o soubor zveřejněný tady, porovnejte jeho SHA-256 se souborem `.sha256` vedle něj v release:
 
-### 🏷️ Organizace
-- Tagy (multi-tag per poznámka)
-- Favorites (hvězdičkování)
-- Trash (soft-delete + restore)
+```powershell
+Get-FileHash .\NoirPad-Setup-1.0.0.exe -Algorithm SHA256
+```
 
-### 🔍 Vyhledávání
-- In-note find & replace (`Ctrl+F`)
-- Globální fulltext search napříč poznámkami
-- Command bar (`Ctrl+Shift+P`) s fuzzy searchem
+## Vaše data
 
-### 📤 Export / Import
-- Per-note: TXT, HTML, PDF (přes browser print)
-- Celá aplikace: ZIP backup (data + obrázky)
+| Co | Kde |
+|---|---|
+| Poznámky, nastavení | `%LOCALAPPDATA%\NoirPad\notes_data.json` |
+| Obrázky | `%LOCALAPPDATA%\NoirPad\images\` |
+| Automatické zálohy | `%LOCALAPPDATA%\NoirPad\backups\` – posledních 7, nejvýš jedna za 10 minut, a kopie před každým importem zálohy |
+| Log | `%LOCALAPPDATA%\NoirPad\logs\noirpad.log` – spuštění a chyby, nikdy obsah poznámek |
 
-### 🖼️ Obrázky
-- Paste / drag-drop / `+Img` tlačítko
-- `Ctrl`+wheel resize inline
+Složku otevřete vložením `%LOCALAPPDATA%\NoirPad` do adresního řádku Průzkumníka. Odinstalace se
+zeptá, jestli ji smazat taky (výchozí volba: nechat).
 
-### 🎨 Vzhled
-- **17 témat**: matrix, amber, cyan, red, purple, blue, pink, white, gold, lime, orange, ice, dracula, synthwave, nord, gruvbox, tokyo-night
-- UI font: Orbitron, Space Grotesk, Outfit, Unbounded, Inter, JetBrains Mono, system
-- Volba editor fontu + velikosti
-- Glow intensity slider (0-150 %)
-- CRT scanline overlay (toggle)
-- Matrix rain background (toggle)
-- Glitch typing effect (toggle)
-- ASCII splash screen (toggle)
-- Orientace stránky: portrait / landscape
+- **Záloha:** Nastavení → Data → *Stáhnout zálohu* uloží ZIP se všemi poznámkami a obrázky.
+  *Importovat zálohu* všechny poznámky **nahradí** obsahem ZIPu (předtím se uloží bezpečnostní kopie).
+- **Export:** *Exportovat vše do Markdownu* vytvoří jeden soubor `.md` pro každou poznámku (složky
+  jsou adresáře, obrázky ve složce `assets/`); *Exportovat vše do HTML* totéž jako čitelné stránky.
+  Zamčené poznámky se přeskočí – aplikace řekne kolik.
+- Kdyby se `notes_data.json` poškodil, NoirPad poškozený soubor nechá stranou, obnoví nejnovější
+  dobrou zálohu a dá vám vědět.
 
-### ⌨️ UX a zkratky
-- Customizable klávesové zkratky (rebinding libovolné akce)
-- Built-in nápověda (`F1`)
-- Focus mode (`Ctrl+B` — skryje sidebar)
-- Spellcheck toggle
-- Confirm-before-delete volba
+## Šifrování a zámek aplikace
 
-### 📱 Mobilní layout
-- Responsive (≤ 900px breakpoint)
-- Slide-out sidebar s hamburgerem
-- Touch-friendly tap targets
+**Zamčené poznámky** (tlačítko Zamknout / `Ctrl+Shift+L`) jsou šifrované vaším heslem:
+Fernet (AES-128-CBC + HMAC-SHA256) s klíčem z PBKDF2-SHA256, 480 000 iterací a náhodnou solí pro
+každou poznámku.
 
-## 🛠️ Tech Stack
+| Šifrované | Nešifrované |
+|---|---|
+| text poznámky | **název** poznámky, její **štítky** a **složka** |
+| | **obrázky** v poznámce (samostatné soubory v `images\`) |
+| | údaje o formátování, oblíbené, nastavení |
 
-- **Backend:** Python 3.9+ — FastAPI, Uvicorn, Pydantic, cryptography, python-multipart
-- **Frontend:** Vanilla JavaScript (33 modulů, žádný build, `window.NP` namespace), HTML, CSS
-- **Storage:** Flat-file JSON (`notes_data.json`) — žádná databáze
-- **Šifrování:** Fernet (AES-128-CBC + HMAC-SHA256) s PBKDF2HMAC odvozením klíče
-- **Syntax highlighting:** Shiki (přes CDN) + `vscode-languagedetection`
+- **Zapomenuté heslo k poznámce nejde obnovit.** Neexistuje reset ani zadní vrátka; poznámka
+  zůstane nečitelná.
+- Heslo se při odemčení jednou pošle místnímu serveru NoirPadu; ten si po dobu otevření poznámky
+  drží v paměti jen odvozený klíč a zapomene ho při zamčení, po nečinnosti nebo při ukončení.
+  Na disk ani do logu se nikdy nezapisuje.
 
-## 📦 Instalace
+**Zámek aplikace není šifrování.** Brání otevření NoirPadu (místní server odmítá všechny požadavky,
+dokud ho neodemknete), ale `notes_data.json` zůstává čitelný pro každého, kdo má přístup k vašemu
+účtu ve Windows. Šifrované jsou jen zamčené poznámky.
+
+*Zapomněli jste heslo k zámku aplikace?* Zavřete NoirPad, otevřete
+`%LOCALAPPDATA%\NoirPad\notes_data.json` v textovém editoru, smažte položku `"app_lock": { … }`
+(pozor na čárky, aby JSON zůstal platný), uložte a spusťte NoirPad. Poznámek se to nedotkne.
+
+## Vlastní server (webová verze)
+
+NoirPad běží i jako malý webový server, třeba na domácím serveru. Potřebujete Python 3.14.
 
 ```bash
-# 1. Naklonuj repo
 git clone https://github.com/krystof2-ops/NoirPad-web.git
 cd NoirPad-web
-
-# 2. (Doporučeno) Vytvoř virtual environment
 python -m venv .venv
-source .venv/bin/activate          # Linux / macOS
-.venv\Scripts\activate             # Windows
-
-# 3. Nainstaluj závislosti
-pip install -r requirements.txt
+.venv/bin/pip install -r requirements.txt        # Windows: .venv\Scripts\pip
+NOIRPAD_PASSWORD='dlouhá přístupová fráze' \
+NOIRPAD_ALLOWED_HOSTS=poznamky.example.org \
+NOIRPAD_HOST=127.0.0.1 NOIRPAD_PORT=8000 \
+.venv/bin/python NoirPad-web.py
 ```
 
-## 🚀 Použití
+| Proměnná | Význam |
+|---|---|
+| `NOIRPAD_PASSWORD` | Heslo pro přihlášení. **Povinné**, když server poslouchá jinde než na localhostu (jinak se odmítne spustit). |
+| `NOIRPAD_ALLOWED_HOSTS` | Čárkou oddělené názvy hostitelů, na které server odpovídá (ochrana proti DNS rebindingu). Localhost je povolený vždy. |
+| `NOIRPAD_HOST`, `NOIRPAD_PORT` | Adresa a port, výchozí `127.0.0.1:8000`. |
+| `NOIRPAD_DATA_DIR` | Datová složka, výchozí `~/.local/share/NoirPad` (Linux) / `%LOCALAPPDATA%\NoirPad`. |
+| `NOIRPAD_SECURE_COOKIES` | `1` za HTTPS: session cookie dostane příznak `Secure`. |
+
+**Používejte HTTPS.** Nechte NoirPad na `127.0.0.1` a před něj dejte reverse proxy (Caddy, nginx,
+Traefik), která ukončí TLS a předá původní hlavičku `Host`. S Caddy:
+
+```
+poznamky.example.org {
+    reverse_proxy 127.0.0.1:8000
+}
+```
+
+Funguje i `uvicorn noirpad.app:app`, ale `NoirPad-web.py` navíc hlídá heslo podle tabulky výše
+a to, aby datovou složku používal vždy jen jeden NoirPad.
+
+## Sestavení ze zdrojáků, testy, licence
+
+Build pro Windows (testy → PyInstaller → Inno Setup, z čistého checkoutu):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File build.ps1
+```
+
+Požadavky a podrobnosti jsou v [BUILD.md](BUILD.md). Spuštění ze zdrojáků:
+`python desktop.py` (okno) nebo `python NoirPad-web.py` (prohlížeč na http://127.0.0.1:8000).
+
+Testy:
 
 ```bash
-# Standalone — preferováno pro běžné použití
-python NoirPad-web.py
-
-# Vývoj — s auto-reloadem při změně souborů
-python -m uvicorn NoirPad-web:app --reload --host 127.0.0.1 --port 8000
+pip install -r requirements-dev.txt && python -m pytest -q    # backend
+npm ci && npx vitest run                                       # frontend
 ```
 
-Pak otevři **http://127.0.0.1:8000** v prohlížeči.
+Bezpečnostní chyby: viz [SECURITY.md](SECURITY.md). Změny: [CHANGELOG.md](CHANGELOG.md).
 
-> Server poslouchá jen na `127.0.0.1` (loopback) záměrně — NoirPad je single-user lokální aplikace bez autentizace. Viz [Bezpečnost](#-bezpečnost).
-
-## 📂 Struktura projektu
-
-```
-NoirPad-web/
-├── NoirPad-web.py          # FastAPI backend (jeden soubor)
-├── requirements.txt
-├── notes_data.json         # Tvoje poznámky (vznikne při prvním spuštění)
-├── images/                 # Embedované obrázky (UUID jména)
-└── static/
-    ├── index.html          # Single-page UI
-    ├── css/
-    │   ├── noirpad.css     # Hlavní stylesheet
-    │   └── themes.css      # 17 theme color tokens
-    └── js/                 # 33 frontend modulů
-        ├── app.js          # bootstrap
-        ├── api.js          # HTTP klient
-        ├── editor.js       # rich-text editor
-        ├── markdown.js     # split-pane preview
-        ├── encryption.js   # password prompt UI
-        └── ...             # (dalších 28)
-```
-
-## ⌨️ Klávesové zkratky
-
-| Zkratka | Akce |
-|---|---|
-| `Ctrl+S` | Uložit aktuální poznámku |
-| `Ctrl+F` | Hledat / nahradit v poznámce |
-| `Ctrl+M` | Toggle Markdown mód |
-| `Ctrl+B` | Focus mód (skryje sidebar) |
-| `Ctrl+P` | Export aktuální poznámky do PDF |
-| `Ctrl+Shift+P` | Command palette |
-| `F1` | Otevřít nápovědu |
-| `Escape` | Zavřít dialog / cancel |
-
-Všechny zkratky lze přizpůsobit v **Settings → Keyboard shortcuts**.
-
-## 🔐 Bezpečnost
-
-NoirPad je navržen jako **lokální single-user desktop-style aplikace**:
-
-- Server poslouchá jen na **127.0.0.1** (localhost) — není dostupný z jiných strojů v síti.
-- **Žádná autentizace.** Kdokoli s přístupem ke tvému stroji má přístup k poznámkám.
-- Pro citlivý obsah použij **per-note password encryption** (Lock tlačítko nebo `default_encrypted` nastavení). Šifrované poznámky používají Fernet (AES-128-CBC + HMAC-SHA256) s PBKDF2HMAC odvozením klíče; server tvoje heslo nikdy neukládá.
-- **Co šifrované NENÍ:** šifruje se jen text poznámky. **Název, tagy a obrázky** (soubory ve složce `images/`) zůstávají na disku nešifrované.
-- **Zapomenuté heslo nejde obnovit.** Poznámku už nikdy neotevřeš.
-- Heslo jde do lokálního backendu jen jednou, při zamčení nebo odemčení. Backend drží odvozený klíč jen v paměti a zapomene ho, když poznámku opustíš, při auto-locku nebo při ukončení NoirPadu; na disk se nikdy nezapisuje.
-- Auto-lock lze zapnout — po 5 / 30 / 60 minutách nečinnosti se heslo opět vyžádá.
-- File-level safety: atomické writes přes `.tmp` swap, automatický `.bak` snapshot před každým write, recovery z backupu pokud je data soubor corrupt.
-- Limity uploadu: obrázky 10 MB, backup ZIPy 100 MB. Path-traversal a zip-slip ochrana je aplikována na každý upload.
-
-> Pokud chceš NoirPad vystavit na síti, **musíš** nejdřív přidat autentizaci.
-
-## 🤝 Contributing
-
-Pull requesty jsou vítané. Pro větší změny prosím nejdřív otevři issue a probereme, co bys chtěl změnit.
-
-Při přispívání:
-1. Zachovej no-build, no-bundle filosofii (vanilla JS, single Python soubor).
-2. Drž se existujícího stylu kódu (žádný framework, plain DOM APIs, `window.NP.*` namespacing).
-3. Otestuj na `matrix`, `dracula` a `tokyo-night` tématech — procvičí různé color systémy.
-
-## 📜 Licence
-
-[MIT](LICENSE) © 2025 krystof2-ops
+Licence MIT – viz [LICENSE](LICENSE).

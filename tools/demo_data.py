@@ -30,10 +30,10 @@ Your notes stay **on this PC** — no account, no cloud, no telemetry.
 
 - Folders and tags in the sidebar
 - Markdown with live preview (`Ctrl+M`)
-- Lock a note with a password (`Ctrl+L`)
+- Lock a note with a password (`Ctrl+Shift+L`)
 - 17 themes in Settings
 
-> Tip: `Ctrl+K` opens the command bar.
+> Tip: `Ctrl+Shift+P` opens the command bar, `F1` the help.
 """
 
 MARKDOWN = """# Markdown demo
