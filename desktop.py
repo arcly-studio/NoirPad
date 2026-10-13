@@ -10,6 +10,12 @@ Failures never vanish silently: everything goes to the log file
 (%LOCALAPPDATA%\\NoirPad\\logs\\noirpad.log) and start-up problems — no
 WebView2 runtime, a crash — are shown in a Windows message box with the
 path to that log.
+
+``NoirPad.exe --smoke-test`` (build.ps1) starts everything except the
+window: it imports the modules NoirPad loads by name at run time, starts
+the server, writes its port and token to <data dir>/smoke-test.json and
+runs until that file is deleted (at most SMOKE_MAX_SECONDS). Problems go to
+the log and the exit code, never to a message box.
 """
 
 from __future__ import annotations
@@ -23,6 +29,7 @@ if sys.stdout is None:
 if sys.stderr is None:
     sys.stderr = open(os.devnull, "w")
 
+import importlib
 import json
 import logging
 import secrets
@@ -37,6 +44,7 @@ import uvicorn
 
 from noirpad import config, logs
 from noirpad.__version__ import __version__
+from noirpad.runtime_imports import RUNTIME_IMPORTS, UVICORN_OPTIONS, WINDOWS_IMPORTS
 
 log = logging.getLogger("noirpad.desktop")
 
@@ -53,7 +61,16 @@ APP_MUTEX = "NoirPad-B6F2E7C0-AppMutex"
 WEBVIEW2_GUID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 WEBVIEW2_DOWNLOAD = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"  # Evergreen bootstrapper
 
-MB_OK, MB_YESNO = 0x0, 0x4
+SERVER_START_TIMEOUT = 15.0
+# A second launch right after the first may find no window yet: wait this
+# long for it before saying "already running".
+FOCUS_WAIT_SECONDS = 6.0
+
+SMOKE_FLAG = "--smoke-test"
+SMOKE_FILE = "smoke-test.json"
+SMOKE_MAX_SECONDS = 60.0
+
+MB_OK, MB_YESNO =0x0, 0x4
 MB_ICONERROR, MB_ICONWARNING, MB_ICONINFORMATION = 0x10, 0x30, 0x40
 IDYES = 6
 
@@ -101,7 +118,13 @@ def _language(data_dir: Path) -> str:
     return "en"
 
 
+_headless = False   # --smoke-test: no message boxes, they would block the build
+
+
 def _message_box(text: str, flags: int) -> int:
+    if _headless:
+        log.error("Message box suppressed (--smoke-test): %s", text)
+        return 0
     if sys.platform != "win32":
         print(text, file=sys.stderr)
         return 0
@@ -163,15 +186,32 @@ def _find_app_window() -> int:
 
 
 def _focus_running_instance(lang: str) -> None:
-    """Bring the already-open NoirPad window to front, or explain why not."""
-    if sys.platform == "win32":
-        import ctypes
-        hwnd = _find_app_window()
-        if hwnd:
-            user32 = ctypes.windll.user32
-            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-            user32.SetForegroundWindow(hwnd)
+    """Bring the already-open NoirPad window to front, or explain why not.
+
+    The other NoirPad may have been launched a moment ago and have no
+    window yet, so wait for one. If it exits meanwhile (it failed to start
+    and has told the user why), stay quiet: one error box, not two.
+    """
+    from noirpad import storage
+
+    deadline = time.monotonic() + FOCUS_WAIT_SECONDS
+    while True:
+        if sys.platform == "win32":
+            import ctypes
+            hwnd = _find_app_window()
+            if hwnd:
+                user32 = ctypes.windll.user32
+                user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+                user32.SetForegroundWindow(hwnd)
+                return
+        free = storage.acquire_instance_lock()
+        if free is not None:
+            free.close()
+            log.info("The other NoirPad exited; nothing to focus")
             return
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(0.25)
     _message_box(MESSAGES[lang]["running"], MB_OK | MB_ICONINFORMATION)
 
 
@@ -187,18 +227,27 @@ def _pick_free_port() -> int:
         return s.getsockname()[1]
 
 
-def _wait_for_server(port: int, timeout: float = 10.0) -> bool:
-    """Poll TCP connect until the server accepts, or *timeout* elapses."""
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.settimeout(0.5)
-            try:
-                s.connect(("127.0.0.1", port))
-                return True
-            except (ConnectionRefusedError, OSError):
-                time.sleep(0.1)
-    return False
+def _missing_runtime_imports() -> list[str]:
+    """Modules NoirPad imports by name at run time that can't be imported
+    here (in NoirPad.exe: that the build left out)."""
+    names = RUNTIME_IMPORTS + (WINDOWS_IMPORTS if sys.platform == "win32" else ())
+    missing = []
+    for name in names:
+        try:
+            importlib.import_module(name)
+        except Exception as exc:
+            log.error("Cannot import %s: %r", name, exc)
+            missing.append(name)
+    return missing
+
+
+class _StartupFailed(Exception):
+    """Start-up stopped; main() shows MESSAGES[lang][message] once the data
+    lock is released, opens *url* on "Yes" and exits with *code*."""
+
+    def __init__(self, message: str, flags: int, code: int, url: Optional[str] = None):
+        super().__init__(message)
+        self.message, self.flags, self.code, self.url = message, flags, code, url
 
 
 # ---------------------------------------------------------------------------
@@ -218,6 +267,7 @@ class _ServerHandle:
             access_log=False,    # never log requests (URLs carry note ids)
             workers=1,
             reload=False,
+            **UVICORN_OPTIONS,   # h11, no WebSockets: nothing picked by "auto"
         )
         self.server = uvicorn.Server(config_)
         # Uvicorn installs its own SIGINT/SIGTERM handlers when run on the
@@ -225,11 +275,32 @@ class _ServerHandle:
         # to keep the main thread (pywebview) responsive to Ctrl+C / close.
         self.server.install_signal_handlers = lambda: None
         self.thread = threading.Thread(
-            target=self.server.run, name="noirpad-uvicorn", daemon=True
+            target=self._serve, name="noirpad-uvicorn", daemon=True
         )
+
+    def _serve(self) -> None:
+        try:
+            self.server.run()
+        except SystemExit:      # uvicorn's own start-up errors; it logged why
+            pass
+        except BaseException:
+            log.critical("Local server crashed", exc_info=True)
 
     def start(self) -> None:
         self.thread.start()
+
+    def wait_ready(self, timeout: float) -> bool:
+        """True once uvicorn listens. False as soon as its thread ends
+        (crash, missing module, port taken, failed lifespan) instead of
+        sitting out the timeout, or when *timeout* elapses."""
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if self.server.started:
+                return True
+            if not self.thread.is_alive():
+                return False
+            self.thread.join(0.05)
+        return self.server.started
 
     def stop(self, join_timeout: float = 5.0) -> None:
         self.server.should_exit = True
@@ -241,25 +312,44 @@ class _ServerHandle:
 # ---------------------------------------------------------------------------
 
 
-def _run(data_dir: Path, log_file: Path, lang: str) -> int:
-    from noirpad import app as backend_app, server_auth, storage
+def _run(data_dir: Path, log_file: Path, lang: str, smoke: bool = False) -> int:
+    from noirpad import app as _backend, storage  # noqa: F401  (the import points storage at data_dir)
 
     # One NoirPad per data directory (desktop or web), see D7 in the audit.
     instance_lock = storage.acquire_instance_lock()
     if instance_lock is None:
         log.info("Another NoirPad uses %s; focusing it", data_dir)
+        if smoke:
+            return 3
         _focus_running_instance(lang)
         return 0
     mutex = _hold_app_mutex()
+    # Both are released before main() shows an error box, so a NoirPad
+    # started meanwhile doesn't report "already running" on top of it.
+    try:
+        return _serve(lang, smoke)
+    finally:
+        instance_lock.close()
+        if mutex:
+            import ctypes
+            ctypes.windll.kernel32.CloseHandle(mutex)
+
+
+def _serve(lang: str, smoke: bool) -> int:
+    from noirpad import storage
 
     webview2 = _webview2_version()
     log.info("WebView2 runtime: %s", webview2 or "MISSING")
-    if webview2 is None:
-        answer = _message_box(MESSAGES[lang]["webview2"].format(log=log_file),
-                              MB_YESNO | MB_ICONWARNING)
-        if answer == IDYES:
-            webbrowser.open(WEBVIEW2_DOWNLOAD)
-        return 2
+    if webview2 is None and not smoke:
+        raise _StartupFailed("webview2", MB_YESNO | MB_ICONWARNING, 2, WEBVIEW2_DOWNLOAD)
+
+    if smoke:
+        missing = _missing_runtime_imports()
+        if missing:
+            log.error("Smoke test: modules missing from the build: %s", ", ".join(missing))
+            return 4
+
+    from noirpad import app as backend_app, server_auth
 
     # Random per-launch token: every /api/ request must carry it, so other
     # local processes (or web pages) that find the port can't use the API.
@@ -269,13 +359,43 @@ def _run(data_dir: Path, log_file: Path, lang: str) -> int:
     handle = _ServerHandle(backend_app.app, port)
     handle.start()
 
-    if not _wait_for_server(port, timeout=10.0):
+    if not handle.wait_ready(SERVER_START_TIMEOUT):
+        ended = not handle.thread.is_alive()
         handle.stop()
-        log.error("Backend did not become ready on 127.0.0.1:%d within 10 s", port)
-        _message_box(MESSAGES[lang]["no_server"].format(log=log_file), MB_OK | MB_ICONERROR)
-        return 1
+        log.error("Backend did not start on 127.0.0.1:%d (%s)", port,
+                  "server thread ended" if ended else f"not ready within {SERVER_START_TIMEOUT:.0f} s")
+        raise _StartupFailed("no_server", MB_OK | MB_ICONERROR, 1)
     log.info("Backend ready on 127.0.0.1:%d", port)
 
+    try:
+        if smoke:
+            return _smoke_wait(handle, port, token, storage.DATA_DIR)
+        _show_window(port, token, storage.DATA_DIR)
+    finally:
+        handle.stop()
+    log.info("NoirPad closed")
+    return 0
+
+
+def _smoke_wait(handle: _ServerHandle, port: int, token: str, data_dir: Path) -> int:
+    """Publish port + token for build.ps1 and serve until it deletes the
+    file. Only ever run with a throwaway NOIRPAD_DATA_DIR."""
+    info = data_dir / SMOKE_FILE
+    tmp = info.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"port": port, "token": token, "version": __version__}),
+                   encoding="utf-8")
+    os.replace(tmp, info)
+    deadline = time.monotonic() + SMOKE_MAX_SECONDS
+    while info.exists() and handle.thread.is_alive() and time.monotonic() < deadline:
+        time.sleep(0.1)
+    if not handle.thread.is_alive():
+        log.error("Smoke test: the server stopped on its own")
+        return 1
+    log.info("Smoke test finished")
+    return 0
+
+
+def _show_window(port: int, token: str, data_dir: Path) -> None:
     # The fragment never reaches the server or its logs; api.js reads it
     # and removes it from the address bar.
     window_url = f"http://127.0.0.1:{port}/#token={token}"
@@ -300,32 +420,32 @@ def _run(data_dir: Path, log_file: Path, lang: str) -> int:
     )
     # Persistent WebView2 profile so localStorage (open folders, CRT
     # toggle) survives restarts; it lives next to the notes.
-    storage_path = storage.DATA_DIR / "webview"
+    storage_path = data_dir / "webview"
     storage_path.mkdir(parents=True, exist_ok=True)
-    try:
-        # gui="edgechromium" forces WebView2 on Windows, which is what we
-        # ship for. On other platforms pywebview picks the system default.
-        gui = "edgechromium" if sys.platform == "win32" else None
-        webview.start(gui=gui, private_mode=False, storage_path=str(storage_path))
-    finally:
-        handle.stop()
-        instance_lock.close()
-        if mutex:
-            import ctypes
-            ctypes.windll.kernel32.CloseHandle(mutex)
-    log.info("NoirPad closed")
-    return 0
+    # gui="edgechromium" forces WebView2 on Windows, which is what we
+    # ship for. On other platforms pywebview picks the system default.
+    gui = "edgechromium" if sys.platform == "win32" else None
+    webview.start(gui=gui, private_mode=False, storage_path=str(storage_path))
 
 
-def main() -> int:
+def main(argv: Optional[list[str]] = None) -> int:
+    global _headless
+    smoke = SMOKE_FLAG in (sys.argv[1:] if argv is None else argv)
+    _headless = smoke
     data_dir = config.get_data_dir()
     log_file = logs.setup_logging(data_dir)
     lang = _language(data_dir)
-    log.info("NoirPad %s starting (desktop, %s, Python %s, data dir %s)",
-             __version__, "installed" if config.is_frozen() else "dev",
+    log.info("NoirPad %s starting (desktop%s, %s, Python %s, data dir %s)",
+             __version__, ", smoke test" if smoke else "",
+             "installed" if config.is_frozen() else "dev",
              sys.version.split()[0], data_dir)
     try:
-        return _run(data_dir, log_file, lang)
+        return _run(data_dir, log_file, lang, smoke)
+    except _StartupFailed as failed:
+        answer = _message_box(MESSAGES[lang][failed.message].format(log=log_file), failed.flags)
+        if failed.url and answer == IDYES:
+            webbrowser.open(failed.url)
+        return failed.code
     except Exception as exc:
         log.exception("NoirPad failed to start")
         _message_box(MESSAGES[lang]["crash"].format(error=exc, log=log_file),

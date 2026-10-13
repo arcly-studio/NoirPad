@@ -28,7 +28,11 @@ powershell -ExecutionPolicy Bypass -File build.ps1
 2. creates `.venv` (Python 3.14) if missing and installs `requirements-dev.txt`;
 3. `npm ci`, then `pytest` and `vitest` — any failure stops the build;
 4. PyInstaller with `noirpad.spec` → `dist\NoirPad\NoirPad.exe` (onedir; ~45 MB);
-5. Inno Setup with `installer.iss` → `dist\installer\NoirPad-Setup-<version>.exe` (~19 MB)
+5. smoke test (`tools/smoke_test.ps1`) of that very `dist\NoirPad`: `NoirPad.exe --smoke-test`
+   with a throwaway `NOIRPAD_DATA_DIR` must import every module it loads by name at run time
+   (`noirpad/runtime_imports.py`), answer `GET /api/version` with 200 within 15 s and exit
+   cleanly — otherwise no installer is built;
+6. Inno Setup with `installer.iss` → `dist\installer\NoirPad-Setup-<version>.exe` (~19 MB)
    and `NoirPad-Setup-<version>.exe.sha256`.
 
 Options: `-Python C:\path\to\python.exe` (interpreter for the venv), `-Iscc C:\path\to\ISCC.exe`.
@@ -48,7 +52,8 @@ appears anywhere else.
    `windows-latest` and creates a **draft** release with the installer, its `.sha256` and the
    changelog section. Review it and publish.
 
-`.github/workflows/test.yml` runs pytest + vitest on every push and pull request.
+`.github/workflows/test.yml` runs pytest + vitest and the whole `build.ps1` (incl. the smoke
+test) on every push and pull request.
 
 ## Notes
 

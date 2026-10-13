@@ -34,3 +34,29 @@ jobs:
 
       - name: vitest
         run: npx vitest run
+
+  # The whole Windows build on every push: PyInstaller, smoke test of the
+  # built NoirPad.exe, Inno Setup. A bundle that can't start fails here,
+  # not on a user's machine.
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build (build.ps1, incl. smoke test)
+        shell: pwsh
+        run: ./build.ps1 -Python python

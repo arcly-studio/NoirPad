@@ -8,7 +8,9 @@
       1. .venv with Python 3.14 + pinned requirements-dev.txt
       2. npm ci (vitest) and the full test suite (pytest + vitest)
       3. PyInstaller onedir  → dist\NoirPad\NoirPad.exe
-      4. Inno Setup          → dist\installer\NoirPad-Setup-<version>.exe + .sha256
+      4. Smoke test          → that NoirPad.exe must start and answer /api/version
+                               (tools\smoke_test.ps1); otherwise no installer
+      5. Inno Setup          → dist\installer\NoirPad-Setup-<version>.exe + .sha256
     The version comes from noirpad\__version__.py only.
 
 .EXAMPLE
@@ -73,7 +75,14 @@ Run $py -m PyInstaller --clean --noconfirm --log-level WARN noirpad.spec
 if (-not (Test-Path "dist\NoirPad\NoirPad.exe")) { Fail "dist\NoirPad\NoirPad.exe was not created" }
 Write-Host "dist\NoirPad: $(SizeMB 'dist\NoirPad')"
 
-# ---- 4. Inno Setup ----------------------------------------------------------
+# ---- 4. Smoke test ----------------------------------------------------------
+# On the exact dist\NoirPad that Inno Setup packs next.
+Step "Smoke test (NoirPad.exe --smoke-test)"
+& powershell -NoProfile -ExecutionPolicy Bypass -File tools\smoke_test.ps1 `
+    -Exe "dist\NoirPad\NoirPad.exe" -Version $version
+if ($LASTEXITCODE -ne 0) { Fail "smoke test of dist\NoirPad\NoirPad.exe" }
+
+# ---- 5. Inno Setup ----------------------------------------------------------
 Step "Inno Setup"
 if (-not $Iscc) {
     $cmd = Get-Command ISCC.exe -ErrorAction SilentlyContinue

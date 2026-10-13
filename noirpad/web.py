@@ -10,6 +10,7 @@ def main() -> None:
     from . import storage
     from .app import app
     from .runtime import RUNTIME
+    from .runtime_imports import UVICORN_OPTIONS
 
     host = os.environ.get("NOIRPAD_HOST", "127.0.0.1")
     port = int(os.environ.get("NOIRPAD_PORT", "8000"))
@@ -27,4 +28,4 @@ def main() -> None:
         )
     from .__version__ import __version__
     print(f"NoirPad {__version__} - http://{host}:{port}/  (data: {storage.DATA_DIR})")
-    uvicorn.run(app, host=host, port=port)
+    uvicorn.run(app, host=host, port=port, **UVICORN_OPTIONS)

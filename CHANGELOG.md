@@ -29,3 +29,7 @@ First public release.
 - Unreferenced images are moved to `images/.trash` after 24 h and deleted after 30 days.
 - A log file (`%LOCALAPPDATA%\NoirPad\logs\noirpad.log`) and clear messages instead of silent
   crashes at start-up.
+- The local server uses fixed components (h11, no WebSockets) instead of uvicorn's "auto"
+  detection; if it fails to start, NoirPad says so at once in a single message and exits.
+- Every build is smoke-tested: the packed `NoirPad.exe` must start and answer before an installer
+  is made.

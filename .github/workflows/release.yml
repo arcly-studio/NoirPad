@@ -41,9 +41,17 @@ jobs:
             exit 1
           }
 
-      - name: Build (build.ps1)
+      # build.ps1 smoke-tests dist\NoirPad before Inno Setup packs it and
+      # fails the build if NoirPad.exe doesn't start (tools/smoke_test.ps1).
+      - name: Build (build.ps1, incl. smoke test)
         shell: pwsh
         run: ./build.ps1 -Python python
+
+      - name: Smoke test the packed build again before upload
+        shell: pwsh
+        run: |
+          $version = $env:TAG.TrimStart("v")
+          ./tools/smoke_test.ps1 -Exe dist/NoirPad/NoirPad.exe -Version $version
 
       - name: Release notes from CHANGELOG.md
         shell: pwsh

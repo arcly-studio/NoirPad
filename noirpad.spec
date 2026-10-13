@@ -16,6 +16,7 @@ installer offers it otherwise, and NoirPad.exe explains when it's missing).
 """
 
 import re
+import runpy
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_submodules
@@ -41,14 +42,15 @@ datas = _static_files()
 
 
 # ---- Hidden imports ---------------------------------------------------------
-# uvicorn picks its loop/protocol implementations by name at runtime, and
-# pywebview loads its Windows backend dynamically.
+# uvicorn picks its loop/protocol implementations by name at runtime, anyio
+# its backend, and pywebview loads its Windows backend dynamically. The list
+# lives in noirpad/runtime_imports.py; `NoirPad.exe --smoke-test` (build.ps1)
+# imports all of it from the finished bundle.
+_imports = runpy.run_path(str(ROOT / "noirpad" / "runtime_imports.py"))
 hiddenimports = collect_submodules("uvicorn") + [
-    "webview.platforms.edgechromium",
-    "webview.platforms.winforms",
+    *_imports["RUNTIME_IMPORTS"],
+    *_imports["WINDOWS_IMPORTS"],
     "clr_loader",
-    "multipart",
-    "python_multipart",
 ]
 
 
