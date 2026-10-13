@@ -31,5 +31,7 @@ First public release.
   crashes at start-up.
 - The local server uses fixed components (h11, no WebSockets) instead of uvicorn's "auto"
   detection; if it fails to start, NoirPad says so at once in a single message and exits.
+- An upgrade replaces the whole program folder (`_internal`); files from an older build can no
+  longer be picked up by the new one.
 - Every build is smoke-tested: the packed `NoirPad.exe` must start and answer before an installer
   is made.

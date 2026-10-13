@@ -86,6 +86,13 @@ czech.DeleteData=Smazat i vaše poznámky, zálohy a nastavení?%n%n%1%n%nTo nej
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
+[InstallDelete]
+; An upgrade must not leave the previous build's modules behind: the exe
+; imports whatever is in _internal\, and a stale websockets package from an
+; older build is what broke the first release test install. Only program
+; files live here; notes are in %LOCALAPPDATA%\NoirPad.
+Type: filesandordirs; Name: "{app}\_internal"
+
 [Files]
 ; The bootloader (NoirPad.exe) and _internal\ must stay together.
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs

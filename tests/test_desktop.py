@@ -202,3 +202,12 @@ def test_smoke_test_mode_serves_api_version_and_stops(tmp_path):
     finally:
         if proc.poll() is None:
             proc.kill()
+
+
+def test_installer_removes_the_previous_build_first():
+    r"""Leftover packages from an older build in {app}\_internal shadowed
+    missing modules (stale websockets 16 → "No module named
+    'websockets.legacy'"), so an upgrade starts from an empty _internal."""
+    iss = (ROOT / "installer.iss").read_text(encoding="utf-8")
+    section = iss.split("[InstallDelete]", 1)[1].split("\n[", 1)[0]
+    assert r'Type: filesandordirs; Name: "{app}\_internal"' in section
