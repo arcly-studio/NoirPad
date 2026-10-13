@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Reproducible Windows build of NoirPad: tests → PyInstaller → Inno Setup.
 
@@ -78,8 +78,7 @@ Write-Host "dist\NoirPad: $(SizeMB 'dist\NoirPad')"
 # ---- 4. Smoke test ----------------------------------------------------------
 # On the exact dist\NoirPad that Inno Setup packs next.
 Step "Smoke test (NoirPad.exe --smoke-test)"
-& powershell -NoProfile -ExecutionPolicy Bypass -File tools\smoke_test.ps1 `
-    -Exe "dist\NoirPad\NoirPad.exe" -Version $version
+& "$PSScriptRoot\tools\smoke_test.ps1" -Exe "dist\NoirPad\NoirPad.exe" -Version $version
 if ($LASTEXITCODE -ne 0) { Fail "smoke test of dist\NoirPad\NoirPad.exe" }
 
 # ---- 5. Inno Setup ----------------------------------------------------------

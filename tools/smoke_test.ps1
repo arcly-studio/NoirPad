@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Smoke test of a built NoirPad.exe: it must start its server and answer.
 
