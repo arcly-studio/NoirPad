@@ -10,7 +10,7 @@ UUID_IMG = re.compile(r"^[0-9a-f-]{36}\.(png|jpe?g|gif|webp)$")
 
 JPEG = b"\xff\xd8\xff\xe0\x00\x10JFIF\x00" + b"\x00" * 32
 GIF = b"GIF89a\x01\x00\x01\x00\x00\x00\x00;"
-WEBP = b"RIFF\x1a\x00\x00\x00WEBPVP8 " + b"\x00" * 16
+WEBP = b"RIFF\x18\x00\x00\x00WEBPVP8 " + b"\x00" * 16   # RIFF size = length - 8
 
 
 def upload(client, name, data, ctype="application/octet-stream"):

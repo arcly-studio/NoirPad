@@ -76,9 +76,17 @@ def decrypt_with_key(stored: str, key: bytes) -> str:
 
 
 def is_encrypted_content(content: str) -> bool:
-    """True if *content* is a NoirPad encryption envelope ({"encrypted":true})."""
+    """True if *content* is a NoirPad encryption envelope: {"encrypted": true,
+    "data": base64 of version (1 or 2) + 16-byte salt + payload}. A plain
+    note that merely looks like that JSON is not one (C12)."""
     try:
         obj = json.loads(content)
     except (json.JSONDecodeError, TypeError):
         return False
-    return isinstance(obj, dict) and obj.get("encrypted") is True
+    if not (isinstance(obj, dict) and obj.get("encrypted") is True and isinstance(obj.get("data"), str)):
+        return False
+    try:
+        raw = base64.b64decode(obj["data"], validate=True)
+    except (ValueError, TypeError):
+        return False
+    return len(raw) > 17 and raw[0] in (1, 2)

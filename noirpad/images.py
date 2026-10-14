@@ -44,6 +44,16 @@ def sniff_image(data: bytes) -> Optional[str]:
     return None
 
 
+def image_complete(kind: str, data: bytes) -> bool:
+    """Formats that say where they end: a PNG ends with its IEND chunk, a
+    WebP's RIFF header gives its length. Cut-off uploads are refused (C10)."""
+    if kind == "png":
+        return len(data) >= 45 and data[12:16] == b"IHDR" and b"IEND" in data[-12:]
+    if kind == "webp":
+        return len(data) >= 12 and int.from_bytes(data[4:8], "little") + 8 <= len(data)
+    return True
+
+
 def image_ext_ok(name: str, data: bytes) -> bool:
     """Stored image name + content agree and are an allowed format."""
     if not IMAGE_NAME_RE.match(name):

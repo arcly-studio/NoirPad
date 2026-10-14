@@ -109,8 +109,11 @@ window.NP = window.NP || {};
             var noteId = NP.state && NP.state.currentNoteId;
             if (!noteId) return;
 
+            if (!name) return;
             var tags = NP.tags._getNoteTags();
-            if (tags.indexOf(name) !== -1) return;
+            /* "Work" and "work" are the same tag (C5). */
+            var lower = name.toLowerCase();
+            if (tags.some(function (t) { return String(t).toLowerCase() === lower; })) return;
 
             tags.push(name);
             NP.api.setTags(noteId, tags).then(function () {

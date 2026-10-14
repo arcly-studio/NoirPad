@@ -155,3 +155,48 @@ describe("folder rows (D2 / N8)", () => {
         expect(win.NP.state.selectedId).toBeNull();
     });
 });
+
+describe("drag and drop targets (C3, C4)", () => {
+    const tree = () => [
+        { id: "f1", name: "Work", type: "folder", children: [
+            { id: "sub", name: "Sub", type: "folder", children: [] },
+            { id: "a", name: "A", type: "note" },
+        ] },
+        { id: "f2", name: "Home", type: "folder", children: [] },
+        { id: "n1", name: "N1", type: "note" },
+        { id: "n2", name: "N2", type: "note" },
+    ];
+
+    it("a folder never goes into itself or its own subfolder", () => {
+        setup({ tree: tree() });
+        const pos = win.NP.tree._dropPosition;
+        expect(pos("f1", "sub", "inside")).toBeNull();
+        expect(pos("f1", "sub", "before")).toBeNull();
+        expect(pos("f1", "f1", "inside")).toBeNull();
+        expect(pos("f1", "f2", "inside")).toBe("inside");
+    });
+
+    it("before/after only within the same group; across groups a folder takes it inside", () => {
+        setup({ tree: tree(), favorites: ["n2"] });
+        const pos = win.NP.tree._dropPosition;
+        expect(pos("n1", "a", "after")).toBe("after");          // note next to a note
+        expect(pos("n1", "f2", "before")).toBe("inside");       // note dropped at a folder's edge
+        expect(pos("n1", "n2", "before")).toBeNull();           // plain note before a favorite
+        expect(pos("f2", "sub", "after")).toBe("after");        // folder next to a folder
+        expect(pos("f2", "n1", "before")).toBeNull();           // folder among the notes
+        expect(pos("n1", "a", "inside")).toBeNull();            // nothing goes into a note
+    });
+
+    it("a refused move tells the user", async () => {
+        setup({ tree: tree() });
+        win.NP.api.move = vi.fn(() => Promise.reject(new Error("A folder cannot be moved into itself.")));
+        win.NP.dialog.failed = vi.fn();
+        const target = win.document.querySelector('.tree-item[data-id="f2"]');
+        target.setAttribute("data-drop-pos", "inside");
+        const ev = new win.Event("drop", { bubbles: true, cancelable: true });
+        ev.dataTransfer = { getData: () => "f1" };
+        target.dispatchEvent(ev);
+        await new Promise((r) => setTimeout(r, 0));
+        expect(win.NP.dialog.failed).toHaveBeenCalledTimes(1);
+    });
+});

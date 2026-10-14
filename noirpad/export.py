@@ -158,7 +158,8 @@ def build_html_zip(data: dict) -> bytes:
             kind = item.get("type")
             name = item.get("name") or "untitled"
             if kind == "folder":
-                visit(item.get("children") or [], path_parts + [safe_filename(name)], zf)
+                folder = names.take("/".join(path_parts), safe_filename(name), "")   # "a", "a (2)" (C11)
+                visit(item.get("children") or [], path_parts + [folder], zf)
                 continue
             if kind != "note":
                 continue

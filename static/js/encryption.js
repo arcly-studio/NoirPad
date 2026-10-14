@@ -257,13 +257,7 @@ window.NP = window.NP || {};
             var content = NP.state.data.notes[noteId];
             if (!content || typeof content !== "string") return false;
 
-            /* Encrypted notes are stored as JSON with salt and data fields */
-            try {
-                var parsed = JSON.parse(content);
-                return !!(parsed && parsed.encrypted && parsed.data);
-            } catch (e) {
-                return false;
-            }
+            return NP.isEncryptedEnvelope(content);
         }
     };
 

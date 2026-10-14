@@ -18,12 +18,15 @@ window.NP = window.NP || {};
        among the folders. Each group keeps the user's own order (drag and
        drop). Only items of this level are reordered, so a favorite stays
        in its folder and never jumps above the folders. */
-    function sortItems(items) {
+    /* 0 favorite folders, 1 folders, 2 favorite notes, 3 notes. */
+    function groupOf(item) {
         var favs = (NP.state.data && NP.state.data.favorites) || [];
-        function group(item) {
-            var fav = favs.indexOf(item.id) !== -1 ? 0 : 1;
-            return (item.type === "folder" ? 0 : 2) + fav;
-        }
+        var fav = favs.indexOf(item.id) !== -1 ? 0 : 1;
+        return (item.type === "folder" ? 0 : 2) + fav;
+    }
+
+    function sortItems(items) {
+        var group = groupOf;
         return items.map(function (item, i) { return { item: item, i: i }; })
             .sort(function (a, b) { return group(a.item) - group(b.item) || a.i - b.i; })
             .map(function (entry) { return entry.item; });
@@ -549,6 +552,23 @@ window.NP = window.NP || {};
             }
         },
 
+        /* Where a dragged item may land on *targetId*: the wanted
+           "before" / "after" / "inside", another one that makes sense, or
+           null. A folder never goes into itself or its own subfolder (C3);
+           before/after only within the same display group – folders,
+           favorite notes, other notes – or the move would look like it did
+           nothing (C4). */
+        _dropPosition: function (sourceId, targetId, wanted) {
+            var tree = (NP.state.data && NP.state.data.tree) || [];
+            var source = findItemById(tree, sourceId);
+            var target = findItemById(tree, targetId);
+            if (!source || !target || sourceId === targetId) return null;
+            if (source.type === "folder" && findItemById(source.children || [], targetId)) return null;
+            if (wanted === "inside") return target.type === "folder" ? "inside" : null;
+            if (groupOf(source) === groupOf(target)) return wanted;
+            return target.type === "folder" ? "inside" : null;
+        },
+
         _setupDragDrop: function () {
             var container = NP.$("#tree-container");
             if (!container) return;
@@ -603,12 +623,18 @@ window.NP = window.NP || {};
                         var h = rect.height;
                         var targetId = el.getAttribute("data-id");
                         var isFolder = el.classList.contains("tree-item--folder");
+                        var wanted = (isFolder && y > h * 0.25 && y < h * 0.75) ? "inside"
+                            : (y <= h * 0.5 ? "before" : "after");
+                        var pos = NP.tree._dropPosition(dragId, targetId, wanted);
 
-                        if (isFolder && y > h * 0.25 && y < h * 0.75) {
+                        if (!pos) {
+                            e.dataTransfer.dropEffect = "none";
+                            el.removeAttribute("data-drop-pos");
+                        } else if (pos === "inside") {
                             /* Drop inside folder */
                             el.classList.add("tree-item--drop-target");
                             el.setAttribute("data-drop-pos", "inside");
-                        } else if (y <= h * 0.5) {
+                        } else if (pos === "before") {
                             /* Drop before */
                             dropIndicator = createIndicator();
                             el.style.position = "relative";
@@ -637,15 +663,16 @@ window.NP = window.NP || {};
 
                         var sourceId = e.dataTransfer.getData("text/plain");
                         var targetId = el.getAttribute("data-id");
-                        var position = el.getAttribute("data-drop-pos") || "after";
+                        var position = el.getAttribute("data-drop-pos");
                         el.removeAttribute("data-drop-pos");
 
-                        if (sourceId && targetId && sourceId !== targetId) {
+                        if (sourceId && targetId && position &&
+                                NP.tree._dropPosition(sourceId, targetId, position)) {
                             NP.api.move(sourceId, targetId, position).then(function () {
                                 return NP.state.init();
                             }).then(function () {
                                 NP.tree.render();
-                            });
+                            }).catch(NP.dialog.failed);   /* never silent (C3) */
                         }
                     });
                 })(items[i]);

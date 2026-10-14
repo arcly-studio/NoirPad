@@ -2,12 +2,13 @@
 
 from typing import Annotated, Any, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 from .config import MAX_FORMATS, MAX_NAME_LEN, MAX_NOTE_CHARS, MAX_TAG_LEN, MAX_TAGS
 from .crypto import MAX_NOTE_PASSWORD
 
-Name = Annotated[str, Field(max_length=MAX_NAME_LEN)]
+# Trimmed; never empty (C6). The UI checks too, this is the backstop.
+Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_NAME_LEN)]
 NoteText = Annotated[str, Field(max_length=MAX_NOTE_CHARS)]
 Formats = Annotated[list[Any], Field(max_length=MAX_FORMATS)]
 NotePassword = Annotated[str, Field(max_length=MAX_NOTE_PASSWORD)]
@@ -26,7 +27,7 @@ class RenameReq(BaseModel):
 class MoveReq(BaseModel):
     id: str
     target_id: str
-    position: str  # "before" | "after" | "inside"
+    position: Literal["before", "after", "inside"]
 
 
 class IdReq(BaseModel):

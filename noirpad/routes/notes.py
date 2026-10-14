@@ -99,9 +99,22 @@ async def list_tags():
             tags.update(item.get("tags", []))
             _walk(item.get("children") or [])
 
+    # Only notes in use: tags of trashed items are not offered (C5).
+
     _walk(data.get("tree") or [])
-    _walk(data.get("trash", {}).get("tree") or [])
     return {"tags": sorted(tags)}
+
+
+def clean_tags(tags: list[str]) -> list[str]:
+    """Trimmed, no empty ones, no duplicates ignoring case (first wins) (C5)."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for tag in tags:
+        tag = tag.strip()
+        if tag and tag.casefold() not in seen:
+            seen.add(tag.casefold())
+            out.append(tag)
+    return out
 
 
 @router.put("/api/tags/{item_id}")
@@ -110,7 +123,7 @@ async def set_tags(item_id: str, body: TagsBody):
         item = find_item_by_id(data["tree"], item_id)
         if item is None:
             raise ApiError(404, "item_not_found")
-        item["tags"] = body.tags
+        item["tags"] = clean_tags(body.tags)
 
     update_data(_mut)
     return {"ok": True}

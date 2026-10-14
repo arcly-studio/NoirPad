@@ -72,7 +72,9 @@
     "note_is_encrypted": "This note is locked. Unlock it first; it is only saved encrypted.",
     "backup_image_too_large": "The backup contains an image that is too large ({name}). Nothing was changed.",
     "backup_write_failed": "The backup's images could not be saved ({error}). Nothing was changed.",
-    "not_desktop": "This works only in the desktop app."
+    "not_desktop": "This works only in the desktop app.",
+    "image_incomplete": "The image file is incomplete (cut off). Try saving it again.",
+    "image_write_failed": "The image could not be saved ({error})."
   },
   "notice": {
     "data_restored": "Your notes file was damaged. It was kept as {file} and the latest good backup ({when}) was restored. Changes made after that backup may be missing.",

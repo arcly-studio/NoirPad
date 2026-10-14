@@ -23,13 +23,7 @@ window.NP = window.NP || {};
     }
 
     function isEncrypted(content) {
-        if (typeof content !== "string") return false;
-        try {
-            var obj = JSON.parse(content);
-            return !!(obj && obj.encrypted && obj.data);
-        } catch (e) {
-            return false;
-        }
+        return NP.isEncryptedEnvelope(content);
     }
 
     function makeSnippet(content, idx, queryLen) {

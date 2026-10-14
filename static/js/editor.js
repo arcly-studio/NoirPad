@@ -238,13 +238,7 @@ window.NP = window.NP || {};
                 }
 
                 /* Check if note is encrypted */
-                var isEncrypted = false;
-                try {
-                    var parsed = JSON.parse(content);
-                    if (parsed && parsed.encrypted && parsed.data) {
-                        isEncrypted = true;
-                    }
-                } catch (e) { /* not JSON, not encrypted */ }
+                var isEncrypted = NP.isEncryptedEnvelope(content);
 
                 NP.editor._currentNoteEncrypted = isEncrypted;
 

@@ -40,6 +40,19 @@ window.NP = window.NP || {};
        values (quotes included). Prefer textContent / setAttribute when
        building DOM directly. */
     var HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+    /* A NoirPad encryption envelope {"encrypted": true, "data": base64},
+       as crypto.py is_encrypted_content (C12). */
+    NP.isEncryptedEnvelope = function (content) {
+        if (typeof content !== "string" || content.charAt(0) !== "{") return false;
+        try {
+            var obj = JSON.parse(content);
+            return !!(obj && obj.encrypted === true && typeof obj.data === "string" &&
+                /^[A-Za-z0-9+\/]{24,}={0,2}$/.test(obj.data));
+        } catch (e) {
+            return false;
+        }
+    };
+
     /* Full screen (F11, :fullscreen). The desktop app switches the real
        window (pywebview, via /api/desktop/fullscreen); a browser uses the
        Fullscreen API (D13). */
