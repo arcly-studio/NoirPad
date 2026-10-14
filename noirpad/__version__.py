@@ -8,4 +8,4 @@ PyInstaller version resource, the Inno Setup installer (build.ps1 passes
 __version__ = "1.0.0"
 
 # Project page — one constant if the repository is ever renamed.
-PROJECT_URL = "https://github.com/krystof2-ops/NoirPad-web"
+PROJECT_URL = "https://github.com/krystof2-ops/NoirPad"

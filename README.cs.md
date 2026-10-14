@@ -6,8 +6,8 @@
 
 Poznámková aplikace pro Windows v terminálovém stylu – s Markdownem, poznámkami zamčenými heslem a 17 motivy.
 
-[![Release](https://img.shields.io/github/v/release/krystof2-ops/NoirPad-web?include_prereleases)](https://github.com/krystof2-ops/NoirPad-web/releases)
-[![Tests](https://github.com/krystof2-ops/NoirPad-web/actions/workflows/test.yml/badge.svg)](https://github.com/krystof2-ops/NoirPad-web/actions/workflows/test.yml)
+[![Release](https://img.shields.io/github/v/release/krystof2-ops/NoirPad?include_prereleases)](https://github.com/krystof2-ops/NoirPad/releases)
+[![Tests](https://github.com/krystof2-ops/NoirPad/actions/workflows/test.yml/badge.svg)](https://github.com/krystof2-ops/NoirPad/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ![NoirPad s poznámkou v Markdownu](docs/screenshots/markdown.png)
@@ -38,7 +38,7 @@ aplikace. Ven vedou jen odkazy, na které sami kliknete.
 
 ## Stažení
 
-Stáhněte **`NoirPad-Setup-<verze>.exe`** z **[Releases](https://github.com/krystof2-ops/NoirPad-web/releases)**.
+Stáhněte **`NoirPad-Setup-<verze>.exe`** z **[Releases](https://github.com/krystof2-ops/NoirPad/releases)**.
 Instaluje se jen pro vašeho uživatele (bez práv správce) do `%LOCALAPPDATA%\Programs\NoirPad`.
 
 NoirPad potřebuje **Microsoft Edge WebView2 Runtime**. Windows 11 ho mají; na starších systémech
@@ -105,8 +105,8 @@ dokud ho neodemknete), ale `notes_data.json` zůstává čitelný pro každého,
 NoirPad běží i jako malý webový server, třeba na domácím serveru. Potřebujete Python 3.14.
 
 ```bash
-git clone https://github.com/krystof2-ops/NoirPad-web.git
-cd NoirPad-web
+git clone https://github.com/krystof2-ops/NoirPad.git
+cd NoirPad
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt        # Windows: .venv\Scripts\pip
 NOIRPAD_PASSWORD='dlouhá přístupová fráze' \

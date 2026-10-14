@@ -17,7 +17,7 @@
   #error Pass /DAppVersion=x.y.z (build.ps1 does this from noirpad\__version__.py)
 #endif
 #ifndef AppURL
-  #define AppURL "https://github.com/krystof2-ops/NoirPad-web"
+  #define AppURL "https://github.com/krystof2-ops/NoirPad"
 #endif
 
 #define AppName       "NoirPad"

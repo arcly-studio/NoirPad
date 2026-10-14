@@ -6,8 +6,8 @@
 
 A terminal-styled note app for Windows with Markdown, password-locked notes and 17 themes.
 
-[![Release](https://img.shields.io/github/v/release/krystof2-ops/NoirPad-web?include_prereleases)](https://github.com/krystof2-ops/NoirPad-web/releases)
-[![Tests](https://github.com/krystof2-ops/NoirPad-web/actions/workflows/test.yml/badge.svg)](https://github.com/krystof2-ops/NoirPad-web/actions/workflows/test.yml)
+[![Release](https://img.shields.io/github/v/release/krystof2-ops/NoirPad?include_prereleases)](https://github.com/krystof2-ops/NoirPad/releases)
+[![Tests](https://github.com/krystof2-ops/NoirPad/actions/workflows/test.yml/badge.svg)](https://github.com/krystof2-ops/NoirPad/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ![NoirPad with a Markdown note](docs/screenshots/markdown.png)
@@ -39,7 +39,7 @@ bundled. The only links that leave the app are the ones you click.
 
 ## Download
 
-Get **`NoirPad-Setup-<version>.exe`** from **[Releases](https://github.com/krystof2-ops/NoirPad-web/releases)**.
+Get **`NoirPad-Setup-<version>.exe`** from **[Releases](https://github.com/krystof2-ops/NoirPad/releases)**.
 It installs for your user only (no admin rights) into `%LOCALAPPDATA%\Programs\NoirPad`.
 
 NoirPad needs the Microsoft Edge **WebView2 Runtime**. Windows 11 has it; on older systems the
@@ -106,8 +106,8 @@ and start NoirPad. Your notes are untouched.
 NoirPad also runs as a small web server, e.g. on a home server. You need Python 3.14.
 
 ```bash
-git clone https://github.com/krystof2-ops/NoirPad-web.git
-cd NoirPad-web
+git clone https://github.com/krystof2-ops/NoirPad.git
+cd NoirPad
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt        # Windows: .venv\Scripts\pip
 NOIRPAD_PASSWORD='a long passphrase' \

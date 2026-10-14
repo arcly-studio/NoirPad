@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please **do not open a public issue** for security problems. Report them privately via
-[GitHub Security Advisories](https://github.com/krystof2-ops/NoirPad-web/security/advisories/new).
+[GitHub Security Advisories](https://github.com/krystof2-ops/NoirPad/security/advisories/new).
 Include the NoirPad version (Settings → About), how you run it (installed app / web), steps to
 reproduce and the impact you see. Never include real notes or passwords.
 
