@@ -232,12 +232,21 @@ def test_installer_mutex_stays_held_until_the_process_ends(desk, np_backend, mon
     ctypes.windll.kernel32.CloseHandle(handle)
 
 
+class _Handlers(list):
+    """Stand-in for a pywebview event: supports `+=`."""
+
+    def __iadd__(self, fn):
+        self.append(fn)
+        return self
+
+
 def test_webview_profile_lives_in_the_data_dir(tmp_path, monkeypatch):
     """B8: nothing NoirPad writes at run time may land in the install dir."""
     calls = {}
     fake = types.SimpleNamespace(
         settings={},
-        create_window=lambda *a, **kw: None,
+        create_window=lambda *a, **kw: types.SimpleNamespace(
+            events=types.SimpleNamespace(closing=_Handlers())),
         start=lambda **kw: calls.update(kw),
     )
     monkeypatch.setitem(sys.modules, "webview", fake)
@@ -280,3 +289,37 @@ def test_installer_refuses_a_foreign_non_empty_folder():
     assert "function UnsafeInstallDir(const Dir: String): Boolean;" in code
     assert "(CurPageID = wpSelectDir) and UnsafeInstallDir(WizardDirValue())" in code
     assert "if UnsafeInstallDir(ExpandConstant('{app}')) then" in code     # silent /DIR= too
+
+
+def test_k5_closing_the_window_saves_first():
+    """K5: the first close request is cancelled, the page saves the open
+    note (no 64 kB keepalive limit), then the window closes for real."""
+    calls = []
+
+    class Handlers(list):
+        def __iadd__(self, fn):
+            self.append(fn)
+            return self
+
+    class FakeWindow:
+        def __init__(self):
+            self.events = types.SimpleNamespace(closing=Handlers())
+
+        def evaluate_js(self, script, callback=None):
+            calls.append(script)
+            callback("saved")
+
+        def destroy(self):
+            calls.append("destroy")
+            # destroy() fires `closing` again; this time it must go through
+            assert all(h() is not False for h in self.events.closing)
+
+    win = FakeWindow()
+    desktop._save_before_close(win)
+    [handler] = win.events.closing
+    assert handler() is False                       # first close: cancelled
+    deadline = time.time() + 5
+    while "destroy" not in calls and time.time() < deadline:
+        time.sleep(0.02)
+    assert "flushForClose()" in calls[0]
+    assert calls[-1] == "destroy"

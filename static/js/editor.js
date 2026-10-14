@@ -79,6 +79,13 @@ window.NP = window.NP || {};
                 NP.editor.updateCharCount();
             }, 300));
 
+            /* Save shortly after typing stops, like the Markdown textarea
+               below. The unload flush (keepalive) cannot carry more than
+               64 kB, so a long note must not wait for it (K5). */
+            NP.editor.el.addEventListener("input", NP.debounce(function () {
+                NP.editor.save(true);
+            }, 1000));
+
             /* Glitch typing — fires CSS RGB-shift on rapid input */
             NP.editor.el.addEventListener("input", function () {
                 if (NP.effects && NP.effects.onEditorInput) NP.effects.onEditorInput();
@@ -166,6 +173,13 @@ window.NP = window.NP || {};
                        nothing to do either way. */
                 });
             } catch (e) { /* unload — nothing we can do */ }
+        },
+
+        /* Desktop app: desktop.py calls this when the window is closed and
+           waits for it, so even a note above the 64 kB keepalive limit is
+           stored (K5). Resolves when the save is done (or not needed). */
+        flushForClose: function () {
+            return NP.editor.save(true).then(function () { return "saved"; });
         },
 
         /* ---- Note loading ---- */

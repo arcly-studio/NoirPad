@@ -62,6 +62,8 @@ WEBVIEW2_GUID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 WEBVIEW2_DOWNLOAD = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"  # Evergreen bootstrapper
 
 SERVER_START_TIMEOUT = 15.0
+# Closing the window: how long the page may take to save the open note.
+CLOSE_SAVE_TIMEOUT = 5.0
 # A second launch right after the first may find no window yet: wait this
 # long for it before saying "already running".
 FOCUS_WAIT_SECONDS = 6.0
@@ -430,6 +432,7 @@ def _show_window(port: int, token: str, data_dir: Path) -> None:
     )
     from noirpad.runtime import RUNTIME
     RUNTIME.save_dialog = lambda name: _ask_save_path(window, name)
+    _save_before_close(window)
     # Persistent WebView2 profile so localStorage (open folders, CRT
     # toggle) survives restarts; it lives next to the notes.
     storage_path = data_dir / "webview"
@@ -438,6 +441,45 @@ def _show_window(port: int, token: str, data_dir: Path) -> None:
     # ship for. On other platforms pywebview picks the system default.
     gui = "edgechromium" if sys.platform == "win32" else None
     webview.start(gui=gui, private_mode=False, storage_path=str(storage_path))
+
+
+def _save_before_close(window) -> None:
+    """K5: the page's own unload flush is a keepalive request, which may
+    carry at most 64 kB, so a long note typed into just before closing was
+    lost. The first close request is cancelled, the page saves the open
+    note (NP.editor.flushForClose), then the window really closes. A page
+    that does not answer within CLOSE_SAVE_TIMEOUT never blocks closing."""
+    state = {"started": False, "closing": False}
+
+    def flush_then_close() -> None:
+        done = threading.Event()
+
+        def ask_page() -> None:
+            try:
+                window.evaluate_js(
+                    "(window.NP && NP.editor && NP.editor.flushForClose)"
+                    " ? NP.editor.flushForClose() : Promise.resolve(null)",
+                    lambda _result: done.set())
+            except Exception:
+                log.exception("Saving before close failed")
+                done.set()
+
+        threading.Thread(target=ask_page, name="noirpad-close-save", daemon=True).start()
+        if not done.wait(CLOSE_SAVE_TIMEOUT):
+            log.warning("The page did not finish saving within %.0f s; closing anyway",
+                        CLOSE_SAVE_TIMEOUT)
+        state["closing"] = True
+        window.destroy()
+
+    def on_closing():
+        if state["closing"]:
+            return True
+        if not state["started"]:
+            state["started"] = True
+            threading.Thread(target=flush_then_close, name="noirpad-close", daemon=True).start()
+        return False
+
+    window.events.closing += on_closing
 
 
 _last_save_dir: Optional[str] = None

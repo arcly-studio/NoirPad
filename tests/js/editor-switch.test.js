@@ -64,3 +64,22 @@ describe("switching notes (K1)", () => {
         expect(saved).toEqual([["A", "edited A"]]);
     });
 });
+
+describe("long notes are saved before the window closes (K5)", () => {
+    it("typing in a rich-text note is saved shortly after the typing stops", async () => {
+        await open("A", "short");
+        win.NP.editor.el.textContent = "x".repeat(100000);   // far above keepalive's 64 kB
+        win.NP.editor.el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 1600));        // well before the 30 s net
+        expect(saved.length).toBe(1);
+        expect(saved[0][0]).toBe("A");
+        expect(saved[0][1].length).toBe(100000);
+    });
+
+    it("flushForClose saves the open note and resolves when it is stored", async () => {
+        await open("A", "text of A");
+        win.NP.editor.el.textContent = "y".repeat(90000);
+        await win.NP.editor.flushForClose();
+        expect(saved).toEqual([["A", "y".repeat(90000)]]);
+    });
+});
