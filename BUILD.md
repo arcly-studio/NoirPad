@@ -61,6 +61,10 @@ test) on every push and pull request.
   `%LOCALAPPDATA%\NoirPad`. For testing, set `NOIRPAD_DATA_DIR` to a scratch folder so real notes
   are never touched. `tools/demo_data.py <dir>` fills a folder with demo notes;
   `tools/take_screenshots.py` regenerates `docs/screenshots/` from them (needs `pip install playwright`).
+- **Logo:** the sources are `docs/brand/noirpad-icon.svg` (and `noirpad-icon-small.svg` for
+  ≤ 24 px) with the raster export `docs/brand/noirpad-1024.png`. `noirpad.ico` (exe, window,
+  installer), `static/favicon.ico`, `static/img/` and `docs/logo.png` are exported from them;
+  `tools/make_wizard_images.ps1` regenerates the installer's `installer/wizard-small-*.bmp`.
 - **Console:** the exe is windowed (no console). Diagnostics go to
   `%LOCALAPPDATA%\NoirPad\logs\noirpad.log`; start-up failures also show a message box.
 - **Code signing:** builds are not signed, so SmartScreen warns on first run (see README).

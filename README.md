@@ -1,5 +1,7 @@
 **English** | [Čeština](README.cs.md)
 
+<p align="center"><img src="docs/logo.png" width="128" height="128" alt="NoirPad logo"></p>
+
 # NoirPad
 
 A terminal-styled note app for Windows with Markdown, password-locked notes and 17 themes.

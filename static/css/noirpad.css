@@ -3743,6 +3743,16 @@ body.editor-md-active #editor { display: none; }
     overflow-wrap: break-word !important;
 }
 
+/* The logo icon above the name (N4). */
+.welcome-icon {
+    display: block;
+    width: clamp(64px, 14vw, 112px);
+    height: auto;
+    margin: 0 auto clamp(10px, 2vw, 18px);
+    animation: welcome-fade-in 0.8s ease-out;
+    -webkit-user-drag: none;
+}
+
 .welcome-sub {
     font-size: clamp(11px, 3.5vw, 13px) !important;
     letter-spacing: clamp(2px, 1.2vw, 6px) !important;
@@ -3901,6 +3911,13 @@ body.auth-active #matrix-canvas {
             color-mix(in srgb, var(--accent) 30%, transparent),
         0 0 calc(var(--glow-core) * var(--glow-multiplier))
             color-mix(in srgb, var(--accent) 22%, transparent) inset;
+}
+
+.auth-logo {
+    display: block;
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 14px;
 }
 
 .auth-ascii {
@@ -4091,6 +4108,26 @@ body.auth-active #matrix-canvas {
         padding: 22px 18px 18px;
     }
     .auth-ascii { font-size: 8px; }
+}
+
+/* ---- About: logo (index.html, Settings) ---- */
+.about-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 6px 0 10px;
+}
+.about-logo {
+    width: 64px;
+    height: 64px;
+    flex: none;
+}
+.about-name {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--fg-bright);
+    letter-spacing: 1px;
 }
 
 /* ---- Trash in the sidebar (tree.js) ---- */

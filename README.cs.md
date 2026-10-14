@@ -1,5 +1,7 @@
 [English](README.md) | **Čeština**
 
+<p align="center"><img src="docs/logo.png" width="128" height="128" alt="Logo NoirPadu"></p>
+
 # NoirPad
 
 Poznámková aplikace pro Windows v terminálovém stylu – s Markdownem, poznámkami zamčenými heslem a 17 motivy.

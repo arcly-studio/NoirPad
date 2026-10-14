@@ -347,7 +347,8 @@ window.NP = window.NP || {};
 
             html += "<div class='welcome-wrap'>";
 
-            /* Logo */
+            /* Logo: the icon above the name */
+            html += "<img class='welcome-icon' src='/static/img/noirpad-icon.svg' alt=''>";
             html += "<h1 class='welcome-logo'>NoirPad</h1>";
 
             /* Decorative divider */

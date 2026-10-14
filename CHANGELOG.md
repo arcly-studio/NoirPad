@@ -70,3 +70,7 @@ First public release.
   ("Save as PDF").
 - Because uninstalling removes the whole install folder, Setup refuses an existing folder that
   already holds other files (empty folders and earlier NoirPad installs are fine).
+- New logo (a dark page with a blue `>_` prompt) everywhere: the app and installer icon, the
+  installer wizard, the browser tab (favicon, SVG icon, Apple touch icon, web manifest), the
+  welcome screen, Settings → About, the password page of the self-hosted version and the README.
+  The sources are in `docs/brand/`.

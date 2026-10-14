@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="/static/favicon.ico">
+    <link rel="icon" href="/static/favicon.ico" sizes="16x16 32x32">
+    <link rel="icon" href="/static/img/noirpad-icon-small.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#070708">
     <title>NoirPad</title>
     <link rel="stylesheet" href="/static/vendor/fonts/fonts.css">
     <link rel="stylesheet" href="/static/css/themes.css?v=2.1.31">
@@ -454,6 +458,11 @@
 
             <hr class="settings-divider">
             <div class="settings-section-title" data-i18n="ui.settings.section.about">About</div>
+
+            <div class="about-brand">
+                <img class="about-logo" src="/static/img/noirpad-icon.svg" width="64" height="64" alt="">
+                <span class="about-name" translate="no">NoirPad</span>
+            </div>
 
             <div class="settings-row">
                 <span class="settings-label" data-i18n="ui.settings.version">Version</span>
