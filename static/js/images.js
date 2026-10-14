@@ -19,6 +19,18 @@ window.NP = window.NP || {};
        rich-text contenteditable (visible in non-MD mode); #md-preview
        is the rendered HTML pane (visible in MD mode). The hidden one
        just never fires events, so attaching to both is safe. */
+    /* The <img> at/above *node* if it is a picture in the note's content,
+       else null. Only those open the viewer or zoom with Ctrl+wheel: the
+       welcome screen is rendered into #editor too, and logos and other UI
+       images (.np-decorative) must never react. */
+    function noteImage(node, host) {
+        var img = node && node.closest ? node.closest("img") : null;
+        if (!img || !host.contains(img)) return null;
+        if (img.classList.contains("np-decorative") || img.closest(".welcome-wrap")) return null;
+        if (host.id === "md-preview" && !img.classList.contains("md-image")) return null;
+        return img;
+    }
+
     function imageHostElements() {
         var out = [];
         var ed = document.getElementById("editor");
@@ -283,13 +295,8 @@ window.NP = window.NP || {};
                    it Chrome ignores the call and zooms the whole page. */
                 host.addEventListener("wheel", function (e) {
                     if (!e.ctrlKey && !e.metaKey) return;
-                    var target = e.target;
-                    /* Walk up in case the target is a child of the <img>
-                       (shouldn't happen with our markup, but cheap to be safe). */
-                    while (target && target !== host && target.tagName !== "IMG") {
-                        target = target.parentElement;
-                    }
-                    if (!target || target.tagName !== "IMG") return;
+                    var target = noteImage(e.target, host);
+                    if (!target) return;
 
                     e.preventDefault();
                     e.stopPropagation();
@@ -318,6 +325,8 @@ window.NP = window.NP || {};
             });
         },
 
+        isNoteImage: function (img, host) { return noteImage(img, host) === img; },
+
         _setupClick: function () {
             imageHostElements().forEach(function (host) {
                 host.addEventListener("click", NP.images._onHostClick);
@@ -330,9 +339,10 @@ window.NP = window.NP || {};
                handled globally by links.js. */
             if (e.ctrlKey || e.metaKey || e.shiftKey) return;
 
-            if (e.target && e.target.tagName === "IMG") {
+            var img = noteImage(e.target, e.currentTarget);
+            if (img) {
                 e.preventDefault();
-                NP.images._openViewer(e.target.src);
+                NP.images._openViewer(img.src);
             }
         },
 

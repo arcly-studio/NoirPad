@@ -67,7 +67,7 @@ def test_ui_shows_the_svg_logo():
     logo = "/static/img/noirpad-icon.svg"
     assert logo in (STATIC / "js" / "editor.js").read_text(encoding="utf-8")       # welcome screen
     assert logo in (STATIC / "js" / "auth.js").read_text(encoding="utf-8")         # login / app lock
-    assert 'class="about-logo" src="' + logo in (STATIC / "index.html").read_text(encoding="utf-8")
+    assert 'class="about-logo np-decorative" src="' + logo in (STATIC / "index.html").read_text(encoding="utf-8")
 
 
 def test_brand_sources_and_readme_logo():

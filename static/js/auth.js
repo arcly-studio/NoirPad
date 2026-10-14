@@ -35,8 +35,9 @@ window.NP = window.NP || {};
 
         overlay = el("div", { id: "auth-overlay", class: "auth-overlay" }, [
             el("div", { class: "auth-window" }, [
-                el("img", { class: "auth-logo", src: "/static/img/noirpad-icon.svg",
-                            width: "72", height: "72", alt: "" }),
+                el("img", { class: "auth-logo np-decorative", src: "/static/img/noirpad-icon.svg",
+                            width: "64", height: "64", alt: "", draggable: "false",
+                            "aria-hidden": "true" }),
                 el("pre", { id: "auth-ascii", class: "auth-ascii", text:
 " _   _       _      ____           _\n" +
 "| \\ | | ___ (_)_ __|  _ \\ __ _  __| |\n" +

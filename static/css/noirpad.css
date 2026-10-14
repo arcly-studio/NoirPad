@@ -616,8 +616,9 @@ body.orientation-portrait #editor {
     max-width: min(900px, 90%);
 }
 
-/* Inline images: zoom-in cursor hints that Ctrl+wheel resizes them. */
-#editor img {
+/* Inline images: zoom-in cursor hints that Ctrl+wheel resizes them.
+   Pictures in the note only — not the welcome screen's logo (.np-decorative). */
+#editor img:not(.np-decorative) {
     display: block;
     max-width: 100%;
     height: auto;
@@ -626,7 +627,7 @@ body.orientation-portrait #editor {
     cursor: zoom-in;
 }
 
-#editor img:hover {
+#editor img:not(.np-decorative):hover {
     outline: 1px solid var(--accent);
     outline-offset: 2px;
 }
@@ -3355,8 +3356,8 @@ body.editor-md-active #editor { display: none; }
     }
 
     /* ===== 6) IMAGES — never crop across pages ===== */
-    #editor img,
-    #md-preview img {
+    #editor img:not(.np-decorative),
+    #md-preview img.md-image {
         max-width: 100% !important;
         height: auto !important;
         page-break-inside: avoid !important;
@@ -3743,14 +3744,28 @@ body.editor-md-active #editor { display: none; }
     overflow-wrap: break-word !important;
 }
 
+/* Logos and other UI pictures: not content, nothing to click, drag,
+   select or highlight — in every theme. */
+img.np-decorative {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    filter: none !important;
+    border-radius: 0 !important;
+    background: none !important;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    cursor: default;
+}
+
 /* The logo icon above the name (N4). */
 .welcome-icon {
     display: block;
-    width: clamp(64px, 14vw, 112px);
+    width: clamp(56px, 6vw, 88px);
     height: auto;
-    margin: 0 auto clamp(10px, 2vw, 18px);
+    margin: 0 auto 16px;
     animation: welcome-fade-in 0.8s ease-out;
-    -webkit-user-drag: none;
 }
 
 .welcome-sub {
@@ -3915,8 +3930,8 @@ body.auth-active #matrix-canvas {
 
 .auth-logo {
     display: block;
-    width: 72px;
-    height: 72px;
+    width: 64px;
+    height: 64px;
     margin: 0 auto 14px;
 }
 

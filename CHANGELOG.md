@@ -74,3 +74,5 @@ First public release.
   installer wizard, the browser tab (favicon, SVG icon, Apple touch icon, web manifest), the
   welcome screen, Settings → About, the password page of the self-hosted version and the README.
   The sources are in `docs/brand/`.
+- The image viewer, Ctrl+wheel resizing and the picture styles apply only to pictures in a note;
+  the logo and other interface images cannot be clicked, dragged or highlighted.
