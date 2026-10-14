@@ -4,7 +4,7 @@ from fastapi import APIRouter
 
 from ..crypto import is_encrypted_content
 from ..errors import ApiError
-from ..images import delete_images, extract_image_names
+from ..images import delete_images, extract_image_names, referenced_images
 from ..models import IdReq, NoteBody, TagsBody
 from ..storage import read_data, update_data
 from ..tree import (collect_note_ids, find_item_by_id, find_parent_list, note_exists,
@@ -117,18 +117,19 @@ def _purge(data: dict, trash: dict, note_ids) -> None:
     """Drop trashed notes for good, with their images.
 
     Images come from the tracked map (encrypted notes) + a regex over the
-    plaintext content.
+    plaintext content. An image another note (active or still in the
+    trash) also shows is kept (K4).
     """
     note_images: dict = data.get("note_images", {})
-    to_delete: set[str] = set()
+    candidates: set[str] = set()
     for nid in note_ids:
-        to_delete.update(note_images.get(nid, []))
-        to_delete.update(extract_image_names(trash.get("notes", {}).get(nid)))
-    delete_images(to_delete)
+        candidates.update(note_images.get(nid, []))
+        candidates.update(extract_image_names(trash.get("notes", {}).get(nid)))
     for nid in note_ids:
         trash.get("notes", {}).pop(nid, None)
         trash.get("note_formats", {}).pop(nid, None)
         note_images.pop(nid, None)
+    delete_images(candidates - referenced_images(data))
 
 
 @router.get("/api/trash")

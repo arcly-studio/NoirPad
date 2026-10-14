@@ -86,3 +86,25 @@ def test_k5_legacy_html_file_not_served(client, np_backend):
     (np_backend.IMAGES_DIR / "payload.html").write_text("<script>alert(1)</script>")
     r = client.get("/images/payload.html")
     assert r.status_code in (403, 404, 415)
+
+
+# K4: purging a note must not delete an image another note still shows.
+@pytest.mark.parametrize("purge", ["empty", "delete"])
+def test_k4_purge_keeps_images_used_elsewhere(client, purge):
+    from conftest import new_note
+    shared = upload(client, "a.png", make_png(), "image/png").json()["filename"]
+    own = upload(client, "b.png", make_png(3, 3), "image/png").json()["filename"]
+    a = new_note(client, name="A", content=f"x <<IMG:{shared}>> <<IMG:{own}>>")
+    b = new_note(client, name="B", content=f"y <<IMG:{shared}>>")
+    keep_trashed = new_note(client, name="C", content=f"z <<IMG:{own}>>")
+    client.post("/api/tree/delete", json={"id": a})
+    if purge == "empty":
+        client.post("/api/tree/delete", json={"id": keep_trashed})
+        client.post("/api/trash/empty")
+        assert client.get(f"/images/{shared}").status_code == 200     # B still uses it
+        assert client.get(f"/images/{own}").status_code == 404        # nobody left
+    else:
+        client.post("/api/trash/delete", json={"id": a})
+        assert client.get(f"/images/{shared}").status_code == 200
+        assert client.get(f"/images/{own}").status_code == 200        # C uses it
+    assert client.get(f"/api/note/{b}").json()["content"] == f"y <<IMG:{shared}>>"
