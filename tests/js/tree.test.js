@@ -77,3 +77,51 @@ describe("trash (N1)", () => {
         expect(calls).toEqual([["empty"]]);
     });
 });
+
+describe("favorites stay in their folder (N2)", () => {
+    const tree = () => [
+        { id: "n1", name: "Root note 1", type: "note" },
+        { id: "f1", name: "Work", type: "folder", children: [
+            { id: "a", name: "A", type: "note" },
+            { id: "sub", name: "Sub", type: "folder", children: [{ id: "s1", name: "Deep", type: "note" }] },
+            { id: "b", name: "B", type: "note" },
+            { id: "c", name: "C", type: "note" },
+        ] },
+        { id: "n2", name: "Root note 2", type: "note" },
+        { id: "f2", name: "Home", type: "folder", children: [] },
+    ];
+
+    it("without favorites: folders, then notes, each in the user's order", () => {
+        setup({ tree: tree() });
+        expect(rows()).toEqual(["Work", "Sub", "Deep", "A", "B", "C", "Home", "Root note 1", "Root note 2"]);
+    });
+
+    it("a favorite note is pinned at the top of its own folder's notes, below the subfolders", () => {
+        setup({ tree: tree(), favorites: ["c"] });
+        expect(rows()).toEqual(["Work", "Sub", "Deep", "C", "A", "B", "Home", "Root note 1", "Root note 2"]);
+        const c = win.document.querySelector('[data-id="c"]');
+        const a = win.document.querySelector('[data-id="a"]');
+        expect(c.style.paddingLeft).toBe(a.style.paddingLeft);     // same depth as its siblings
+        expect(c.textContent).toContain("★");
+    });
+
+    it("at the root too, and never above the folders", () => {
+        setup({ tree: tree(), favorites: ["n2"] });
+        expect(rows()).toEqual(["Work", "Sub", "Deep", "A", "B", "C", "Home", "Root note 2", "Root note 1"]);
+    });
+
+    it("favorites are neither duplicated nor lost, also in a closed folder", () => {
+        setup({ tree: tree(), favorites: ["c", "s1", "n2", "f2"] }, { f1: false });
+        expect(rows()).toEqual(["Home", "Work", "Root note 2", "Root note 1"]);  // favorite folder first
+        setup({ tree: tree(), favorites: ["c", "s1", "n2", "f2"] });
+        const ids = [...win.document.querySelectorAll(".tree-item[data-id]")].map((el) => el.dataset.id);
+        expect(ids.sort()).toEqual(["a", "b", "c", "f1", "f2", "n1", "n2", "s1", "sub"]);
+    });
+
+    it("the stored tree order is not changed", () => {
+        const data = tree();
+        setup({ tree: data, favorites: ["c", "n2"] });
+        expect(data[1].children.map((i) => i.id)).toEqual(["a", "sub", "b", "c"]);
+        expect(data.map((i) => i.id)).toEqual(["n1", "f1", "n2", "f2"]);
+    });
+});

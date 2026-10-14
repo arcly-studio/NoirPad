@@ -56,3 +56,6 @@ First public release.
 - Trash in the sidebar: Restore (↩) and Delete permanently (×) are real buttons with a 32×32 px
   target, a tooltip and a screen-reader label; delete is red and asks first. The trash header
   has an "Empty trash" button (also with a confirmation).
+- Favorites stay in their folder: inside every folder (and at the top level) the sidebar shows
+  subfolders first, then favorite notes, then the other notes, each group in your own order. A
+  favorite note no longer jumps above the folders. Favorite folders come first among folders.

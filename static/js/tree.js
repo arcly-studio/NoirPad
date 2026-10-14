@@ -13,16 +13,20 @@ window.NP = window.NP || {};
         contextMenu = null;
     }
 
+    /* Display order of one folder's items (or the root's): subfolders,
+       then favorite notes, then the other notes; favorite folders first
+       among the folders. Each group keeps the user's own order (drag and
+       drop). Only items of this level are reordered, so a favorite stays
+       in its folder and never jumps above the folders. */
     function sortItems(items) {
         var favs = (NP.state.data && NP.state.data.favorites) || [];
-        var sorted = items.slice();
-        sorted.sort(function (a, b) {
-            var aFav = favs.indexOf(a.id) !== -1 ? 0 : 1;
-            var bFav = favs.indexOf(b.id) !== -1 ? 0 : 1;
-            if (aFav !== bFav) return aFav - bFav;
-            return 0;
-        });
-        return sorted;
+        function group(item) {
+            var fav = favs.indexOf(item.id) !== -1 ? 0 : 1;
+            return (item.type === "folder" ? 0 : 2) + fav;
+        }
+        return items.map(function (item, i) { return { item: item, i: i }; })
+            .sort(function (a, b) { return group(a.item) - group(b.item) || a.i - b.i; })
+            .map(function (entry) { return entry.item; });
     }
 
     function findItemById(tree, id) {
