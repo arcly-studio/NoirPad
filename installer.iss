@@ -52,11 +52,15 @@ LicenseFile=LICENSE
 
 ; Per-user install only — no elevation, no "install for all users" dialog.
 PrivilegesRequired=lowest
+; Always %LOCALAPPDATA%\Programs\NoirPad: no folder page, and an earlier
+; install elsewhere is not reused. Uninstalling removes the whole folder,
+; so it must never be one the user picked for other things too.
 DefaultDirName={localappdata}\Programs\{#AppName}
+DisableDirPage=yes
+UsePreviousAppDir=no
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 AllowNoIcons=yes
-UsePreviousAppDir=yes
 
 ; A running NoirPad is detected (mutex) and closed via Restart Manager.
 AppMutex={#AppMutexName}
@@ -121,8 +125,8 @@ Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; F
 
 [UninstallDelete]
 ; Everything in the install dir, including files added after installing.
-; Only program files live here (AppendDefaultDirName keeps a browsed-to
-; folder from being used as {app} itself); notes are in %LOCALAPPDATA%\NoirPad.
+; Only program files live here (the folder is fixed, see DisableDirPage);
+; notes are in %LOCALAPPDATA%\NoirPad.
 Type: filesandordirs; Name: "{app}"
 
 [Code]
@@ -191,12 +195,6 @@ var
   Code: Integer;
 begin
   Result := True;
-  if (CurPageID = wpSelectDir) and UnsafeInstallDir(WizardDirValue()) then
-  begin
-    MsgBox(FmtMessage(CustomMessage('DirNotEmpty'), [WizardDirValue()]), mbError, MB_OK);
-    Result := False;
-    exit;
-  end;
   if (CurPageID <> wpReady) or not WantWebView2 then
     exit;
   DownloadPage.Clear;

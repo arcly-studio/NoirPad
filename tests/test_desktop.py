@@ -283,12 +283,19 @@ def test_installer_closes_noirpad_processes_first():
 
 
 def test_installer_refuses_a_foreign_non_empty_folder():
-    """Review of B8: [UninstallDelete] {app} must never wipe a folder the user
-    typed in that already holds other files."""
+    """Review of B8: [UninstallDelete] {app} must never wipe a folder that
+    already holds other files (only reachable with /DIR= now)."""
     code = _installer_section("Code")
     assert "function UnsafeInstallDir(const Dir: String): Boolean;" in code
-    assert "(CurPageID = wpSelectDir) and UnsafeInstallDir(WizardDirValue())" in code
-    assert "if UnsafeInstallDir(ExpandConstant('{app}')) then" in code     # silent /DIR= too
+    assert "if UnsafeInstallDir(ExpandConstant('{app}')) then" in code
+
+
+def test_installer_always_uses_the_fixed_folder():
+    """Manual test point 9: no folder page, always %LOCALAPPDATA%/Programs/NoirPad."""
+    setup = _installer_section("Setup")
+    assert r"DefaultDirName={localappdata}\Programs\{#AppName}" in setup
+    assert "DisableDirPage=yes" in setup
+    assert "UsePreviousAppDir=no" in setup
 
 
 def test_k5_closing_the_window_saves_first():
