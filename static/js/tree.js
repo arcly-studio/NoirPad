@@ -317,7 +317,7 @@ window.NP = window.NP || {};
                         }).then(function () {
                             NP.tree.render();
                         });
-                    });
+                    }).catch(NP.dialog.failed);
                 });
             }
 
@@ -485,7 +485,7 @@ window.NP = window.NP || {};
                 }).then(function () {
                     NP.tree.render();
                 });
-            });
+            }).catch(NP.dialog.failed);
         },
 
         _handleContextAction: function (action, id, type) {
@@ -502,7 +502,7 @@ window.NP = window.NP || {};
                         }).then(function () {
                             NP.tree.render();
                         });
-                    });
+                    }).catch(NP.dialog.failed);
                     break;
 
                 case "new-folder":
@@ -517,7 +517,7 @@ window.NP = window.NP || {};
                         }).then(function () {
                             NP.tree.render();
                         });
-                    });
+                    }).catch(NP.dialog.failed);
                     break;
 
                 case "rename":
@@ -535,7 +535,7 @@ window.NP = window.NP || {};
                             NP.tree.render();
                             if (NP.tabs) NP.tabs.render();
                         });
-                    });
+                    }).catch(NP.dialog.failed);
                     break;
 
                 case "delete":
@@ -547,7 +547,7 @@ window.NP = window.NP || {};
                         return NP.state.init();
                     }).then(function () {
                         NP.tree.render();
-                    });
+                    }).catch(NP.dialog.failed);
                     break;
             }
         },

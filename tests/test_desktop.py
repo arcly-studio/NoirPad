@@ -264,8 +264,19 @@ def test_installer_closes_noirpad_processes_first():
     assert "function InitializeUninstall(): Boolean;" in code
     assert "Result := CloseAppProcesses(UninstallSilent());" in code
     assert "function PrepareToInstall(" in code
-    # Only processes started from {app} or using NoirPad's WebView2 profile.
+    # Only NoirPad.exe started from {app} is ever closed; WebView2 is only waited for.
     assert "StartsWithText(VarText(Item.ExecutablePath), AppDir)" in code
-    assert "'msedgewebview2.exe'" in code
+    assert "KillProcesses(AppProcessIds()" in code
+    assert "KillProcesses(MatchingProcessIds(True)" not in code
     # The data folder is deleted only after the user said Yes.
-    assert "MB_YESNO or MB_DEFBUTTON2) = IDYES then\n    DelTree(DataDir()" in code
+    yes = code.index("MB_YESNO or MB_DEFBUTTON2) = IDYES then")
+    assert code.index("DelTree(DataDir()") > yes
+
+
+def test_installer_refuses_a_foreign_non_empty_folder():
+    """Review of B8: [UninstallDelete] {app} must never wipe a folder the user
+    typed in that already holds other files."""
+    code = _installer_section("Code")
+    assert "function UnsafeInstallDir(const Dir: String): Boolean;" in code
+    assert "(CurPageID = wpSelectDir) and UnsafeInstallDir(WizardDirValue())" in code
+    assert "if UnsafeInstallDir(ExpandConstant('{app}')) then" in code     # silent /DIR= too

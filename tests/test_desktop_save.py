@@ -102,6 +102,18 @@ def test_reveal_is_not_available_in_web_mode(client, monkeypatch, tmp_path):
     assert client.post("/api/desktop/reveal", json={"token": "t"}).status_code == 404
 
 
+def test_a_failing_dialog_is_reported_not_a_bare_500(desk):
+    c, _, _, _ = desk
+
+    def boom(name):
+        raise RuntimeError("window is closing")
+
+    RUNTIME.save_dialog = boom
+    r = c.get("/api/backup", headers=SAVE)
+    assert r.status_code == 500
+    assert r.json()["detail"] == {"code": "save_failed", "params": {"error": "window is closing"}}
+
+
 def test_filename_from_content_disposition():
     assert desktop_save.filename_from(
         "attachment; filename=\"N_kup.txt\"; filename*=UTF-8''N%C3%A1kup.txt") == "Nákup.txt"

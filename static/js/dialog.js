@@ -29,6 +29,7 @@ window.NP = window.NP || {};
     var BAD_NAME_CHARS = /[\\\/:*?"<>|\u0000-\u001f]/;
 
     var stack = [];   /* open dialogs, topmost last */
+    var opened = 0;   /* for unique element ids */
 
     function el(tag, className, text) {
         var node = document.createElement(tag);
@@ -58,7 +59,7 @@ window.NP = window.NP || {};
             var box = el("form", "dialog-box");
             box.setAttribute("novalidate", "");
             var title = el("div", "dialog-title", opts.title || "NoirPad");  // i18n-ignore (brand)
-            title.id = "np-dialog-title-" + stack.length;
+            title.id = "np-dialog-title-" + (++opened);
             overlay.setAttribute("aria-labelledby", title.id);
             box.appendChild(title);
             if (message) box.appendChild(el("div", "dialog-message np-dialog-message", message));  // i18n-ignore (CSS classes)
@@ -214,6 +215,10 @@ window.NP = window.NP || {};
             return open("prompt", message, opts);
         },
         validateName: validateName,
+        /* .catch(NP.dialog.failed) for API calls behind a button. */
+        failed: function (err) {
+            return open("alert", err && err.message ? err.message : String(err));
+        },
         isOpen: function () { return stack.length > 0; }
     };
 

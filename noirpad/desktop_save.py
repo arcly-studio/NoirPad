@@ -17,6 +17,7 @@ import os
 import re
 import secrets
 import subprocess
+import threading
 from pathlib import Path
 from typing import Optional
 from urllib.parse import unquote
@@ -31,6 +32,7 @@ log = logging.getLogger("noirpad")
 
 SAVE_HEADER = "x-noirpad-save-as"
 MAX_REMEMBERED = 50          # tokens for "Open folder" kept per run
+_dialog_lock = threading.Lock()   # one "Save as" at a time (double click on Export)
 
 
 def wants_native_save(request: Request) -> bool:
@@ -66,6 +68,17 @@ def _remember(path: Path) -> str:
     return token
 
 
+def _ask(filename: str) -> Optional[str]:
+    with _dialog_lock:
+        return RUNTIME.save_dialog(filename)
+
+
+def _failed(error: str) -> JSONResponse:
+    """Same body shape as errors.ApiError."""
+    return JSONResponse({"detail": {"code": "save_failed", "params": {"error": error}}},
+                        status_code=500)
+
+
 async def save_response(response: Response) -> Response:
     """Turn a finished download response into a saved file + JSON."""
     disposition = response.headers.get("content-disposition", "")
@@ -76,7 +89,11 @@ async def save_response(response: Response) -> Response:
     # The page still needs X-NoirPad-Skipped & co.
     extra = {k: v for k, v in response.headers.items() if k.lower().startswith("x-noirpad-")}
 
-    chosen = await run_in_threadpool(RUNTIME.save_dialog, filename_from(disposition) or "noirpad")
+    try:
+        chosen = await run_in_threadpool(_ask, filename_from(disposition) or "noirpad")
+    except Exception as exc:   # pywebview / window closing: never a bare 500
+        log.exception("The Save dialog failed")
+        return _failed(str(exc))
     if not chosen:
         return JSONResponse({"saved": False}, headers=extra)
     path = Path(chosen)
@@ -84,8 +101,7 @@ async def save_response(response: Response) -> Response:
         await run_in_threadpool(_write, path, body)
     except OSError as exc:
         log.error("Saving an export failed: %s", exc)
-        return JSONResponse({"detail": {"code": "save_failed", "params": {"error": exc.strerror or str(exc)}}},
-                            status_code=500)
+        return _failed(exc.strerror or str(exc))
     log.info("Export saved (%d bytes)", len(body))   # never the path: it can name the user
     return JSONResponse({"saved": True, "name": path.name, "token": _remember(path)}, headers=extra)
 

@@ -272,7 +272,7 @@ window.NP = window.NP || {};
                         }).then(function () {
                             NP.tree.render();
                         });
-                    });
+                    }).catch(NP.dialog.failed);
                 });
             }
 
@@ -334,7 +334,7 @@ window.NP = window.NP || {};
                                 }
                             });
                         });
-                    });
+                    }).catch(NP.dialog.failed);
                 });
             }
 
@@ -366,7 +366,7 @@ window.NP = window.NP || {};
                             NP.tree.render();
                             if (NP.tabs) NP.tabs.render();
                         });
-                    });
+                    }).catch(NP.dialog.failed);
                 });
             }
 

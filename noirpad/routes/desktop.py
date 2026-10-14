@@ -16,5 +16,8 @@ def reveal_saved_file(req: SavedFileReq):
     path = desktop_save.saved_file(req.token) if RUNTIME.mode == "desktop" else None
     if path is None:
         raise ApiError(404, "file_not_found")
-    desktop_save.reveal(path)
+    try:
+        desktop_save.reveal(path)
+    except OSError as exc:
+        raise ApiError(500, "open_folder_failed", error=exc.strerror or str(exc))
     return {"ok": True}

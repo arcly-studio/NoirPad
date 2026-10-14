@@ -75,7 +75,8 @@
     "backup_not_image": "Záloha obsahuje soubor, který není obrázek: {name}",
     "import_unsupported_file": "Importovat jde jen soubory .md a archivy .zip.",
     "save_failed": "Soubor se nepodařilo uložit: {error}",
-    "file_not_found": "Soubor už neexistuje."
+    "file_not_found": "Soubor už neexistuje.",
+    "open_folder_failed": "Složku se nepodařilo otevřít: {error}"
   },
   "notice": {
     "data_restored": "Soubor s poznámkami byl poškozený. Zůstal uložený jako {file} a obnovila se poslední dobrá záloha ({when}). Změny provedené po této záloze mohou chybět.",

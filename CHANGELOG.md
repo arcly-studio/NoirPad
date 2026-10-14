@@ -64,3 +64,5 @@ First public release.
   with an "Open folder" button. Edge's "Downloads" panel no longer appears; Cancel does nothing.
   The web/self-hosted version still downloads through the browser. PDF stays in the print dialog
   ("Save as PDF").
+- Because uninstalling removes the whole install folder, Setup refuses an existing folder that
+  already holds other files (empty folders and earlier NoirPad installs are fine).

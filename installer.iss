@@ -86,6 +86,8 @@ english.WebView2Missing=NoirPad needs the Microsoft Edge WebView2 Runtime, which
 czech.WebView2Missing=NoirPad potřebuje Microsoft Edge WebView2 Runtime, který na tomto počítači není nainstalovaný.%n%nStáhnout ho teď od Microsoftu a nainstalovat?%n(Když zvolíte Ne, NoirPad vám to připomene při spuštění.)
 english.WebView2Failed=WebView2 could not be installed automatically (%1).%n%nThe download page will open in your browser.
 czech.WebView2Failed=WebView2 se nepodařilo nainstalovat automaticky (%1).%n%nV prohlížeči se otevře stránka ke stažení.
+english.DirNotEmpty=The folder %1 already contains other files.%n%nUninstalling NoirPad removes its whole folder, so please choose an empty folder or a new one (for example ...\NoirPad).
+czech.DirNotEmpty=Složka %1 už obsahuje jiné soubory.%n%nOdinstalace NoirPadu maže celou jeho složku, proto zvolte prázdnou nebo novou složku (například ...\NoirPad).
 english.AppStillRunning=NoirPad is still running and cannot be removed while it is open.%n%nClose it now? Unsaved changes in an open note may be lost.
 czech.AppStillRunning=NoirPad pořád běží a nejde odebrat, dokud je otevřený.%n%nZavřít ho teď? Neuložené změny v otevřené poznámce se mohou ztratit.
 english.DeleteData=Also delete your notes, backups and settings?%n%n%1%n%nThis cannot be undone. Choose No to keep them (recommended if you plan to reinstall).
@@ -155,12 +157,42 @@ begin
   ShellExec('open', '{#WebView2Url}', '', '', SW_SHOWNORMAL, ewNoWait, Code);
 end;
 
+// [UninstallDelete] removes the whole install dir, so it must hold nothing
+// but NoirPad: an existing folder is accepted only when it is empty or
+// already has NoirPad.exe in it (upgrade / reinstall).
+function UnsafeInstallDir(const Dir: String): Boolean;
+var
+  Rec: TFindRec;
+begin
+  Result := False;
+  if not DirExists(Dir) or FileExists(AddBackslash(Dir) + '{#AppExeName}') then
+    exit;
+  if FindFirst(AddBackslash(Dir) + '*', Rec) then
+  try
+    repeat
+      if (Rec.Name <> '.') and (Rec.Name <> '..') then
+      begin
+        Result := True;
+        exit;
+      end;
+    until not FindNext(Rec);
+  finally
+    FindClose(Rec);
+  end;
+end;
+
 { Evergreen bootstrapper from Microsoft, run per-user and silently. }
 function NextButtonClick(CurPageID: Integer): Boolean;
 var
   Code: Integer;
 begin
   Result := True;
+  if (CurPageID = wpSelectDir) and UnsafeInstallDir(WizardDirValue()) then
+  begin
+    MsgBox(FmtMessage(CustomMessage('DirNotEmpty'), [WizardDirValue()]), mbError, MB_OK);
+    Result := False;
+    exit;
+  end;
   if (CurPageID <> wpReady) or not WantWebView2 then
     exit;
   DownloadPage.Clear;
@@ -186,11 +218,13 @@ begin
 end;
 
 // ---- Processes that lock the install dir ----------------------------------
-// NoirPad.exe (or anything else) started from the install dir, plus the
-// WebView2 processes of NoirPad's profile (--user-data-dir inside the data
-// folder). NoirPad holds AppMutex until its process is gone, so Setup and
-// Uninstall already wait for an open NoirPad; this is the fallback for a
-// process that is still shutting down or hangs. Nothing else is closed.
+// NoirPad.exe started from the install dir. NoirPad holds AppMutex until its
+// process is gone, so Setup and Uninstall already wait for an open NoirPad;
+// this is the fallback for one that is still shutting down or hangs. Only
+// those processes are ever closed. NoirPad's WebView2 processes (profile in
+// the data folder) lock no program files; they are only waited for before
+// the data folder is deleted. If WMI fails, nothing counts as running and
+// Setup/Uninstall go on as they did before this check existed.
 
 function StartsWithText(const S, Prefix: String): Boolean;
 begin
@@ -209,9 +243,9 @@ end;
 var
   Wmi: Variant;
 
-{ Space-separated PIDs, '' when none. The uninstaller itself (unins000.exe
-  in the install dir) is not NoirPad and never matches. }
-function AppProcessIds(): String;
+{ Space-separated PIDs, '' when none: NoirPad.exe from the install dir, or
+  (WebViewProfile) the msedgewebview2.exe processes using NoirPad's profile. }
+function MatchingProcessIds(WebViewProfile: Boolean): String;
 var
   Locator, Items, Item: Variant;
   AppDir, Profile: String;
@@ -226,20 +260,30 @@ begin
       Locator := CreateOleObject('WbemScripting.SWbemLocator');
       Wmi := Locator.ConnectServer('.', 'root\CIMV2');
     end;
-    Items := Wmi.ExecQuery('SELECT ProcessId, Name, ExecutablePath, CommandLine FROM Win32_Process ' +
-                           'WHERE Name = ''{#AppExeName}'' OR Name = ''msedgewebview2.exe''');
+    if WebViewProfile then
+      Items := Wmi.ExecQuery('SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name = ''msedgewebview2.exe''')
+    else
+      Items := Wmi.ExecQuery('SELECT ProcessId, ExecutablePath FROM Win32_Process WHERE Name = ''{#AppExeName}''');
     for I := 0 to Items.Count - 1 do
     begin
       Item := Items.ItemIndex(I);
-      if StartsWithText(VarText(Item.ExecutablePath), AppDir) or
-         ((CompareText(VarText(Item.Name), 'msedgewebview2.exe') = 0) and
-          (Pos(Profile, Lowercase(VarText(Item.CommandLine))) > 0)) then
+      if WebViewProfile then
+      begin
+        if Pos(Profile, Lowercase(VarText(Item.CommandLine))) > 0 then
+          Result := Result + ' ' + IntToStr(Item.ProcessId);
+      end
+      else if StartsWithText(VarText(Item.ExecutablePath), AppDir) then
         Result := Result + ' ' + IntToStr(Item.ProcessId);
     end;
   except
     Log('Listing processes failed: ' + GetExceptionMessage);
   end;
   Result := Trim(Result);
+end;
+
+function AppProcessIds(): String;
+begin
+  Result := MatchingProcessIds(False);
 end;
 
 function GetTickCount: DWORD; external 'GetTickCount@kernel32.dll stdcall';
@@ -283,7 +327,7 @@ end;
 function CloseAppProcesses(Silent: Boolean): Boolean;
 begin
   Result := True;
-  if WaitForAppExit(10) then
+  if WaitForAppExit(5) then
     exit;
   Log('Still running from the install dir: ' + AppProcessIds());
   if not Silent and
@@ -305,7 +349,9 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := '';
-  if not CloseAppProcesses(WizardSilent()) then
+  if UnsafeInstallDir(ExpandConstant('{app}')) then
+    Result := FmtMessage(CustomMessage('DirNotEmpty'), [ExpandConstant('{app}')])
+  else if not CloseAppProcesses(WizardSilent()) then
     Result := SetupMessage(msgSetupAppRunningError);
 end;
 
@@ -333,6 +379,8 @@ end;
 
 { Ask (default: No) whether the notes in %LOCALAPPDATA%\NoirPad go too. }
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  I: Integer;
 begin
   if (CurUninstallStep <> usPostUninstall) or UninstallSilent() then
     exit;
@@ -340,5 +388,13 @@ begin
     exit;
   if MsgBox(FmtMessage(CustomMessage('DeleteData'), [DataDir()]), mbConfirmation,
             MB_YESNO or MB_DEFBUTTON2) = IDYES then
+  begin
+    // WebView2 may still be closing NoirPad's profile; never kill it, wait.
+    for I := 1 to 20 do
+      if MatchingProcessIds(True) = '' then
+        break
+      else
+        Sleep(250);
     DelTree(DataDir(), True, True, True);
+  end;
 end;
