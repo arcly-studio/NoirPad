@@ -95,9 +95,10 @@ window.NP = window.NP || {};
             dropdown.style.display = "none";
             return;
         }
+        var folded = NP.searchFold(val);   /* Czech descriptions match without diacritics */
         var matches = COMMANDS.filter(function (c) {
             return c.cmd.indexOf(val) !== -1 ||
-                NP.t(c.desc).toLowerCase().indexOf(val) !== -1;
+                NP.searchFold(NP.t(c.desc)).indexOf(folded) !== -1;
         });
         /* Also check theme names */
         if (NP.THEMES) {

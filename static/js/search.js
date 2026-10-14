@@ -194,12 +194,12 @@ window.NP = window.NP || {};
             var editor = getEditor();
             if (!editor) return;
 
-            var lowerQuery = query.toLowerCase();
+            var lowerQuery = NP.searchFold(query);   /* "cestina" finds "Čeština" */
             var marks = [];
 
             walkText(editor, function (textNode) {
                 var text = textNode.textContent;
-                var lower = text.toLowerCase();
+                var lower = NP.searchFold(text);
                 var idx = lower.indexOf(lowerQuery);
                 if (idx === -1) return;
 

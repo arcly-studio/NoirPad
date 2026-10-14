@@ -52,14 +52,14 @@ window.NP = window.NP || {};
             if (!query || !NP.state || !NP.state.data) return results;
             var notes = NP.state.data.notes || {};
             var tree = NP.state.data.tree || [];
-            var lq = query.toLowerCase();
+            var lq = NP.searchFold(query);   /* case and diacritics don't matter */
 
             for (var noteId in notes) {
                 if (!Object.prototype.hasOwnProperty.call(notes, noteId)) continue;
                 var content = notes[noteId];
                 if (!content || isEncrypted(content)) continue;
 
-                var lc = content.toLowerCase();
+                var lc = NP.searchFold(content);
                 var hitsInNote = 0;
                 var pos = 0;
                 while (true) {

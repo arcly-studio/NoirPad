@@ -40,6 +40,26 @@ window.NP = window.NP || {};
        values (quotes included). Prefer textContent / setAttribute when
        building DOM directly. */
     var HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+    /* Text for searching: lower case, no diacritics ("Čeština" → "cestina"),
+       folded one UTF-16 unit at a time, so every index in the result is
+       the same index in the original (for highlighting) (D10). */
+    var foldCache = {};
+    NP.searchFold = function (str) {
+        var out = "";
+        for (var i = 0; i < str.length; i++) {
+            var c = str.charAt(i);
+            var f = foldCache[c];
+            if (f === undefined) {
+                f = c;
+                try { f = c.normalize("NFD").charAt(0); } catch (e) { /* lone surrogate */ }
+                f = f.toLowerCase().charAt(0) || c;
+                foldCache[c] = f;
+            }
+            out += f;
+        }
+        return out;
+    };
+
     NP.escapeHtml = function (str) {
         return String(str == null ? "" : str).replace(/[&<>"']/g, function (c) {
             return HTML_ESCAPES[c];
