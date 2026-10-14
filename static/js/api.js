@@ -283,13 +283,15 @@ window.NP = window.NP || {};
             });
         },
 
-        saveEncrypted: function (id, unlockToken, content, formats) {
-            return request("POST", "/api/save-encrypted", {
+        saveEncrypted: function (id, unlockToken, content, formats, opts) {
+            var body = {
                 id: id,
                 unlock_token: unlockToken,
                 content: content,
                 formats: formats || []
-            });
+            };
+            if (opts && opts.mode !== undefined) body.mode = opts.mode;
+            return request("POST", "/api/save-encrypted", body);
         },
 
         lock: function (unlockToken) {

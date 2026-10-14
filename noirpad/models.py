@@ -92,6 +92,7 @@ class SaveEncryptedReq(BaseModel):
     content: NoteText
     formats: Formats = []
     lock_after: bool = False   # leaving the page: save, then forget the key
+    mode: Optional[str] = None # like NoteBody.mode (Ctrl+M on an unlocked note)
 
 
 class AppLockReq(BaseModel):

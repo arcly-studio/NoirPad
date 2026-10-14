@@ -68,7 +68,8 @@
     "import_unsupported_file": "Only .md files and .zip archives can be imported.",
     "save_failed": "The file could not be saved: {error}",
     "file_not_found": "The file no longer exists.",
-    "open_folder_failed": "The folder could not be opened: {error}"
+    "open_folder_failed": "The folder could not be opened: {error}",
+    "note_is_encrypted": "This note is locked. Unlock it first; it is only saved encrypted."
   },
   "notice": {
     "data_restored": "Your notes file was damaged. It was kept as {file} and the latest good backup ({when}) was restored. Changes made after that backup may be missing.",

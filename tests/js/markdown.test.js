@@ -115,3 +115,43 @@ describe("audit regressions", () => {
         expect(box.querySelector("button")).toBeNull();
     });
 });
+
+describe("Ctrl+M on a locked note (K2)", () => {
+    function setup(encrypted, token) {
+        const calls = [];
+        win.NP.state = { currentNoteId: "n1", data: { note_modes: {} } };
+        win.NP.editor = {
+            _currentNoteEncrypted: encrypted, _unlockToken: token,
+            _htmlToTextWithImages: () => ({ text: "tajný text" }), _extractFormats: () => [],
+        };
+        win.NP.api = {
+            saveNote: (...a) => { calls.push(["saveNote", ...a]); return Promise.resolve({}); },
+            saveEncrypted: (...a) => { calls.push(["saveEncrypted", ...a]); return Promise.resolve({}); },
+        };
+        win.NP.dialog = { failed: () => {} };
+        win.document.getElementById("editor-md").value = "tajný text";
+        return calls;
+    }
+
+    it("an unlocked locked note is re-encrypted, never saved as plain text", () => {
+        const calls = setup(true, "tok");
+        win.NP.markdown.toggleForCurrentNote();
+        expect(calls.map((c) => c[0])).toEqual(["saveEncrypted"]);
+        expect(calls[0][1]).toBe("n1");
+        expect(calls[0][2]).toBe("tok");
+        expect(calls[0][5]).toEqual({ mode: "markdown" });
+    });
+
+    it("a locked note without its key is not switched at all", () => {
+        const calls = setup(true, null);
+        win.NP.markdown.toggleForCurrentNote();
+        expect(calls).toEqual([]);
+        expect(win.NP.state.data.note_modes.n1).toBeUndefined();
+    });
+
+    it("a plain note is saved normally", () => {
+        const calls = setup(false, null);
+        win.NP.markdown.toggleForCurrentNote();
+        expect(calls.map((c) => c[0])).toEqual(["saveNote"]);
+    });
+});

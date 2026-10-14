@@ -76,7 +76,8 @@
     "import_unsupported_file": "Importovat jde jen soubory .md a archivy .zip.",
     "save_failed": "Soubor se nepodařilo uložit: {error}",
     "file_not_found": "Soubor už neexistuje.",
-    "open_folder_failed": "Složku se nepodařilo otevřít: {error}"
+    "open_folder_failed": "Složku se nepodařilo otevřít: {error}",
+    "note_is_encrypted": "Poznámka je zamčená. Nejdřív ji odemkněte; ukládá se jen zašifrovaná."
   },
   "notice": {
     "data_restored": "Soubor s poznámkami byl poškozený. Zůstal uložený jako {file} a obnovila se poslední dobrá záloha ({when}). Změny provedené po této záloze mohou chybět.",

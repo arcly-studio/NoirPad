@@ -229,6 +229,10 @@ window.NP = window.NP || {};
             if (!id) return;
             var data = NP.state.data;
             if (!data) return;
+            var ed = NP.editor;
+            var locked = !!(ed && ed._currentNoteEncrypted);
+            /* A locked note that is not unlocked has nothing to switch. */
+            if (locked && !ed._unlockToken) return;
             var modes = data.note_modes = data.note_modes || {};
             var nextMode = modes[id] === "markdown" ? "rich-text" : "markdown";
 
@@ -252,7 +256,12 @@ window.NP = window.NP || {};
             var formats = (nextMode !== "markdown" &&
                 NP.editor && NP.editor._extractFormats)
                 ? NP.editor._extractFormats() : [];
-            if (NP.api && NP.api.saveNote) {
+            /* A locked note stays encrypted on disk: re-encrypt with its
+               unlock token, never a plain save (K2). */
+            if (locked) {
+                NP.api.saveEncrypted(id, ed._unlockToken, content, formats, { mode: nextMode })
+                    .catch(NP.dialog.failed);
+            } else if (NP.api && NP.api.saveNote) {
                 NP.api.saveNote(id, content, formats, { mode: nextMode });
             }
         },

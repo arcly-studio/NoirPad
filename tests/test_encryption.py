@@ -194,3 +194,29 @@ def test_d2_save_with_lock_after_forgets_key(client, np_backend):
     assert r.status_code == 200
     assert np_backend.RUNTIME.unlocked == {}
     assert unlock(client, nid).json()["content"] == "v2"
+
+
+# K2: a locked note's file must never be overwritten with its plaintext.
+def test_k2_plain_save_cannot_overwrite_an_encrypted_note(client, np_backend):
+    nid = new_note(client, content="tajné")
+    lock(client, nid)
+    before = stored(np_backend, nid)
+    r = client.put(f"/api/note/{nid}", json={"content": "tajné v čistém textu", "formats": [],
+                                            "mode": "markdown"})
+    assert r.status_code == 409
+    assert r.json()["detail"]["code"] == "note_is_encrypted"
+    assert stored(np_backend, nid) == before
+
+
+def test_k2_mode_change_of_an_unlocked_note_stays_encrypted(client, np_backend):
+    nid = new_note(client, content="# tajné")
+    token = lock(client, nid)
+    r = client.post("/api/save-encrypted", json={"id": nid, "unlock_token": token,
+                                                 "content": "# tajné", "mode": "markdown"})
+    assert r.status_code == 200
+    raw = stored(np_backend, nid)
+    assert "tajné" not in raw and json.loads(raw)["encrypted"] is True
+    assert client.get(f"/api/note/{nid}").json()["mode"] == "markdown"
+    client.post("/api/save-encrypted", json={"id": nid, "unlock_token": token,
+                                             "content": "# tajné", "mode": "rich-text"})
+    assert client.get(f"/api/note/{nid}").json()["mode"] == "rich-text"

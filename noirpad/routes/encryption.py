@@ -18,6 +18,7 @@ from ..crypto import (MAX_NOTE_PASSWORD, MIN_NOTE_PASSWORD, InvalidToken, decryp
                       decrypt_with_key, derive_key, encrypt_with_key, is_encrypted_content,
                       unlock_content)
 from ..errors import ApiError
+from .notes import set_mode
 from ..images import extract_image_names
 from ..models import DecryptReq, LockReq, PasswordReq, SaveEncryptedReq
 from ..runtime import RUNTIME
@@ -125,6 +126,7 @@ async def save_encrypted(req: SaveEncryptedReq):
         data["notes"][req.id] = encrypt_with_key(req.content, entry["key"], entry["salt"])
         if req.formats:
             data.setdefault("note_formats", {})[req.id] = req.formats
+        set_mode(data, req.id, req.mode)
 
     update_data(_mut)
     if req.lock_after:

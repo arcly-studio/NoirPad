@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter
 
+from ..crypto import is_encrypted_content
 from ..errors import ApiError
 from ..images import delete_images, extract_image_names
 from ..models import IdReq, NoteBody, TagsBody
@@ -28,22 +29,33 @@ async def get_note(note_id: str):
     }
 
 
+def set_mode(data: dict, note_id: str, mode) -> None:
+    """Only the non-default mode ("markdown") is stored; None = unchanged."""
+    if mode is None:
+        return
+    if mode == "markdown":
+        data.setdefault("note_modes", {})[note_id] = "markdown"
+    else:
+        data.get("note_modes", {}).pop(note_id, None)
+
+
 @router.put("/api/note/{note_id}")
 async def put_note(note_id: str, body: NoteBody):
     def _mut(data: dict) -> None:
         if not note_exists(data, note_id):
             raise ApiError(404, "note_not_found")
+        # A locked note is only ever written encrypted (/api/save-encrypted,
+        # /api/decrypt): never let a stale window or a mode switch put its
+        # plaintext on disk (K2).
+        if (is_encrypted_content(data.get("notes", {}).get(note_id, ""))
+                and not is_encrypted_content(body.content)):
+            raise ApiError(409, "note_is_encrypted")
         data.setdefault("notes", {})[note_id] = body.content
         if body.formats:
             data.setdefault("note_formats", {})[note_id] = body.formats
         else:
             data.get("note_formats", {}).pop(note_id, None)
-        # Only the non-default mode ("markdown") is stored.
-        if body.mode is not None:
-            if body.mode == "markdown":
-                data.setdefault("note_modes", {})[note_id] = "markdown"
-            else:
-                data.get("note_modes", {}).pop(note_id, None)
+        set_mode(data, note_id, body.mode)
         data.setdefault("note_images", {})[note_id] = extract_image_names(body.content)
 
     update_data(_mut)
