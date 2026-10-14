@@ -4,6 +4,8 @@ import io
 import json
 import zipfile
 
+import pytest
+
 from conftest import make_png, make_zip, new_folder, new_note, pending
 
 
@@ -120,3 +122,106 @@ def test_d15_existing_image_not_overwritten(client, np_backend):
     other = make_png(7, 7)
     import_zip(client, backup_with([], {}, {name: other}))
     assert (np_backend.IMAGES_DIR / name).read_bytes() == original
+
+
+
+# ---- D4–D6: a bad backup never half-replaces the notes -----------------------
+
+IMG = "11111111-2222-4333-8444-555555555555.png"
+NOTE = {"id": "n", "name": "N", "type": "note"}
+
+
+def _state(client):
+    data = client.get("/api/data").json()
+    return data["tree"], data["notes"]
+
+
+@pytest.mark.parametrize("payload", [
+    [1, 2],                                                   # not an object
+    {"tree": "x"},                                            # tree not a list
+    {"tree": [{"type": "note"}]},                             # item without id
+    {"tree": [{"id": "n", "name": "N", "type": "file"}]},     # unknown type
+    {"tree": [NOTE], "notes": {"n": 5}},                      # content not text
+    {"tree": [NOTE], "notes": {}, "trash": []},               # trash not an object
+    {"tree": [{"id": "f", "name": "F", "type": "folder", "children": "x"}]},
+    {"tree": [NOTE], "favorites": "n"},
+    {"tree": [NOTE], "note_images": {"n": "x.png"}},
+])
+def test_d4_import_rejects_malformed_data(client, payload):
+    before = (new_note(client, name="Keep", content="keep me"), _state(client))[1]
+    r = import_zip(client, make_zip({"notes_data.json": json.dumps(payload)}))
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "backup_corrupt_data"
+    assert _state(client) == before
+    assert client.get("/api/notes/export-md").status_code == 200
+
+
+def _zip_with_flag(bit):
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as zf:
+        info = zipfile.ZipInfo("notes_data.json")
+        zf.writestr(info, json.dumps({"tree": [], "notes": {}}))
+    raw = bytearray(buf.getvalue())
+    # general purpose flag: local header offset 6, central directory +8
+    raw[6] |= bit
+    cd = raw.rfind(b"PK\x01\x02")
+    raw[cd + 8] |= bit
+    return bytes(raw)
+
+
+def _corrupt_deflate():
+    data = make_zip({"notes_data.json": json.dumps({"tree": [], "notes": {"x": "a" * 5000}})})
+    raw = bytearray(data)
+    start = raw.find(b"notes_data.json") + len("notes_data.json")
+    for i in range(start + 5, start + 40):
+        raw[i] ^= 0xFF
+    return bytes(raw)
+
+
+@pytest.mark.parametrize("blob", [_zip_with_flag(0x1), _corrupt_deflate()],
+                         ids=["password-protected", "corrupt-deflate"])
+def test_d4_unreadable_zip_is_a_clean_400(client, blob):
+    new_note(client, name="Keep", content="keep me")
+    before = _state(client)
+    r = import_zip(client, blob)
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "not_a_zip"
+    assert _state(client) == before
+
+
+def test_d6_import_refuses_an_oversized_image(client, np_backend, monkeypatch):
+    monkeypatch.setattr(np_backend, "MAX_IMAGE_BYTES", 1000)
+    new_note(client, name="Keep", content="keep me")
+    before = _state(client)
+    big = make_png() + b"\x00" * 5000
+    r = import_zip(client, backup_with([NOTE], {"n": f"<<IMG:{IMG}>>"}, {IMG: big}))
+    assert r.status_code == 413
+    assert r.json()["detail"] == {"code": "backup_image_too_large", "params": {"name": f"images/{IMG}"}}
+    assert _state(client) == before
+    assert not (np_backend.IMAGES_DIR / IMG).exists()
+
+
+def test_d5_failed_image_write_leaves_the_notes_untouched(client, np_backend, monkeypatch):
+    import pathlib as _pl
+    new_note(client, name="Keep", content="keep me")
+    before = _state(client)
+    real = _pl.Path.write_bytes
+
+    def disk_full(self, data):
+        if self.parent == np_backend.IMAGES_DIR:
+            raise OSError(28, "No space left on device")
+        return real(self, data)
+
+    monkeypatch.setattr(_pl.Path, "write_bytes", disk_full)
+    r = import_zip(client, backup_with([NOTE], {"n": f"<<IMG:{IMG}>>"}, {IMG: make_png()}))
+    assert r.status_code == 507
+    assert r.json()["detail"]["code"] == "backup_write_failed"
+    assert _state(client) == before
+    assert [p.name for p in np_backend.IMAGES_DIR.iterdir() if p.is_file()] == []
+
+
+def test_d5_valid_import_with_image_still_works(client, np_backend):
+    r = import_zip(client, backup_with([NOTE], {"n": f"<<IMG:{IMG}>>"}, {IMG: make_png()}))
+    assert r.status_code == 200
+    assert (np_backend.IMAGES_DIR / IMG).read_bytes() == make_png()
+    assert client.get("/api/note/n").json()["content"] == f"<<IMG:{IMG}>>"

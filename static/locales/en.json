@@ -69,7 +69,9 @@
     "save_failed": "The file could not be saved: {error}",
     "file_not_found": "The file no longer exists.",
     "open_folder_failed": "The folder could not be opened: {error}",
-    "note_is_encrypted": "This note is locked. Unlock it first; it is only saved encrypted."
+    "note_is_encrypted": "This note is locked. Unlock it first; it is only saved encrypted.",
+    "backup_image_too_large": "The backup contains an image that is too large ({name}). Nothing was changed.",
+    "backup_write_failed": "The backup's images could not be saved ({error}). Nothing was changed."
   },
   "notice": {
     "data_restored": "Your notes file was damaged. It was kept as {file} and the latest good backup ({when}) was restored. Changes made after that backup may be missing.",
