@@ -59,3 +59,8 @@ First public release.
 - Favorites stay in their folder: inside every folder (and at the top level) the sidebar shows
   subfolders first, then favorite notes, then the other notes, each group in your own order. A
   favorite note no longer jumps above the folders. Favorite folders come first among folders.
+- Desktop app: exports (Markdown ZIP, TXT, HTML, HTML ZIP) and the ZIP backup open a native
+  "Save as" dialog with the file name filled in; NoirPad writes the file itself and shows "Saved"
+  with an "Open folder" button. Edge's "Downloads" panel no longer appears; Cancel does nothing.
+  The web/self-hosted version still downloads through the browser. PDF stays in the print dialog
+  ("Save as PDF").

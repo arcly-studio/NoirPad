@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import config, images, server_auth, storage
+from . import config, desktop_save, images, server_auth, storage
 from .__version__ import __version__
 from .errors import ApiError
 from .routes import ROUTERS
@@ -44,7 +44,11 @@ app.mount("/static", StaticFiles(directory=str(config.STATIC_DIR)), name="static
 
 @app.middleware("http")
 async def _http_guard(request: Request, call_next):
-    response = server_auth.check_request(request) or await call_next(request)
+    response = server_auth.check_request(request)
+    if response is None:
+        response = await call_next(request)
+        if desktop_save.wants_native_save(request):
+            response = await desktop_save.save_response(response)
     server_auth.apply_security_headers(request, response)
     return response
 

@@ -1,7 +1,7 @@
 // N3: NoirPad's own dialogs replace the browser's prompt/confirm/alert.
 import fs from "node:fs";
 import path from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadApp } from "./harness.js";
 
 const STATIC = path.resolve(import.meta.dirname, "../../static");
@@ -126,6 +126,25 @@ describe("NP.dialog.confirm / alert", () => {
         expect(cancelButton().textContent).toBe("Zrušit");
         key("Escape");
         await p;
+    });
+});
+
+describe("NP.toast", () => {
+    it("shows text and an action button; the action closes it", () => {
+        const action = vi.fn();
+        win.NP.toast("Saved: a.zip", { actionLabel: "Open folder", action });
+        const toast = win.document.querySelector(".np-toast");
+        expect(toast.getAttribute("role")).toBe("status");
+        expect(toast.querySelector(".np-toast-text").textContent).toBe("Saved: a.zip");
+        toast.querySelector(".np-toast-action").click();
+        expect(action).toHaveBeenCalledTimes(1);
+        expect(win.document.querySelector(".np-toast")).toBeNull();
+    });
+
+    it("a new toast replaces the old one", () => {
+        win.NP.toast("one");
+        win.NP.toast("two");
+        expect([...win.document.querySelectorAll(".np-toast")].map((n) => n.firstChild.textContent)).toEqual(["two"]);
     });
 });
 

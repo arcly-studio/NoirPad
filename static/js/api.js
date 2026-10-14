@@ -101,12 +101,35 @@ window.NP = window.NP || {};
         return plain ? plain[1] : "";
     }
 
+    /* Desktop app: the backend shows a native "Save as" dialog, writes the
+       file and answers {saved, name, token} (desktop_save.py), so WebView2's
+       Downloads panel never opens. Then a toast with "Open folder". */
+    function savedNatively(res) {
+        return res.json().then(function (info) {
+            if (!info || !info.saved) return undefined;      /* cancelled */
+            NP.toast(NP.t("api.saved", { name: info.name }), {
+                actionLabel: NP.t("api.openFolder"),
+                action: function () {
+                    request("POST", "/api/desktop/reveal", { token: info.token }).catch(function (err) {
+                        NP.dialog.alert(err && err.message ? err.message : String(err));
+                    });
+                }
+            });
+            return res.headers;
+        });
+    }
+
     /* Downloads go through fetch (so they carry the API headers) and a
-       blob: link with `download` (allowed by links.js). Resolves with the
-       response headers, or undefined after showing an error. */
+       blob: link with `download` (allowed by links.js); in the desktop app
+       through savedNatively. Resolves with the response headers, or
+       undefined after Cancel or an error (which it shows). */
     function download(url) {
-        return apiFetch(url).then(function (res) {
+        var opts = token ? { headers: { "X-NoirPad-Save-As": "1" } } : {};
+        return apiFetch(url, opts).then(function (res) {
             if (!res.ok) return errorFrom(res);
+            if (token && (res.headers.get("content-type") || "").indexOf("application/json") !== -1) {
+                return savedNatively(res);
+            }
             var name = filenameFrom(res.headers.get("content-disposition"));
             return res.blob().then(function (blob) {
                 var href = URL.createObjectURL(blob);

@@ -45,4 +45,56 @@ describe("api.js", () => {
         await win.NP.api.fetch("/api/storage");
         expect(win.fetch.mock.calls[0][1].headers["X-NoirPad-Token"]).toBe("t");
     });
+
+    it("desktop export: native save, toast with 'Open folder', no blob download (N6)", async () => {
+        const win = boot("http://127.0.0.1:5555/#token=t");
+        const headers = new Map([["content-type", "application/json"], ["x-noirpad-skipped", "2"]]);
+        win.fetch = vi.fn(() => Promise.resolve({
+            ok: true, status: 200,
+            headers: { get: (k) => headers.get(k.toLowerCase()) || null },
+            json: () => Promise.resolve({ saved: true, name: "x.zip", token: "s1" }),
+        }));
+        win.NP.t = (key, p) => key + (p && p.name ? ":" + p.name : "");
+        win.NP.toast = vi.fn();
+        win.URL.createObjectURL = vi.fn();
+        const res = await win.NP.api.download("/api/notes/export-md");
+        expect(win.fetch.mock.calls[0][1].headers["X-NoirPad-Save-As"]).toBe("1");
+        expect(res.get("x-noirpad-skipped")).toBe("2");
+        expect(win.URL.createObjectURL).not.toHaveBeenCalled();
+        const [msg, opts] = win.NP.toast.mock.calls[0];
+        expect(msg).toBe("api.saved:x.zip");
+        expect(opts.actionLabel).toBe("api.openFolder");
+        opts.action();
+        const [url, req] = win.fetch.mock.calls[1];
+        expect(url).toBe("/api/desktop/reveal");
+        expect(JSON.parse(req.body)).toEqual({ token: "s1" });
+    });
+
+    it("desktop export cancelled: no toast, resolves undefined", async () => {
+        const win = boot("http://127.0.0.1:5555/#token=t");
+        win.fetch = vi.fn(() => Promise.resolve({
+            ok: true, status: 200,
+            headers: { get: () => "application/json" },
+            json: () => Promise.resolve({ saved: false }),
+        }));
+        win.NP.toast = vi.fn();
+        expect(await win.NP.api.download("/api/backup")).toBeUndefined();
+        expect(win.NP.toast).not.toHaveBeenCalled();
+    });
+
+    it("web mode export stays a browser download", async () => {
+        const win = boot("http://127.0.0.1:8000/");
+        win.fetch = vi.fn(() => Promise.resolve({
+            ok: true, status: 200,
+            headers: { get: (k) => (k === "content-disposition" ? 'attachment; filename="a.zip"' : "application/zip") },
+            blob: () => Promise.resolve(new win.Blob(["x"])),
+        }));
+        win.URL.createObjectURL = vi.fn(() => "blob:x");
+        win.URL.revokeObjectURL = vi.fn();
+        win.NP.toast = vi.fn();
+        await win.NP.api.download("/api/backup");
+        expect(win.fetch.mock.calls[0][1].headers["X-NoirPad-Save-As"]).toBeUndefined();
+        expect(win.URL.createObjectURL).toHaveBeenCalled();
+        expect(win.NP.toast).not.toHaveBeenCalled();
+    });
 });

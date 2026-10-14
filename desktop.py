@@ -415,11 +415,11 @@ def _show_window(port: int, token: str, data_dir: Path) -> None:
     # links.js opens external links with window.open(); pywebview must hand
     # those to the system browser, never load them in the app window.
     webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
-    # Exports and backups are downloads; pywebview cancels them by default.
-    # With this on, WebView2 shows a "Save as" dialog.
+    # Exports go through _ask_save_path (api.js download → desktop_save.py).
+    # A download from anywhere else still gets pywebview's "Save as" dialog.
     webview.settings["ALLOW_DOWNLOADS"] = True
 
-    webview.create_window(
+    window = webview.create_window(
         WINDOW_TITLE,
         url=window_url,
         width=WINDOW_INITIAL_WIDTH,
@@ -428,6 +428,8 @@ def _show_window(port: int, token: str, data_dir: Path) -> None:
         resizable=True,
         confirm_close=False,
     )
+    from noirpad.runtime import RUNTIME
+    RUNTIME.save_dialog = lambda name: _ask_save_path(window, name)
     # Persistent WebView2 profile so localStorage (open folders, CRT
     # toggle) survives restarts; it lives next to the notes.
     storage_path = data_dir / "webview"
@@ -436,6 +438,39 @@ def _show_window(port: int, token: str, data_dir: Path) -> None:
     # ship for. On other platforms pywebview picks the system default.
     gui = "edgechromium" if sys.platform == "win32" else None
     webview.start(gui=gui, private_mode=False, storage_path=str(storage_path))
+
+
+_last_save_dir: Optional[str] = None
+
+
+def _downloads_dir() -> str:
+    """The user's Downloads folder (it can be moved, so ask the registry)."""
+    if sys.platform == "win32":
+        import winreg
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                                r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders") as key:
+                return winreg.QueryValueEx(key, "{374DE290-123F-4565-9164-39C4925E467B}")[0]
+        except OSError:
+            pass
+    return str(Path.home() / "Downloads")
+
+
+def _ask_save_path(window, filename: str) -> Optional[str]:
+    """Native "Save as" for an export (N6); None when cancelled. Starts in
+    the folder used last time this run, else in Downloads."""
+    global _last_save_dir
+    import webview
+
+    ext = Path(filename).suffix.lstrip(".")
+    types = (f"{ext.upper()} (*.{ext})",) if ext.isalnum() else ()
+    result = window.create_file_dialog(webview.FileDialog.SAVE, directory=_last_save_dir or _downloads_dir(),
+                                       save_filename=filename, file_types=types)
+    if not result:
+        return None
+    path = result[0] if isinstance(result, (list, tuple)) else result
+    _last_save_dir = str(Path(path).parent)
+    return path
 
 
 def main(argv: Optional[list[str]] = None) -> int:

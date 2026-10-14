@@ -1,7 +1,8 @@
 """Process-wide mutable state (never written to disk)."""
 
 import os
-from typing import Optional
+from pathlib import Path
+from typing import Callable, Optional
 
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost")
 
@@ -26,6 +27,10 @@ class _Runtime:
     app_lock: Optional[dict] = None
     app_lock_tokens: set[str] = set()
     app_lock_failures: list[float] = []
+    # Desktop app (desktop.py): native "Save as" dialog, suggested name →
+    # chosen path or None; files saved through it, token -> path (N6).
+    save_dialog: Optional[Callable[[str], Optional[str]]] = None
+    saved_files: dict[str, Path] = {}
 
 
 RUNTIME = _Runtime()

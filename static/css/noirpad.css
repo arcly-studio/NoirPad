@@ -4191,6 +4191,60 @@ body.auth-active #matrix-canvas {
     outline-offset: 2px;
 }
 
+/* ---- Toast (dialog.js NP.toast: "Saved" + "Open folder") ---- */
+.np-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    z-index: 460;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: min(560px, 92vw);
+    padding: 8px 8px 8px 16px;
+    font-size: 12px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 var(--glow-blur, 22px) var(--glow);
+}
+.np-toast-text {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.np-toast-action,
+.np-toast-close {
+    min-height: 32px;
+    padding: 0 12px;
+    font-family: inherit;
+    font-size: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.np-toast-action {
+    color: var(--bg);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+}
+.np-toast-action:hover {
+    filter: brightness(1.15);
+}
+.np-toast-close {
+    min-width: 32px;
+    padding: 0;
+    color: var(--fg-dim);
+    background: transparent;
+    border: 1px solid transparent;
+    font-size: 16px;
+}
+.np-toast-close:hover {
+    color: var(--fg);
+    border-color: var(--border);
+}
+
 /* ---- Password dialog (password-dialog.js) ---- */
 .np-password-dialog {
     z-index: 400;

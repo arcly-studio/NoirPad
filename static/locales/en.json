@@ -65,7 +65,9 @@
     "backup_corrupt_data": "The backup is damaged (notes_data.json cannot be read).",
     "backup_unsafe_path": "The backup contains an unsafe file path: {name}",
     "backup_not_image": "The backup contains a file that is not an image: {name}",
-    "import_unsupported_file": "Only .md files and .zip archives can be imported."
+    "import_unsupported_file": "Only .md files and .zip archives can be imported.",
+    "save_failed": "The file could not be saved: {error}",
+    "file_not_found": "The file no longer exists."
   },
   "notice": {
     "data_restored": "Your notes file was damaged. It was kept as {file} and the latest good backup ({when}) was restored. Changes made after that backup may be missing.",
@@ -78,7 +80,9 @@
     "cs": "Čeština"
   },
   "api": {
-    "downloadFailed": "Download failed: {error}"
+    "downloadFailed": "Download failed: {error}",
+    "saved": "Saved: {name}",
+    "openFolder": "Open folder"
   },
   "auth": {
     "password": "password",

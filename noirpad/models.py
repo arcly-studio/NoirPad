@@ -33,6 +33,10 @@ class IdReq(BaseModel):
     id: str
 
 
+class SavedFileReq(BaseModel):
+    token: str = Field(max_length=100)
+
+
 class NoteBody(BaseModel):
     content: NoteText
     formats: Formats = []

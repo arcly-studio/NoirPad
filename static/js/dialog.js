@@ -14,7 +14,10 @@
        maxLength             prompt: default 300 (MAX_NAME_LEN in config.py)
 
    Enter = OK, Escape = Cancel (alert: close). While a dialog is open, keys
-   do not reach the app's shortcuts. Texts are set with textContent only. */
+   do not reach the app's shortcuts. Texts are set with textContent only.
+
+   NP.toast(message, { actionLabel, action, timeout }) - a short note at the
+   bottom of the window (e.g. "Saved" + "Open folder"); it does not take focus. */
 window.NP = window.NP || {};
 
 (function (NP) {
@@ -166,6 +169,39 @@ window.NP = window.NP || {};
             }
         });
     }
+
+    var toastTimer = null;
+
+    function toast(message, opts) {
+        opts = opts || {};
+        var old = document.querySelector(".np-toast");
+        if (old && old.parentNode) old.parentNode.removeChild(old);
+        clearTimeout(toastTimer);
+
+        var box = el("div", "np-toast");
+        box.setAttribute("role", "status");
+        box.appendChild(el("span", "np-toast-text", message));
+        function close() {
+            clearTimeout(toastTimer);
+            if (box.parentNode) box.parentNode.removeChild(box);
+        }
+        if (opts.action && opts.actionLabel) {
+            var action = el("button", "np-toast-action", opts.actionLabel);
+            action.type = "button";
+            action.addEventListener("click", function () { close(); opts.action(); });
+            box.appendChild(action);
+        }
+        var x = el("button", "np-toast-close", "\u00d7");
+        x.type = "button";
+        x.setAttribute("aria-label", NP.t("common.close"));
+        x.addEventListener("click", close);
+        box.appendChild(x);
+        document.body.appendChild(box);
+        toastTimer = setTimeout(close, opts.timeout || 8000);
+        return { close: close };
+    }
+
+    NP.toast = toast;
 
     NP.dialog = {
         alert: function (message, opts) {
