@@ -42,6 +42,20 @@ def test_every_backend_code_is_translated():
         assert not missing, f"{lang}.json: {missing}"
 
 
+def test_install_language_is_the_default_until_one_is_picked(client, np_backend):
+    """N7: the setup wizard's language replaces "auto" only; a language
+    picked in Settings always wins."""
+    assert client.get("/api/session").json()["install_language"] is None
+    (np_backend.DATA_DIR / "install-language.txt").write_text("cs", encoding="ascii")
+    session = client.get("/api/session").json()
+    assert (session["language"], session["install_language"]) == ("auto", "cs")
+    client.put("/api/settings", json={"language": "en"})
+    session = client.get("/api/session").json()
+    assert (session["language"], session["install_language"]) == ("en", "cs")
+    (np_backend.DATA_DIR / "install-language.txt").write_text("xx\n", encoding="ascii")
+    assert client.get("/api/session").json()["install_language"] is None
+
+
 def test_language_setting(client):
     assert client.get("/api/session").json()["language"] == "auto"
     assert client.put("/api/settings", json={"language": "cs"}).status_code == 200

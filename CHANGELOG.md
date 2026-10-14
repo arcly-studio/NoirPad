@@ -43,3 +43,6 @@ First public release.
   installer mutex until the process has really ended, and Setup/Uninstall wait for (and, if
   needed, close) programs running from the install folder and NoirPad's WebView2 processes.
   Notes in `%LOCALAPPDATA%\NoirPad` are still deleted only when you answer Yes.
+- The installer passes its language to NoirPad (`%LOCALAPPDATA%\NoirPad\install-language.txt`).
+  It is used while Settings → Language is "Automatic" (the default, nothing picked); a language
+  chosen in Settings always wins and is never overwritten.

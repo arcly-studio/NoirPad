@@ -11,6 +11,7 @@ Two separate roots:
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent  # repo root in dev / _MEIPASS in frozen
 
@@ -37,6 +38,23 @@ def get_data_dir() -> Path:
         path = Path(user_data_dir("NoirPad", appauthor=False))
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+# Written by installer.iss with the setup wizard's language ("en" / "cs").
+INSTALL_LANGUAGE_FILE = "install-language.txt"
+UI_LANGUAGES = ("en", "cs")
+
+
+def install_language(data_dir: Path) -> Optional[str]:
+    """The language the user installed NoirPad in, None without one.
+
+    Used only while Settings → Language is "auto" (nothing picked yet);
+    a language chosen in Settings always wins."""
+    try:
+        value = (data_dir / INSTALL_LANGUAGE_FILE).read_text(encoding="utf-8-sig").strip().lower()
+    except (OSError, ValueError):
+        return None
+    return value if value in UI_LANGUAGES else None
 
 
 STATIC_DIR = resource_path("static")

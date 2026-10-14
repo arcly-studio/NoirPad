@@ -5,7 +5,7 @@ import time
 
 from fastapi import APIRouter, Request, Response
 
-from .. import app_lock
+from .. import app_lock, config, storage
 from .. import server_auth as auth
 from ..__version__ import PROJECT_URL, __version__
 from ..errors import ApiError
@@ -28,6 +28,8 @@ async def session_info(request: Request):
                      "unlocked": app_lock.is_unlocked(request)},
         # Needed before login / app lock, so the gate is in the right language.
         "language": read_data().get("language", "auto"),
+        # The installer's language: what "auto" means in the desktop app.
+        "install_language": config.install_language(storage.DATA_DIR),
     }
 
 

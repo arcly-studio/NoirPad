@@ -105,13 +105,17 @@ MESSAGES = {
 
 
 def _language(data_dir: Path) -> str:
-    """The UI language setting, else Windows' display language."""
+    """The UI language setting, else the installer's language, else
+    Windows' display language (the same order as the app itself)."""
     try:
         setting = json.loads((data_dir / "notes_data.json").read_text(encoding="utf-8")).get("language")
     except (OSError, ValueError, AttributeError):
         setting = None
     if setting in MESSAGES:
         return setting
+    installed = config.install_language(data_dir)
+    if installed in MESSAGES:
+        return installed
     if sys.platform == "win32":
         import ctypes
         return "cs" if ctypes.windll.kernel32.GetUserDefaultUILanguage() & 0x3FF == 0x05 else "en"

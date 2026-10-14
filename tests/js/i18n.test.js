@@ -152,6 +152,22 @@ describe("no hard-coded UI text", () => {
     });
 });
 
+describe("language choice", () => {
+    it("a picked language wins; \"auto\" uses the installer's, then the browser's", () => {
+        const win = loadApp([]);
+        const nav = win.navigator.language.startsWith("cs") ? "cs" : "en";
+        expect(win.NP.i18n.resolve("auto")).toBe(nav);
+        win.NP.i18n.setDefault("cs");
+        expect(win.NP.i18n.resolve("auto")).toBe("cs");
+        expect(win.NP.i18n.resolve("en")).toBe("en");
+        win.NP.i18n.setDefault("en");
+        expect(win.NP.i18n.resolve("auto")).toBe("en");
+        expect(win.NP.i18n.resolve("cs")).toBe("cs");
+        win.NP.i18n.setDefault(null);
+        expect(win.NP.i18n.resolve("auto")).toBe(nav);
+    });
+});
+
 describe("NP.t", () => {
     it("fills params, picks Czech plural forms, falls back to English", () => {
         const win = loadApp([]);

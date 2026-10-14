@@ -77,6 +77,13 @@ def test_czech_messages_follow_the_language_setting(desk, client, np_backend, mo
     assert "není nainstalovaný" in desk[0]
 
 
+def test_message_boxes_use_the_install_language_until_one_is_picked(desk, client, np_backend, monkeypatch):
+    (np_backend.DATA_DIR / "install-language.txt").write_text("cs", encoding="ascii")
+    assert desktop._language(np_backend.DATA_DIR) == "cs"
+    client.put("/api/settings", json={"language": "en"})
+    assert desktop._language(np_backend.DATA_DIR) == "en"
+
+
 def test_log_rotates_and_never_contains_note_content(desk, client, np_backend, monkeypatch):
     monkeypatch.setattr(desktop, "_webview2_version", lambda: None)
     desktop.main()

@@ -196,6 +196,7 @@ window.NP = window.NP || {};
             }).then(function (res) {
                 session = res || {};
                 /* Language first: the gate itself must be translated. */
+                NP.i18n.setDefault(session.install_language);
                 return NP.i18n.init(session.language).then(proceed);
             }).catch(function (err) {
                 return NP.i18n.init("auto").then(function () { showStartError(err); });

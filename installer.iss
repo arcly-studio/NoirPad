@@ -28,6 +28,9 @@
 #define AppMutexName  "NoirPad-B6F2E7C0-AppMutex"
 ; Data folder under %LOCALAPPDATA% (platformdirs user_data_dir in config.py).
 #define DataDirName   "NoirPad"
+; Read by noirpad\config.py install_language(): the wizard's language is
+; the app's language while Settings → Language is "auto".
+#define InstallLangFile "install-language.txt"
 #define WebView2Guid  "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 #define WebView2Url   "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
 
@@ -309,6 +312,23 @@ end;
 function InitializeUninstall(): Boolean;
 begin
   Result := CloseAppProcesses(UninstallSilent());
+end;
+
+{ The wizard's language is NoirPad's language while Settings → Language is
+  "auto"; a language picked there always wins. Rewritten on every install. }
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  Lang: String;
+begin
+  if CurStep <> ssPostInstall then
+    exit;
+  if ActiveLanguage() = 'czech' then
+    Lang := 'cs'
+  else
+    Lang := 'en';
+  if not ForceDirectories(DataDir()) or
+     not SaveStringToFile(AddBackslash(DataDir()) + '{#InstallLangFile}', Lang, False) then
+    Log('Could not write {#InstallLangFile}');
 end;
 
 { Ask (default: No) whether the notes in %LOCALAPPDATA%\NoirPad go too. }

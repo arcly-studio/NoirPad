@@ -10,8 +10,9 @@
                                             → that attribute
    A missing key falls back to English, then to the key itself.
 
-   Language: Settings → Language ("auto" | "en" | "cs"); "auto" follows
-   the browser (cs* → Czech, anything else → English). */
+   Language: Settings → Language ("auto" | "en" | "cs"); "auto" uses the
+   language NoirPad was installed in (desktop, setDefault), else the
+   browser's (cs* → Czech, anything else → English). */
 window.NP = window.NP || {};
 
 (function (NP) {
@@ -21,6 +22,7 @@ window.NP = window.NP || {};
     var ATTRS = ["title", "placeholder", "aria-label", "data-placeholder"];
     var dicts = {};          /* lang → nested dictionary */
     var current = "en";
+    var installed = null;    /* the installer's language, see setDefault */
 
     function lookup(dict, key) {
         var node = dict;
@@ -74,6 +76,7 @@ window.NP = window.NP || {};
 
     function resolve(setting) {
         if (SUPPORTED.indexOf(setting) !== -1) return setting;
+        if (installed) return installed;
         var nav = (navigator.languages && navigator.languages[0]) || navigator.language || "";
         return /^cs\b/i.test(nav) ? "cs" : "en";
     }
@@ -108,6 +111,13 @@ window.NP = window.NP || {};
                 document.documentElement.lang = current;
                 apply(document);
             });
+        },
+
+        /* What "auto" resolves to before the browser language: the
+           installer's language from /api/session (null outside the
+           desktop app). */
+        setDefault: function (lang) {
+            installed = SUPPORTED.indexOf(lang) !== -1 ? lang : null;
         },
 
         /* Tests / tools: register a dictionary without fetching. */

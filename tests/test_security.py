@@ -20,7 +20,7 @@ def test_password_mode_requires_login(client, np_backend):
     assert client.get("/api/session").json() == {
         "mode": "server", "password_required": True, "authenticated": False,
         "data_notice": None, "app_lock": {"enabled": False, "unlocked": True},
-        "language": "auto"}
+        "language": "auto", "install_language": None}
     assert client.get("/api/data").status_code == 401
     assert client.get("/images/x.png").status_code == 401
 
