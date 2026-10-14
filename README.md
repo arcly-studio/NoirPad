@@ -29,11 +29,13 @@ bundled. The only links that leave the app are the ones you click.
 - **App lock** (optional) — ask for a password whenever NoirPad starts or after inactivity.
 - **Search** — find in the note, search across all notes, command bar (`Ctrl+Shift+P`).
 - **Images** — paste, drag & drop or insert; zoom with `Ctrl`+wheel.
-- **Export** — a note as TXT, HTML or PDF; everything as Markdown files or HTML in a ZIP.
+- **Export** — a note as TXT, HTML or PDF; everything as Markdown files or HTML in a ZIP. The
+  desktop app asks where to save (“Save as”) and then offers *Open folder*.
 - **Import** — Markdown files or a ZIP of them (adds notes, never deletes).
 - **Look** — 17 themes, UI and editor fonts, glow, CRT scanlines, Matrix rain, focus mode.
 - **Keyboard first** — every shortcut can be remapped; built-in help with `F1`.
-- **English and Czech UI** — follows your system language, switchable in Settings.
+- **English and Czech UI** — starts in the language you chose in the installer, switchable in
+  Settings.
 
 ## Download
 
@@ -60,8 +62,9 @@ Get-FileHash .\NoirPad-Setup-1.0.0.exe -Algorithm SHA256
 | Automatic snapshots | `%LOCALAPPDATA%\NoirPad\backups\` — the last 7, at most one per 10 minutes, plus a copy before every backup import |
 | Log | `%LOCALAPPDATA%\NoirPad\logs\noirpad.log` — start-up and errors, never note content |
 
-Paste `%LOCALAPPDATA%\NoirPad` into the Explorer address bar to open the folder. Uninstalling asks
-whether to delete it too (default: keep it).
+Paste `%LOCALAPPDATA%\NoirPad` into the Explorer address bar to open the folder. Uninstalling
+removes the program folder (`%LOCALAPPDATA%\Programs\NoirPad`) completely and asks whether to delete
+your data folder too (default: keep it).
 
 - **Backup:** Settings → Data → *Download backup* saves a ZIP with all notes and images.
   *Import backup* **replaces** all notes with the ZIP's content (a safety copy is made first).
@@ -75,7 +78,8 @@ whether to delete it too (default: keep it).
 
 **Locked notes** (Lock button / `Ctrl+Shift+L`) are encrypted with your password:
 Fernet (AES-128-CBC + HMAC-SHA256) with a key from PBKDF2-SHA256, 480 000 iterations and a random
-salt per note.
+salt per note. A password needs at least 4 characters (the same for the app lock); below 8 NoirPad
+reminds you that short passwords are easy to crack.
 
 | Encrypted | Not encrypted |
 |---|---|

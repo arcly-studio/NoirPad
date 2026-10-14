@@ -30,10 +30,11 @@ aplikace. Ven vedou jen odkazy, na které sami kliknete.
 - **Hledání** – v poznámce, napříč všemi poznámkami, příkazová lišta (`Ctrl+Shift+P`).
 - **Obrázky** – vložení ze schránky, přetažením nebo tlačítkem; zoom přes `Ctrl`+kolečko.
 - **Export** – poznámka jako TXT, HTML nebo PDF; vše jako soubory Markdown nebo HTML v ZIPu.
+  Desktopová aplikace se zeptá, kam uložit („Uložit jako“), a pak nabídne *Otevřít složku*.
 - **Import** – soubory Markdown nebo jejich ZIP (poznámky přidá, nic nemaže).
 - **Vzhled** – 17 motivů, písmo rozhraní i editoru, záře, CRT řádkování, Matrix rain, režim soustředění.
 - **Klávesnice na prvním místě** – každou zkratku jde přemapovat; nápověda přes `F1`.
-- **Čeština a angličtina** – podle jazyka systému, přepnout jde v Nastavení.
+- **Čeština a angličtina** – podle jazyka zvoleného v instalátoru, přepnout jde v Nastavení.
 
 ## Stažení
 
@@ -60,8 +61,9 @@ Get-FileHash .\NoirPad-Setup-1.0.0.exe -Algorithm SHA256
 | Automatické zálohy | `%LOCALAPPDATA%\NoirPad\backups\` – posledních 7, nejvýš jedna za 10 minut, a kopie před každým importem zálohy |
 | Log | `%LOCALAPPDATA%\NoirPad\logs\noirpad.log` – spuštění a chyby, nikdy obsah poznámek |
 
-Složku otevřete vložením `%LOCALAPPDATA%\NoirPad` do adresního řádku Průzkumníka. Odinstalace se
-zeptá, jestli ji smazat taky (výchozí volba: nechat).
+Složku otevřete vložením `%LOCALAPPDATA%\NoirPad` do adresního řádku Průzkumníka. Odinstalace
+úplně odstraní programovou složku (`%LOCALAPPDATA%\Programs\NoirPad`) a zeptá se, jestli smazat
+i složku s daty (výchozí volba: nechat).
 
 - **Záloha:** Nastavení → Data → *Stáhnout zálohu* uloží ZIP se všemi poznámkami a obrázky.
   *Importovat zálohu* všechny poznámky **nahradí** obsahem ZIPu (předtím se uloží bezpečnostní kopie).
@@ -75,7 +77,8 @@ zeptá, jestli ji smazat taky (výchozí volba: nechat).
 
 **Zamčené poznámky** (tlačítko Zamknout / `Ctrl+Shift+L`) jsou šifrované vaším heslem:
 Fernet (AES-128-CBC + HMAC-SHA256) s klíčem z PBKDF2-SHA256, 480 000 iterací a náhodnou solí pro
-každou poznámku.
+každou poznámku. Heslo musí mít aspoň 4 znaky (stejně jako u zámku aplikace); pod 8 znaků NoirPad
+upozorní, že krátké heslo jde snadno prolomit.
 
 | Šifrované | Nešifrované |
 |---|---|
