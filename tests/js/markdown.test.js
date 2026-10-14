@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { dangers, loadApp } from "./harness.js";
 
@@ -153,5 +155,43 @@ describe("Ctrl+M on a locked note (K2)", () => {
         const calls = setup(false, null);
         win.NP.markdown.toggleForCurrentNote();
         expect(calls.map((c) => c[0])).toEqual(["saveNote"]);
+    });
+});
+
+describe("locking a note that is open in Markdown (K3)", () => {
+    function openLockedInMarkdown() {
+        win.eval(fs.readFileSync(path.resolve(import.meta.dirname, "../../static/js/editor.js"), "utf8"));
+        win.NP.state = { currentNoteId: "n1", data: { tree: [], note_modes: { n1: "markdown" } } };
+        win.NP.editor.init();
+        win.NP.editor._currentNoteId = "n1";
+        win.NP.editor._currentNoteEncrypted = true;
+        win.NP.editor._unlockToken = "tok";
+        win.NP.markdown.enableForEditor("# Deník\nTAJNÝ TEXT");
+    }
+
+    it("the lock screen hides the Markdown source and preview too", () => {
+        openLockedInMarkdown();
+        expect(win.document.body.classList.contains("editor-md-active")).toBe(true);
+        expect(win.document.getElementById("editor-md").value).toContain("TAJNÝ TEXT");
+        win.NP.editor._showLockScreen();
+        expect(win.document.body.classList.contains("editor-md-active")).toBe(false);
+        expect(win.document.getElementById("editor-md").value).toBe("");
+        expect(win.document.getElementById("md-preview").textContent).not.toContain("TAJNÝ TEXT");
+        expect(win.document.body.textContent).not.toContain("TAJNÝ TEXT");
+    });
+});
+
+describe("opening a locked note from a Markdown note (K3)", () => {
+    it("the previous note's source is gone while the password is asked", async () => {
+        win.eval(fs.readFileSync(path.resolve(import.meta.dirname, "../../static/js/editor.js"), "utf8"));
+        win.NP.state = { data: { tree: [], note_modes: { a: "markdown" } } };
+        win.NP.editor.init();
+        win.NP.markdown.enableForEditor("PŘEDCHOZÍ POZNÁMKA");
+        win.NP.api = { getNote: () => Promise.resolve({ content: '{"encrypted": true, "data": "x"}', formats: [] }) };
+        win.NP.encryption = { askAndUnlock: () => new Promise(() => {}), updateLockButtonState: () => {} };
+        win.NP.editor.loadNote("locked");
+        await new Promise((r) => setTimeout(r, 0));
+        expect(win.document.getElementById("editor-md").value).toBe("");
+        expect(win.document.body.textContent).not.toContain("PŘEDCHOZÍ POZNÁMKA");
     });
 });

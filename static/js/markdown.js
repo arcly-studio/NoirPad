@@ -219,6 +219,8 @@ window.NP = window.NP || {};
             document.body.classList.remove("editor-md-active");
             var ta = document.getElementById("editor-md");
             if (ta) ta.value = "";
+            var pv = document.getElementById("md-preview");
+            if (pv) pv.innerHTML = "";
             lastRendered = null;
             updateMdButtonState();
         },

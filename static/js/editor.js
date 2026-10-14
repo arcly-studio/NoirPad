@@ -302,6 +302,10 @@ window.NP = window.NP || {};
 
         _showLockScreen: function () {
             if (!NP.editor.el) return;
+            /* In Markdown mode the source and the preview are what is on
+               screen, not #editor: they must go too (K3). */
+            if (NP.markdown && NP.markdown.leaveForLoad) NP.markdown.leaveForLoad();
+            NP.editor._loadedNoteId = null;
             NP.editor.el.contentEditable = "false";
             NP.editor.el.innerHTML =
                 "<div style='text-align:center;padding:80px 20px;'>" +
