@@ -84,8 +84,8 @@ def test_k7_quote_in_name(client):
     r = client.get(f"/api/export/{nid}/txt")
     assert r.status_code == 200
     fallback = ascii_fallback(r)
-    assert fallback == "a_b.txt"
-    assert utf8_name(r) == "a_b.txt"
+    assert fallback == "a-b.txt"
+    assert utf8_name(r) == "a-b.txt"
 
 
 # K7 – název v <title> musí být escapovaný

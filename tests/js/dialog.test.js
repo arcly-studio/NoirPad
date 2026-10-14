@@ -38,21 +38,16 @@ describe("NP.dialog.prompt", () => {
         expect(dialog()).toBeNull();
     });
 
-    it("rejects empty names and forbidden characters inline", async () => {
+    it("rejects an empty name inline; any characters are allowed", async () => {
         const p = win.NP.dialog.prompt("Note name:");
+        input().value = "   ";
         key("Enter");
         expect(dialog()).not.toBeNull();
         expect(dialog().querySelector(".np-dialog-error").textContent).toBe("Enter a name.");
-        input().value = "a/b";
-        key("Enter");
-        expect(dialog().querySelector(".np-dialog-error").textContent).toContain("cannot contain");
         expect(input().getAttribute("aria-invalid")).toBe("true");
-        input().value = "Nákup: mléko";
-        key("Enter");
-        expect(dialog()).not.toBeNull();
-        input().value = "Nákup – mléko";
+        input().value = "Re: porada?";
         button("primary").click();
-        expect(await p).toBe("Nákup – mléko");
+        expect(await p).toBe("Re: porada?");
     });
 
     it("pre-fills the current value (rename) and selects it", async () => {
@@ -68,7 +63,7 @@ describe("NP.dialog.prompt", () => {
         const v = win.NP.dialog.validateName;
         expect(v("Poznámka 1")).toBeNull();
         expect(v("   ")).not.toBeNull();
-        for (const c of ['\\', "/", ":", "*", "?", '"', "<", ">", "|", "\u0007"]) expect(v(`a${c}b`), c).not.toBeNull();
+        for (const c of ['\\', "/", ":", "*", "?", '"', "<", ">", "|"]) expect(v(`a${c}b`), c).toBeNull();
         expect(v("x".repeat(301))).not.toBeNull();
     });
 });

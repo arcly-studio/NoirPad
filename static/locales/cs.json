@@ -848,7 +848,6 @@
     "moveToTrashTitle": "Přesunout do koše",
     "moveToTrash": "Přesunout do koše",
     "errorEmptyName": "Zadejte název.",
-    "errorBadChars": "Název nesmí obsahovat tyto znaky: {chars}",
     "errorTooLong": "Název je příliš dlouhý (nejvýš {n} znaků)."
   }
 }

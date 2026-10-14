@@ -23,15 +23,24 @@ def attachment(filename: str) -> str:
     return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(filename, safe='')}"
 
 
-def safe_filename(name: str) -> str:
-    """Strip filesystem-unsafe chars from *name* (file / zip entry name).
+# CON, NUL, COM1 … are devices on Windows, also with an extension (NUL.md).
+_RESERVED_NAMES = re.compile(r"^(CON|PRN|AUX|NUL|COM[0-9¹²³]|LPT[0-9¹²³])$", re.IGNORECASE)
 
-    Same character set rejected by Windows + control bytes. Leading/trailing
-    dots and spaces are stripped. Capped at 200 chars; empty → 'untitled'.
+
+def safe_filename(name: str) -> str:
+    """A file / zip entry name for a note or folder called *name*.
+
+    Note names may contain anything; only the exported file name is fixed
+    up: the characters Windows forbids (and control bytes) become "-",
+    leading/trailing dots and spaces go, a reserved device name gets a "-"
+    appended. Capped at 200 chars; empty → 'untitled'.
+    "Re: porada?" → "Re- porada-".
     """
-    cleaned = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", name or "untitled")
-    cleaned = cleaned.strip(" .")
-    return cleaned[:200] or "untitled"
+    cleaned = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "-", name or "")
+    cleaned = cleaned.strip(" .")[:200].rstrip(" .")
+    if _RESERVED_NAMES.match(cleaned.split(".", 1)[0].rstrip(" ")):
+        cleaned += "-"
+    return cleaned or "untitled"
 
 
 def build_note_html(name: str, content: str, font: str, size: Any) -> str:

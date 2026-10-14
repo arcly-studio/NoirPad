@@ -50,7 +50,7 @@ def test_single_note_export_prefills_the_note_name(desk, tmp_path):
     target["path"] = str(tmp_path / "out" / "poznamka.txt")
     r = c.get(f"/api/export/{note}/txt", headers=SAVE)
     assert r.json()["saved"] is True
-    assert asked == ["Nákup_ mléko.txt"]
+    assert asked == ["Nákup- mléko.txt"]
     assert (tmp_path / "out" / "poznamka.txt").read_text(encoding="utf-8") == "# Seznam\n- mléko"
 
 

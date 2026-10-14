@@ -51,8 +51,12 @@ First public release.
   easy to crack; it does not block saving.
 - NoirPad's own dialogs replace every browser `prompt()`, `confirm()` and `alert()` (no more
   "127.0.0.1 says", always in the UI language): Enter confirms, Escape cancels, the name field
-  is focused and checked (not empty, none of `\ / : * ? " < > |`, at most 300 characters), and
-  actions that cannot be undone get a red button. Rename starts with the current name.
+  is focused and checked (not empty, at most 300 characters), and actions that cannot be undone
+  get a red button. Rename starts with the current name.
+- Note and folder names may contain any character. Exports fix up only the file names: the
+  characters Windows forbids (`\ / : * ? " < > |`) become `-`, trailing dots and spaces are
+  dropped and reserved names (CON, NUL, COM1 …) get a `-`, so "Re: porada?" is exported as
+  `Re- porada-.md`.
 - Trash in the sidebar: Restore (↩) and Delete permanently (×) are real buttons with a 32×32 px
   target, a tooltip and a screen-reader label; delete is red and asks first. The trash header
   has an "Empty trash" button (also with a confirmation).

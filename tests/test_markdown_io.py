@@ -113,3 +113,26 @@ def test_import_rejects_other_files_and_zip_bombs(client, np_backend, monkeypatc
     blob = make_zip({"a.md": "a", "b.md": "b", "c.md": "c"})
     assert import_files(client, ("x.zip", blob)).status_code == 413
     assert client.get("/api/data").json()["tree"] == []
+
+
+def test_names_keep_any_character_files_are_fixed_up_on_export(client):
+    """N3 follow-up: the name is stored as typed; only the exported file
+    name replaces the characters Windows forbids."""
+    from noirpad.export import safe_filename
+
+    folder = client.post("/api/tree/new-folder", json={"name": "Plán: Q1 / 2027.", "parent_id": None}).json()["id"]
+    nid = client.post("/api/tree/new-note", json={"name": "Re: porada?", "parent_id": folder}).json()["id"]
+    client.put(f"/api/note/{nid}", json={"content": "obsah", "formats": []})
+    tree = client.get("/api/data").json()["tree"]
+    assert tree[0]["name"] == "Plán: Q1 / 2027." and tree[0]["children"][0]["name"] == "Re: porada?"
+
+    with zipfile.ZipFile(io.BytesIO(client.get("/api/notes/export-md").content)) as zf:
+        assert "Plán- Q1 - 2027/Re- porada-.md" in zf.namelist()
+
+    assert safe_filename(r'a\b/c:d*e?f"g<h>i|j') == "a-b-c-d-e-f-g-h-i-j"
+    assert safe_filename("  tečka na konci. . ") == "tečka na konci"
+    assert safe_filename("CON") == "CON-"
+    assert safe_filename("nul.zaloha") == "nul.zaloha-"
+    assert safe_filename("Com1") == "Com1-"
+    assert safe_filename("CONTROL") == "CONTROL"
+    assert safe_filename("...") == "untitled"

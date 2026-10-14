@@ -808,7 +808,6 @@
     "moveToTrashTitle": "Move to trash",
     "moveToTrash": "Move to trash",
     "errorEmptyName": "Enter a name.",
-    "errorBadChars": "A name cannot contain these characters: {chars}",
     "errorTooLong": "The name is too long (at most {n} characters)."
   }
 }

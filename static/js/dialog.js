@@ -23,10 +23,9 @@ window.NP = window.NP || {};
 (function (NP) {
     "use strict";
 
+    /* Any character is fine in a name: export.py safe_filename() fixes up
+       the file names when exporting. */
     var MAX_NAME = 300;
-    /* The characters Windows forbids in file names (and export.py replaces):
-       a note or folder name becomes a file name in Markdown/ZIP exports. */
-    var BAD_NAME_CHARS = /[\\\/:*?"<>|\u0000-\u001f]/;
 
     var stack = [];   /* open dialogs, topmost last */
     var opened = 0;   /* for unique element ids */
@@ -41,7 +40,6 @@ window.NP = window.NP || {};
     function validateName(value) {
         var v = (value || "").trim();
         if (!v) return NP.t("dialog.errorEmptyName");
-        if (BAD_NAME_CHARS.test(v)) return NP.t("dialog.errorBadChars", { chars: '\\ / : * ? " < > |' });  // i18n-ignore (characters)
         if (v.length > MAX_NAME) return NP.t("dialog.errorTooLong", { n: MAX_NAME });
         return null;
     }
