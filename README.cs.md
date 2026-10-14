@@ -1,158 +1,202 @@
-[English](README.md) | **Čeština**
+<div align="center">
 
-<p align="center"><img src="docs/logo.png" width="128" height="128" alt="Logo NoirPadu"></p>
+<img src="docs/logo.png" width="128" height="128" alt="Logo NoirPadu">
 
 # NoirPad
 
-Poznámková aplikace pro Windows v terminálovém stylu – s Markdownem, poznámkami zamčenými heslem a 17 motivy.
+**Šifrované poznámky v Markdownu s duší terminálu — pro Windows.**
 
-[![Release](https://img.shields.io/github/v/release/krystof2-ops/NoirPad?include_prereleases)](https://github.com/krystof2-ops/NoirPad/releases)
-[![Tests](https://github.com/krystof2-ops/NoirPad/actions/workflows/test.yml/badge.svg)](https://github.com/krystof2-ops/NoirPad/actions/workflows/test.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[English](README.md) · **Čeština**
 
-![NoirPad s poznámkou v Markdownu](docs/screenshots/markdown.png)
+[![Poslední verze](https://img.shields.io/github/v/release/krystof2-ops/NoirPad)](https://github.com/krystof2-ops/NoirPad/releases/latest)
+[![Stažení](https://img.shields.io/github/downloads/krystof2-ops/NoirPad/total)](https://github.com/krystof2-ops/NoirPad/releases)
+[![Licence](https://img.shields.io/github/license/krystof2-ops/NoirPad)](LICENSE)
+![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows)
 
-**Žádný účet, žádný cloud, žádná telemetrie – vaše poznámky zůstávají ve vašem PC.**
-NoirPad sám nic po síti neposílá: písma, vykreslování Markdownu i zvýrazňování kódu jsou součástí
-aplikace. Ven vedou jen odkazy, na které sami kliknete.
+<a href="https://github.com/krystof2-ops/NoirPad/releases/latest/download/NoirPad-Setup.exe"><img src="docs/buttons/download-cs.svg" alt="Stáhnout pro Windows" height="68"></a>
 
-| Úvod | Motivy | Zamčená poznámka |
-|:---:|:---:|:---:|
-| ![Úvod](docs/screenshots/welcome.png) | ![Motivy](docs/screenshots/themes.png) | ![Zamčená poznámka](docs/screenshots/encryption.png) |
+<sub>[Všechny verze](https://github.com/krystof2-ops/NoirPad/releases)</sub>
+
+<img src="docs/demo.gif" width="960" alt="Ukázka NoirPadu: nová poznámka, Markdown s blokem kódu v Pythonu a živým náhledem, přepnutí motivu z příkazové lišty, zamčení poznámky heslem">
+
+</div>
+
+## Proč NoirPad?
+
+- **Žádný účet, žádný cloud, žádná telemetrie** — poznámky jsou ve složce na vašem počítači
+  a NoirPad sám nic po síti neposílá.
+- **Šifrování jednotlivých poznámek** — každou poznámku můžete zamknout vlastním heslem.
+- **Skutečný Markdown** — živý náhled vedle zdroje, tabulky, úkoly a zvýrazněný kód.
+- **17 motivů** — od zelené Matrix po Tokyo Night, k tomu záře, CRT řádky a padající znaky.
 
 ## Funkce
 
-- **Poznámky a složky** – strom s přetahováním, karty, štítky, oblíbené, koš s obnovou.
-- **Dva režimy pro každou poznámku** – formátovaný text, nebo Markdown s živým náhledem, tabulkami, seznamy úkolů
-  a zvýrazněnými bloky kódu.
-- **Zamčené poznámky** – šifrování jednotlivé poznámky vlastním heslem (podrobnosti níže).
-- **Zámek aplikace** (volitelně) – heslo při každém spuštění a po nečinnosti.
-- **Hledání** – v poznámce, napříč všemi poznámkami, příkazová lišta (`Ctrl+Shift+P`).
-- **Obrázky** – vložení ze schránky, přetažením nebo tlačítkem; zoom přes `Ctrl`+kolečko.
-- **Export** – poznámka jako TXT, HTML nebo PDF; vše jako soubory Markdown nebo HTML v ZIPu.
-  Desktopová aplikace se zeptá, kam uložit („Uložit jako“), a pak nabídne *Otevřít složku*.
-- **Import** – soubory Markdown nebo jejich ZIP (poznámky přidá, nic nemaže).
-- **Vzhled** – 17 motivů, písmo rozhraní i editoru, záře, CRT řádkování, Matrix rain, režim soustředění.
-- **Klávesnice na prvním místě** – každou zkratku jde přemapovat; nápověda přes `F1`.
-- **Čeština a angličtina** – podle jazyka zvoleného v instalátoru, přepnout jde v Nastavení.
+### Psaní
 
-## Stažení
+![Poznámka v Markdownu s blokem kódu v Pythonu, vlevo strom složek (české rozhraní)](docs/screenshots/hero-cs.png)
 
-Stáhněte **`NoirPad-Setup-<verze>.exe`** z **[Releases](https://github.com/krystof2-ops/NoirPad/releases)**.
-Instaluje se jen pro vašeho uživatele (bez práv správce) do `%LOCALAPPDATA%\Programs\NoirPad`.
+- Každá poznámka je **formátovaný text** nebo **Markdown** (`Ctrl+M`); otevřené poznámky jsou
+  v záložkách, k dispozici je i režim soustředění.
+- **Obrázky**: vložte, přetáhněte nebo přidejte tlačítkem; `Ctrl`+kolečko mění velikost obrázku
+  v poznámce.
+- Ukládání `Ctrl+S`, nebo zapněte automatické ukládání v Nastavení.
 
-NoirPad potřebuje **Microsoft Edge WebView2 Runtime**. Windows 11 ho mají; na starších systémech
-instalátor nabídne jeho stažení od Microsoftu.
+### Markdown a kód
 
-**Windows SmartScreen:** instalátor není digitálně podepsaný, takže Windows může ukázat „Systém
-Windows ochránil váš počítač“. Klikněte na **Další informace → Přesto spustit**. Abyste měli jistotu,
-že jde o soubor zveřejněný tady, porovnejte jeho SHA-256 se souborem `.sha256` vedle něj v release:
+![Markdown vedle sebe: vlevo zdroj, vpravo vykreslená tabulka a seznam úkolů](docs/screenshots/split-preview.png)
+
+- Vlevo zdroj, vpravo **živý náhled**.
+- **Tabulky, úkoly, citace** a **bloky kódu se zvýrazněním syntaxe**.
+- Zkratky pro tučné písmo, kurzívu, kód, bloky kódu a odkazy (`Ctrl+B`, `Ctrl+I`, `Ctrl+E`,
+  `Ctrl+Shift+E`, `Ctrl+K`).
+
+### Šifrování
+
+![Zamčení poznámky: heslo dvakrát a varování, že zapomenuté heslo nejde obnovit](docs/screenshots/encryption.png)
+
+- Poznámku zamknete `Ctrl+Shift+L`; otevře se jen s jejím heslem.
+- Volitelný **zámek aplikace** chce heslo při spuštění NoirPadu nebo po nečinnosti.
+- Co je a není šifrované: viz [Bezpečnost a soukromí](#bezpečnost-a-soukromí).
+
+### Motivy
+
+![Stejná poznámka ve čtyřech motivech: Matrix, Tokyo Night, Amber a Dracula](docs/screenshots/themes.png)
+
+- **17 motivů**; nastavit jde i písmo rozhraní a editoru.
+- Síla záře, CRT řádky a padající znaky — každé jde vypnout.
+- Rozhraní česky a anglicky; NoirPad začne v jazyce, který jste zvolili v instalátoru.
+
+### Organizace
+
+![Příkazová lišta s příkazy odpovídajícími „:e"](docs/screenshots/command-palette.png)
+
+- **Složky** s přetahováním, **štítky**, **oblíbené** (připnuté nahoru ve své složce) a **koš**
+  s obnovením.
+- **Hledání** v poznámce (`Ctrl+F`) i ve všech poznámkách; **příkazová lišta** (`Ctrl+Shift+P`)
+  spouští příkazy jako `:theme`, `:tag`, `:export`.
+- Každou zkratku si můžete přenastavit.
+
+### Export a zálohy
+
+- Poznámku jako **TXT, HTML nebo PDF**; všechny poznámky jako soubory **Markdown** nebo stránky
+  **HTML** v ZIPu. Desktopová aplikace se zeptá, kam uložit, a pak nabídne *Otevřít složku*.
+- **Záloha**: jeden ZIP se všemi poznámkami a obrázky; *Importovat zálohu* ji obnoví.
+- **Import** souborů Markdown nebo jejich ZIPu — poznámky přidá, žádné nesmaže.
+
+## Klávesové zkratky
+
+| Zkratka | Akce |
+|---|---|
+| `Ctrl+Shift+N` / `Ctrl+Shift+F` | Nová poznámka / nová složka |
+| `Ctrl+S` | Uložit |
+| `Ctrl+M` | Přepnout poznámku mezi formátovaným textem a Markdownem |
+| `Ctrl+F`, `F3` / `Shift+F3` | Hledat v poznámce, další / předchozí výskyt |
+| `Ctrl+Shift+L` | Zamknout nebo odemknout poznámku |
+| `Ctrl+Shift+P` | Příkazová lišta |
+| `Ctrl+D` | Přidat do oblíbených / odebrat |
+| `F2` / `Delete` | Přejmenovat / přesunout do koše |
+| `Ctrl+B` | Postranní panel (v editoru Markdownu: tučné písmo) |
+| `Ctrl+Tab` / `Ctrl+W` | Další záložka / zavřít záložku |
+| `Ctrl+,` / `F1` | Nastavení / nápověda |
+
+Úplný seznam i s přenastavením najdete v Nastavení → Klávesové zkratky → Spravovat a v nápovědě
+(`F1`).
+
+## Instalace
+
+1. Stáhněte **[NoirPad-Setup.exe](https://github.com/krystof2-ops/NoirPad/releases/latest/download/NoirPad-Setup.exe)**
+   (nebo konkrétní verzi z [Releases](https://github.com/krystof2-ops/NoirPad/releases)).
+2. Spusťte ho. Nainstaluje se jen pro vašeho uživatele — bez administrátorských práv — do
+   `%LOCALAPPDATA%\Programs\NoirPad`.
+
+**Windows SmartScreen:** instalátor není podepsaný, takže Windows může ukázat „Systém Windows
+ochránil váš počítač". Klikněte na **Další informace → Přesto spustit**. Pro kontrolu souboru
+porovnejte jeho SHA-256 se souborem `.sha256` vedle něj v release:
 
 ```powershell
-Get-FileHash .\NoirPad-Setup-1.0.0.exe -Algorithm SHA256
+Get-FileHash .\NoirPad-Setup.exe -Algorithm SHA256
 ```
 
-## Vaše data
+NoirPad potřebuje Microsoft Edge **WebView2 Runtime**. Windows 11 ho mají; na Windows 10 nabídne
+instalátor jeho stažení od Microsoftu.
 
-| Co | Kde |
-|---|---|
-| Poznámky, nastavení | `%LOCALAPPDATA%\NoirPad\notes_data.json` |
-| Obrázky | `%LOCALAPPDATA%\NoirPad\images\` |
-| Automatické zálohy | `%LOCALAPPDATA%\NoirPad\backups\` – posledních 7, nejvýš jedna za 10 minut, a kopie před každým importem zálohy |
-| Log | `%LOCALAPPDATA%\NoirPad\logs\noirpad.log` – spuštění a chyby, nikdy obsah poznámek |
+**Vaše data** jsou v `%LOCALAPPDATA%\NoirPad` (vložte do adresního řádku Průzkumníka):
+`notes_data.json` s poznámkami a nastavením, `images\`, `backups\` s automatickými zálohami
+(posledních 7, nejvýš jedna za 10 minut) a `logs\` (spuštění a chyby, nikdy obsah poznámek).
+Kdyby se datový soubor poškodil, NoirPad ho nechá stranou a obnoví nejnovější dobrou zálohu.
 
-Složku otevřete vložením `%LOCALAPPDATA%\NoirPad` do adresního řádku Průzkumníka. Odinstalace
-úplně odstraní programovou složku (`%LOCALAPPDATA%\Programs\NoirPad`) a zeptá se, jestli smazat
-i složku s daty (výchozí volba: nechat).
+**Odinstalace** v Nastavení Windows → Aplikace. Programová složka se odstraní celá; poznámky
+zůstanou, pokud nezvolíte, že se mají smazat taky.
 
-- **Záloha:** Nastavení → Data → *Stáhnout zálohu* uloží ZIP se všemi poznámkami a obrázky.
-  *Importovat zálohu* všechny poznámky **nahradí** obsahem ZIPu (předtím se uloží bezpečnostní kopie).
-- **Export:** *Exportovat vše do Markdownu* vytvoří jeden soubor `.md` pro každou poznámku (složky
-  jsou adresáře, obrázky ve složce `assets/`); *Exportovat vše do HTML* totéž jako čitelné stránky.
-  Zamčené poznámky se přeskočí – aplikace řekne kolik.
-- Kdyby se `notes_data.json` poškodil, NoirPad poškozený soubor nechá stranou, obnoví nejnovější
-  dobrou zálohu a dá vám vědět.
+## Bezpečnost a soukromí
 
-## Šifrování a zámek aplikace
-
-**Zamčené poznámky** (tlačítko Zamknout / `Ctrl+Shift+L`) jsou šifrované vaším heslem:
-Fernet (AES-128-CBC + HMAC-SHA256) s klíčem z PBKDF2-SHA256, 480 000 iterací a náhodnou solí pro
-každou poznámku. Heslo musí mít aspoň 4 znaky (stejně jako u zámku aplikace); pod 8 znaků NoirPad
-upozorní, že krátké heslo jde snadno prolomit.
+**Zamčené poznámky** jsou šifrované Fernetem (AES-128-CBC + HMAC-SHA256); klíč vzniká z vašeho
+hesla přes PBKDF2-SHA256 se 480 000 iteracemi a náhodnou solí pro každou poznámku. Heslo musí mít
+aspoň 4 znaky; pod 8 znaků NoirPad upozorní, že krátké heslo jde snadno prolomit.
 
 | Šifrované | Nešifrované |
 |---|---|
-| text poznámky | **název** poznámky, její **štítky** a **složka** |
+| text poznámky | **název** poznámky, **štítky** a **složka** |
 | | **obrázky** v poznámce (samostatné soubory v `images\`) |
 | | údaje o formátování, oblíbené, nastavení |
 
-- **Zapomenuté heslo k poznámce nejde obnovit.** Neexistuje reset ani zadní vrátka; poznámka
-  zůstane nečitelná.
-- Heslo se při odemčení jednou pošle místnímu serveru NoirPadu; ten si po dobu otevření poznámky
-  drží v paměti jen odvozený klíč a zapomene ho při zamčení, po nečinnosti nebo při ukončení.
-  Na disk ani do logu se nikdy nezapisuje.
+- **Zapomenuté heslo k poznámce nejde obnovit.** Neexistuje reset ani zadní vrátka.
+- Heslo se při odemčení jednou pošle místnímu serveru NoirPadu; po dobu otevření poznámky zůstává
+  v paměti jen odvozený klíč. Na disk ani do logu se nikdy nezapisuje.
+- **Zámek aplikace není šifrování.** Brání otevření NoirPadu, ale `notes_data.json` zůstává
+  čitelný pro každého s přístupem k vašemu účtu ve Windows. Šifrované jsou jen zamčené poznámky.
+  Zapomněli jste heslo k zámku aplikace? Zavřete NoirPad, smažte z `notes_data.json` položku
+  `"app_lock": { … }` a NoirPad znovu spusťte — poznámek se to nedotkne.
+- **Žádné síťové požadavky**: písma, vykreslování Markdownu i zvýrazňování kódu jsou součástí
+  aplikace. Ven vedou jen odkazy, na které sami kliknete.
 
-**Zámek aplikace není šifrování.** Brání otevření NoirPadu (místní server odmítá všechny požadavky,
-dokud ho neodemknete), ale `notes_data.json` zůstává čitelný pro každého, kdo má přístup k vašemu
-účtu ve Windows. Šifrované jsou jen zamčené poznámky.
+Bezpečnostní problémy hlaste prosím neveřejně, viz [SECURITY.md](SECURITY.md).
 
-*Zapomněli jste heslo k zámku aplikace?* Zavřete NoirPad, otevřete
-`%LOCALAPPDATA%\NoirPad\notes_data.json` v textovém editoru, smažte položku `"app_lock": { … }`
-(pozor na čárky, aby JSON zůstal platný), uložte a spusťte NoirPad. Poznámek se to nedotkne.
+## Vlastní server
 
-## Vlastní server (webová verze)
-
-NoirPad běží i jako malý webový server, třeba na domácím serveru. Potřebujete Python 3.14.
+NoirPad běží i jako malý webový server (Python 3.14), třeba na domácím serveru:
 
 ```bash
 git clone https://github.com/krystof2-ops/NoirPad.git
 cd NoirPad
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt        # Windows: .venv\Scripts\pip
-NOIRPAD_PASSWORD='dlouhá přístupová fráze' \
-NOIRPAD_ALLOWED_HOSTS=poznamky.example.org \
-NOIRPAD_HOST=127.0.0.1 NOIRPAD_PORT=8000 \
-.venv/bin/python NoirPad-web.py
+NOIRPAD_PASSWORD='dlouhé heslo' NOIRPAD_ALLOWED_HOSTS=notes.example.org \
+.venv/bin/python NoirPad-web.py                  # poslouchá na 127.0.0.1:8000
 ```
 
 | Proměnná | Význam |
 |---|---|
-| `NOIRPAD_PASSWORD` | Heslo pro přihlášení. **Povinné**, když server poslouchá jinde než na localhostu (jinak se odmítne spustit). |
-| `NOIRPAD_ALLOWED_HOSTS` | Čárkou oddělené názvy hostitelů, na které server odpovídá (ochrana proti DNS rebindingu). Localhost je povolený vždy. |
+| `NOIRPAD_PASSWORD` | Heslo pro přihlášení. **Povinné**, pokud server neposlouchá jen na localhostu. |
+| `NOIRPAD_ALLOWED_HOSTS` | Názvy hostitelů, na které server odpovídá (ochrana proti DNS rebindingu). |
 | `NOIRPAD_HOST`, `NOIRPAD_PORT` | Adresa a port, výchozí `127.0.0.1:8000`. |
-| `NOIRPAD_DATA_DIR` | Datová složka, výchozí `~/.local/share/NoirPad` (Linux) / `%LOCALAPPDATA%\NoirPad`. |
-| `NOIRPAD_SECURE_COOKIES` | `1` za HTTPS: session cookie dostane příznak `Secure`. |
+| `NOIRPAD_DATA_DIR` | Složka s daty, výchozí `~/.local/share/NoirPad` / `%LOCALAPPDATA%\NoirPad`. |
+| `NOIRPAD_SECURE_COOKIES` | `1` za HTTPS (session cookie dostane příznak `Secure`). |
 
-**Používejte HTTPS.** Nechte NoirPad na `127.0.0.1` a před něj dejte reverse proxy (Caddy, nginx,
-Traefik), která ukončí TLS a předá původní hlavičku `Host`. S Caddy:
+Nechte NoirPad na `127.0.0.1` a před něj dejte reverzní proxy s HTTPS (Caddy:
+`notes.example.org { reverse_proxy 127.0.0.1:8000 }`), která předává původní hlavičku `Host`.
 
-```
-poznamky.example.org {
-    reverse_proxy 127.0.0.1:8000
-}
-```
-
-Funguje i `uvicorn noirpad.app:app`, ale `NoirPad-web.py` navíc hlídá heslo podle tabulky výše
-a to, aby datovou složku používal vždy jen jeden NoirPad.
-
-## Sestavení ze zdrojáků, testy, licence
-
-Build pro Windows (testy → PyInstaller → Inno Setup, z čistého checkoutu):
+## Sestavení ze zdrojů
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File build.ps1
+powershell -ExecutionPolicy Bypass -File build.ps1    # testy → PyInstaller → Inno Setup
 ```
 
-Požadavky a podrobnosti jsou v [BUILD.md](BUILD.md). Spuštění ze zdrojáků:
-`python desktop.py` (okno) nebo `python NoirPad-web.py` (prohlížeč na http://127.0.0.1:8000).
+Požadavky a podrobnosti jsou v [BUILD.md](BUILD.md). Ze zdrojů: `python desktop.py` (okno) nebo
+`python NoirPad-web.py` (prohlížeč na http://127.0.0.1:8000).
 
-Testy:
+## Přispívání
+
+Chyby a nápady pište do [Issues](https://github.com/krystof2-ops/NoirPad/issues). Před pull
+requestem spusťte testy:
 
 ```bash
 pip install -r requirements-dev.txt && python -m pytest -q    # backend
 npm ci && npx vitest run                                       # frontend
 ```
 
-Bezpečnostní chyby: viz [SECURITY.md](SECURITY.md). Změny: [CHANGELOG.md](CHANGELOG.md).
+Změny v jednotlivých verzích: [CHANGELOG.md](CHANGELOG.md).
 
-Licence MIT – viz [LICENSE](LICENSE).
+## Licence
+
+MIT — viz [LICENSE](LICENSE).

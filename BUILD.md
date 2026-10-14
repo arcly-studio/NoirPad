@@ -59,8 +59,10 @@ test) on every push and pull request.
 
 - **Data directory:** both the exe and `python desktop.py` / `python NoirPad-web.py` use
   `%LOCALAPPDATA%\NoirPad`. For testing, set `NOIRPAD_DATA_DIR` to a scratch folder so real notes
-  are never touched. `tools/demo_data.py <dir>` fills a folder with demo notes;
-  `tools/take_screenshots.py` regenerates `docs/screenshots/` from them (needs `pip install playwright`).
+  are never touched. `tools/demo_data.py <dir> [--lang cs]` fills a folder with demo notes;
+  `tools/take_screenshots.py [--gif]` starts `desktop.py` on them and regenerates the README's
+  `docs/screenshots/` (and `docs/demo.gif`) over the WebView2 DevTools protocol (needs
+  `pip install playwright`, plus `ffmpeg` and `oxipng` on PATH).
 - **Logo:** the sources are `docs/brand/noirpad-icon.svg` (and `noirpad-icon-small.svg` for
   ≤ 24 px) with the raster export `docs/brand/noirpad-1024.png`. `noirpad.ico` (exe, window,
   installer), `static/favicon.ico`, `static/img/` and `docs/logo.png` are exported from them;

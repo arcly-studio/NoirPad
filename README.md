@@ -1,159 +1,199 @@
-**English** | [Čeština](README.cs.md)
+<div align="center">
 
-<p align="center"><img src="docs/logo.png" width="128" height="128" alt="NoirPad logo"></p>
+<img src="docs/logo.png" width="128" height="128" alt="NoirPad logo">
 
 # NoirPad
 
-A terminal-styled note app for Windows with Markdown, password-locked notes and 17 themes.
+**Encrypted markdown notes with a terminal soul — for Windows.**
 
-[![Release](https://img.shields.io/github/v/release/krystof2-ops/NoirPad?include_prereleases)](https://github.com/krystof2-ops/NoirPad/releases)
-[![Tests](https://github.com/krystof2-ops/NoirPad/actions/workflows/test.yml/badge.svg)](https://github.com/krystof2-ops/NoirPad/actions/workflows/test.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+**English** · [Čeština](README.cs.md)
 
-![NoirPad with a Markdown note](docs/screenshots/markdown.png)
+[![Latest release](https://img.shields.io/github/v/release/krystof2-ops/NoirPad)](https://github.com/krystof2-ops/NoirPad/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/krystof2-ops/NoirPad/total)](https://github.com/krystof2-ops/NoirPad/releases)
+[![License](https://img.shields.io/github/license/krystof2-ops/NoirPad)](LICENSE)
+![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows)
 
-**No account, no cloud, no telemetry — your notes stay on your PC.**
-NoirPad makes no network requests of its own: fonts, Markdown renderer and code highlighter are
-bundled. The only links that leave the app are the ones you click.
+<a href="https://github.com/krystof2-ops/NoirPad/releases/latest/download/NoirPad-Setup.exe"><img src="docs/buttons/download.svg" alt="Download for Windows" height="68"></a>
 
-| Welcome | Themes | Locked note |
-|:---:|:---:|:---:|
-| ![Welcome](docs/screenshots/welcome.png) | ![Themes](docs/screenshots/themes.png) | ![Locked note](docs/screenshots/encryption.png) |
+<sub>[All releases](https://github.com/krystof2-ops/NoirPad/releases)</sub>
+
+<img src="docs/demo.gif" width="960" alt="NoirPad demo: a new note, Markdown with a Python code block and live preview, switching the theme from the command bar, locking the note with a password">
+
+</div>
+
+## Why NoirPad?
+
+- **No account, no cloud, no telemetry** — notes live in a folder on your PC and NoirPad makes no
+  network requests of its own.
+- **Per-note encryption** — lock any note with its own password.
+- **Real Markdown** — live side-by-side preview, tables, task lists and syntax-highlighted code.
+- **17 themes** — from Matrix green to Tokyo Night, plus glow, CRT scanlines and Matrix rain.
 
 ## Features
 
-- **Notes and folders** — tree with drag & drop, tabs, tags, favorites, trash with restore.
-- **Two editing modes per note** — rich text, or Markdown with a live preview, tables, task lists
-  and syntax-highlighted code blocks.
-- **Locked notes** — encrypt a single note with its own password (details below).
-- **App lock** (optional) — ask for a password whenever NoirPad starts or after inactivity.
-- **Search** — find in the note, search across all notes, command bar (`Ctrl+Shift+P`).
-- **Images** — paste, drag & drop or insert; zoom with `Ctrl`+wheel.
-- **Export** — a note as TXT, HTML or PDF; everything as Markdown files or HTML in a ZIP. The
-  desktop app asks where to save (“Save as”) and then offers *Open folder*.
-- **Import** — Markdown files or a ZIP of them (adds notes, never deletes).
-- **Look** — 17 themes, UI and editor fonts, glow, CRT scanlines, Matrix rain, focus mode.
-- **Keyboard first** — every shortcut can be remapped; built-in help with `F1`.
-- **English and Czech UI** — starts in the language you chose in the installer, switchable in
-  Settings.
+### Writing
 
-## Download
+![A Markdown note with a Python code block, the folder tree on the left](docs/screenshots/hero.png)
 
-Get **`NoirPad-Setup-<version>.exe`** from **[Releases](https://github.com/krystof2-ops/NoirPad/releases)**.
-It installs for your user only (no admin rights) into `%LOCALAPPDATA%\Programs\NoirPad`.
+- Each note is **rich text** or **Markdown** (`Ctrl+M`), with tabs for open notes and a focus mode.
+- **Images**: paste, drag & drop or insert them; `Ctrl`+wheel resizes an image in the note.
+- Save with `Ctrl+S`, or turn on autosave in Settings.
 
-NoirPad needs the Microsoft Edge **WebView2 Runtime**. Windows 11 has it; on older systems the
-installer offers to download it from Microsoft.
+### Markdown & code
+
+![Markdown split view: the source on the left, the rendered table and task list on the right](docs/screenshots/split-preview.png)
+
+- Source on the left, **live preview** on the right.
+- **Tables, task lists, quotes** and fenced **code blocks with syntax highlighting**.
+- Shortcuts for bold, italic, inline code, code blocks and links (`Ctrl+B`, `Ctrl+I`, `Ctrl+E`,
+  `Ctrl+Shift+E`, `Ctrl+K`).
+
+### Encryption
+
+![Locking a note: password twice and a warning that a forgotten password cannot be recovered](docs/screenshots/encryption.png)
+
+- Lock a note with `Ctrl+Shift+L`; it opens only with its password.
+- Optional **app lock** asks for a password when NoirPad starts or after inactivity.
+- What is and isn't encrypted: see [Security & privacy](#security--privacy).
+
+### Themes
+
+![The same note in four themes: Matrix, Tokyo Night, Amber and Dracula](docs/screenshots/themes.png)
+
+- **17 themes**; UI and editor fonts are configurable too.
+- Glow intensity, CRT scanlines and Matrix rain — each can be switched off.
+- English and Czech UI; NoirPad starts in the language you chose in the installer.
+
+### Organize
+
+![The command bar with commands matching ":e"](docs/screenshots/command-palette.png)
+
+- **Folders** with drag & drop, **tags**, **favorites** (pinned to the top of their folder) and a
+  **trash** with restore.
+- **Find** in the note (`Ctrl+F`) or across all notes; the **command bar** (`Ctrl+Shift+P`)
+  runs commands like `:theme`, `:tag`, `:export`.
+- Every shortcut can be remapped in Settings.
+
+### Export & backup
+
+- A note as **TXT, HTML or PDF**; all notes as **Markdown** files or **HTML** pages in a ZIP.
+  The desktop app asks where to save and then offers *Open folder*.
+- **Backup**: one ZIP with all notes and images; *Import backup* restores it.
+- **Import** Markdown files or a ZIP of them — adds notes, never deletes any.
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+Shift+N` / `Ctrl+Shift+F` | New note / new folder |
+| `Ctrl+S` | Save |
+| `Ctrl+M` | Switch the note between rich text and Markdown |
+| `Ctrl+F`, `F3` / `Shift+F3` | Find in the note, next / previous match |
+| `Ctrl+Shift+L` | Lock or unlock the note |
+| `Ctrl+Shift+P` | Command bar |
+| `Ctrl+D` | Add to / remove from favorites |
+| `F2` / `Delete` | Rename / move to trash |
+| `Ctrl+B` | Sidebar (in the Markdown editor: bold) |
+| `Ctrl+Tab` / `Ctrl+W` | Next tab / close tab |
+| `Ctrl+,` / `F1` | Settings / help |
+
+The full list, with remapping, is in Settings → Keyboard shortcuts → Manage, and in the help (`F1`).
+
+## Install
+
+1. Download **[NoirPad-Setup.exe](https://github.com/krystof2-ops/NoirPad/releases/latest/download/NoirPad-Setup.exe)**
+   (or a specific version from [Releases](https://github.com/krystof2-ops/NoirPad/releases)).
+2. Run it. It installs for your user only — no admin rights — into
+   `%LOCALAPPDATA%\Programs\NoirPad`.
 
 **Windows SmartScreen:** the installer is not code-signed, so Windows may show “Windows protected
-your PC”. Click **More info → Run anyway**. To be sure the file is the one published here, compare
-its SHA-256 with the `.sha256` file next to it in the release:
+your PC”. Click **More info → Run anyway**. To check the file, compare its SHA-256 with the
+`.sha256` file next to it in the release:
 
 ```powershell
-Get-FileHash .\NoirPad-Setup-1.0.0.exe -Algorithm SHA256
+Get-FileHash .\NoirPad-Setup.exe -Algorithm SHA256
 ```
 
-## Your data
+NoirPad needs the Microsoft Edge **WebView2 Runtime**. Windows 11 has it; on Windows 10 the
+installer offers to download it from Microsoft.
 
-| What | Where |
-|---|---|
-| Notes, settings | `%LOCALAPPDATA%\NoirPad\notes_data.json` |
-| Images | `%LOCALAPPDATA%\NoirPad\images\` |
-| Automatic snapshots | `%LOCALAPPDATA%\NoirPad\backups\` — the last 7, at most one per 10 minutes, plus a copy before every backup import |
-| Log | `%LOCALAPPDATA%\NoirPad\logs\noirpad.log` — start-up and errors, never note content |
+**Your data** is in `%LOCALAPPDATA%\NoirPad` (paste it into the Explorer address bar):
+`notes_data.json` with notes and settings, `images\`, `backups\` with automatic snapshots (the last
+7, at most one per 10 minutes) and `logs\` (start-up and errors, never note content). If the data
+file is ever damaged, NoirPad keeps it aside and restores the newest good snapshot.
 
-Paste `%LOCALAPPDATA%\NoirPad` into the Explorer address bar to open the folder. Uninstalling
-removes the program folder (`%LOCALAPPDATA%\Programs\NoirPad`) completely and asks whether to delete
-your data folder too (default: keep it).
+**Uninstall** from Windows Settings → Apps. The program folder is removed completely; your notes
+stay unless you choose to delete them too.
 
-- **Backup:** Settings → Data → *Download backup* saves a ZIP with all notes and images.
-  *Import backup* **replaces** all notes with the ZIP's content (a safety copy is made first).
-- **Export:** *Export all as Markdown* writes one `.md` file per note (folders become directories,
-  images go to `assets/`); *Export all as HTML* does the same as readable web pages.
-  Locked notes are skipped — the app tells you how many.
-- If `notes_data.json` ever gets damaged, NoirPad keeps the damaged file, restores the newest good
-  snapshot and tells you.
+## Security & privacy
 
-## Encryption and the app lock
-
-**Locked notes** (Lock button / `Ctrl+Shift+L`) are encrypted with your password:
-Fernet (AES-128-CBC + HMAC-SHA256) with a key from PBKDF2-SHA256, 480 000 iterations and a random
-salt per note. A password needs at least 4 characters (the same for the app lock); below 8 NoirPad
-reminds you that short passwords are easy to crack.
+**Locked notes** are encrypted with Fernet (AES-128-CBC + HMAC-SHA256); the key comes from your
+password via PBKDF2-SHA256 with 480 000 iterations and a random salt per note. A password needs at
+least 4 characters; below 8 NoirPad reminds you that short passwords are easy to crack.
 
 | Encrypted | Not encrypted |
 |---|---|
-| the note's text | the note's **name**, its **tags** and its **folder** |
+| the note's text | the note's **name**, **tags** and **folder** |
 | | **images** in the note (separate files in `images\`) |
 | | formatting data, favorites, settings |
 
-- **A forgotten note password cannot be recovered.** There is no reset and no back door; the note
-  stays unreadable.
-- The password is sent once to NoirPad's local server to unlock; the server keeps only the derived
-  key in memory while the note is open and forgets it on lock, after inactivity or on exit.
-  It is never written to disk or to the log.
+- **A forgotten note password cannot be recovered.** There is no reset and no back door.
+- The password is sent once to NoirPad's own local server to unlock; only the derived key is kept
+  in memory while the note is open. It is never written to disk or to the log.
+- **The app lock is not encryption.** It keeps people out of NoirPad, but `notes_data.json` stays
+  readable to anyone with access to your Windows account. Only locked notes are encrypted.
+  Forgot the app-lock password? Close NoirPad, delete the `"app_lock": { … }` entry from
+  `notes_data.json`, start NoirPad again — your notes are untouched.
+- **No network requests**: fonts, Markdown renderer and code highlighter are bundled. The only
+  links that leave the app are the ones you click.
 
-**The app lock is not encryption.** It keeps people from opening NoirPad (the local server refuses
-every request until you unlock), but `notes_data.json` stays readable to anyone with access to your
-Windows account. Only locked notes are encrypted.
+Security issues: please report them privately, see [SECURITY.md](SECURITY.md).
 
-*Forgot the app-lock password?* Close NoirPad, open `%LOCALAPPDATA%\NoirPad\notes_data.json` in a
-text editor, delete the `"app_lock": { … }` entry (mind the commas so the JSON stays valid), save,
-and start NoirPad. Your notes are untouched.
+## Self-hosting
 
-## Self-hosting (web version)
-
-NoirPad also runs as a small web server, e.g. on a home server. You need Python 3.14.
+NoirPad also runs as a small web server (Python 3.14), e.g. on a home server:
 
 ```bash
 git clone https://github.com/krystof2-ops/NoirPad.git
 cd NoirPad
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt        # Windows: .venv\Scripts\pip
-NOIRPAD_PASSWORD='a long passphrase' \
-NOIRPAD_ALLOWED_HOSTS=notes.example.org \
-NOIRPAD_HOST=127.0.0.1 NOIRPAD_PORT=8000 \
-.venv/bin/python NoirPad-web.py
+NOIRPAD_PASSWORD='a long passphrase' NOIRPAD_ALLOWED_HOSTS=notes.example.org \
+.venv/bin/python NoirPad-web.py                  # listens on 127.0.0.1:8000
 ```
 
 | Variable | Meaning |
 |---|---|
-| `NOIRPAD_PASSWORD` | Login password. **Required** when listening on anything but localhost (the server refuses to start otherwise). |
-| `NOIRPAD_ALLOWED_HOSTS` | Comma-separated host names the server answers to (protects against DNS rebinding). Localhost is always allowed. |
+| `NOIRPAD_PASSWORD` | Login password. **Required** when listening on anything but localhost. |
+| `NOIRPAD_ALLOWED_HOSTS` | Host names the server answers to (DNS-rebinding protection). |
 | `NOIRPAD_HOST`, `NOIRPAD_PORT` | Listen address, default `127.0.0.1:8000`. |
-| `NOIRPAD_DATA_DIR` | Data folder, default `~/.local/share/NoirPad` (Linux) / `%LOCALAPPDATA%\NoirPad`. |
-| `NOIRPAD_SECURE_COOKIES` | `1` behind HTTPS: the session cookie gets the `Secure` flag. |
+| `NOIRPAD_DATA_DIR` | Data folder, default `~/.local/share/NoirPad` / `%LOCALAPPDATA%\NoirPad`. |
+| `NOIRPAD_SECURE_COOKIES` | `1` behind HTTPS (the session cookie gets the `Secure` flag). |
 
-**Use HTTPS.** Keep NoirPad on `127.0.0.1` and put a reverse proxy (Caddy, nginx, Traefik) in front
-that terminates TLS and passes the original `Host` header. With Caddy:
+Keep NoirPad on `127.0.0.1` and put a reverse proxy with HTTPS in front (Caddy:
+`notes.example.org { reverse_proxy 127.0.0.1:8000 }`), passing the original `Host` header.
 
-```
-notes.example.org {
-    reverse_proxy 127.0.0.1:8000
-}
-```
-
-`uvicorn noirpad.app:app` works too, but `NoirPad-web.py` adds the password check above and makes
-sure only one NoirPad uses the data folder at a time.
-
-## Building from source, tests, license
-
-Windows build (tests → PyInstaller → Inno Setup, from a clean checkout):
+## Build from source
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File build.ps1
+powershell -ExecutionPolicy Bypass -File build.ps1    # tests → PyInstaller → Inno Setup
 ```
 
-See [BUILD.md](BUILD.md) for requirements and details. Running from source:
-`python desktop.py` (window) or `python NoirPad-web.py` (browser at http://127.0.0.1:8000).
+Requirements and details are in [BUILD.md](BUILD.md). From source: `python desktop.py` (window) or
+`python NoirPad-web.py` (browser at http://127.0.0.1:8000).
 
-Tests:
+## Contributing
+
+Bug reports and ideas are welcome in [Issues](https://github.com/krystof2-ops/NoirPad/issues).
+For a pull request, run the tests first:
 
 ```bash
 pip install -r requirements-dev.txt && python -m pytest -q    # backend
 npm ci && npx vitest run                                       # frontend
 ```
 
-Security issues: see [SECURITY.md](SECURITY.md). Changes: [CHANGELOG.md](CHANGELOG.md).
+Changes per version: [CHANGELOG.md](CHANGELOG.md).
 
-MIT License — see [LICENSE](LICENSE).
+## License
+
+MIT — see [LICENSE](LICENSE).

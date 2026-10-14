@@ -66,6 +66,16 @@ jobs:
           }
           $notes | Set-Content release-notes.md -Encoding utf8
 
+      # The same installer under a fixed name, so README's
+      # releases/latest/download/NoirPad-Setup.exe always gets the newest one.
+      - name: Installer copy under a stable name
+        shell: pwsh
+        run: |
+          $version = $env:TAG.TrimStart("v")
+          Copy-Item "dist/installer/NoirPad-Setup-$version.exe" "dist/installer/NoirPad-Setup.exe"
+          $hash = (Get-FileHash -Algorithm SHA256 "dist/installer/NoirPad-Setup.exe").Hash.ToLower()
+          Set-Content "dist/installer/NoirPad-Setup.exe.sha256" "$hash  NoirPad-Setup.exe" -Encoding ascii -NoNewline
+
       - name: Create draft release
         shell: pwsh
         env:
@@ -75,4 +85,6 @@ jobs:
           gh release create "$env:TAG" `
             "dist/installer/NoirPad-Setup-$version.exe" `
             "dist/installer/NoirPad-Setup-$version.exe.sha256" `
+            "dist/installer/NoirPad-Setup.exe" `
+            "dist/installer/NoirPad-Setup.exe.sha256" `
             --draft --title "NoirPad $version" --notes-file release-notes.md
