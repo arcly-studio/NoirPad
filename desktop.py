@@ -54,8 +54,8 @@ WINDOW_MIN_HEIGHT = 480
 WINDOW_INITIAL_WIDTH = 1280
 WINDOW_INITIAL_HEIGHT = 800
 
-# Held while NoirPad runs; installer.iss AppMutex uses the same name so
-# setup/uninstall can ask the user to close the app first.
+# Held until the process is gone; installer.iss AppMutex uses the same name
+# so setup/uninstall can ask the user to close the app first.
 APP_MUTEX = "NoirPad-B6F2E7C0-AppMutex"
 
 WEBVIEW2_GUID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
@@ -154,11 +154,20 @@ def _webview2_version() -> Optional[str]:
     return None
 
 
-def _hold_app_mutex():
-    if sys.platform != "win32":
-        return None
+_app_mutex = None
+
+
+def _hold_app_mutex() -> None:
+    """Create the installer mutex and never close it: Windows releases it
+    when the process ends. Closing it when the window closes left a few
+    seconds (WebView2 and .NET shutting down) in which the uninstaller saw
+    no NoirPad, yet NoirPad.exe and python314.dll were still locked, and
+    the uninstall left the program folder behind (B8)."""
+    global _app_mutex
+    if sys.platform != "win32" or _app_mutex:
+        return
     import ctypes
-    return ctypes.windll.kernel32.CreateMutexW(None, False, APP_MUTEX)
+    _app_mutex = ctypes.windll.kernel32.CreateMutexW(None, False, APP_MUTEX)
 
 
 def _find_app_window() -> int:
@@ -323,16 +332,13 @@ def _run(data_dir: Path, log_file: Path, lang: str, smoke: bool = False) -> int:
             return 3
         _focus_running_instance(lang)
         return 0
-    mutex = _hold_app_mutex()
-    # Both are released before main() shows an error box, so a NoirPad
-    # started meanwhile doesn't report "already running" on top of it.
+    _hold_app_mutex()
+    # The data lock is released before main() shows an error box, so a
+    # NoirPad started meanwhile doesn't report "already running" on top of it.
     try:
         return _serve(lang, smoke)
     finally:
         instance_lock.close()
-        if mutex:
-            import ctypes
-            ctypes.windll.kernel32.CloseHandle(mutex)
 
 
 def _serve(lang: str, smoke: bool) -> int:

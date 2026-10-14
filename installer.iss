@@ -9,7 +9,8 @@
 ;     ISCC /DAppVersion=x.y.z /DAppURL=https://github.com/... installer.iss
 ;
 ;  Notes live in %LOCALAPPDATA%\NoirPad (separate from the install dir).
-;  Uninstalling asks whether to delete them too; the default is NO.
+;  Uninstalling removes the whole install dir and asks whether to delete the
+;  notes too; the default is NO.
 ; ============================================================================
 
 #ifndef AppVersion
@@ -25,6 +26,8 @@
 #define SourceDir     "dist\NoirPad"
 ; Same name as APP_MUTEX in desktop.py: setup/uninstall see a running NoirPad.
 #define AppMutexName  "NoirPad-B6F2E7C0-AppMutex"
+; Data folder under %LOCALAPPDATA% (platformdirs user_data_dir in config.py).
+#define DataDirName   "NoirPad"
 #define WebView2Guid  "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 #define WebView2Url   "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
 
@@ -80,6 +83,8 @@ english.WebView2Missing=NoirPad needs the Microsoft Edge WebView2 Runtime, which
 czech.WebView2Missing=NoirPad potřebuje Microsoft Edge WebView2 Runtime, který na tomto počítači není nainstalovaný.%n%nStáhnout ho teď od Microsoftu a nainstalovat?%n(Když zvolíte Ne, NoirPad vám to připomene při spuštění.)
 english.WebView2Failed=WebView2 could not be installed automatically (%1).%n%nThe download page will open in your browser.
 czech.WebView2Failed=WebView2 se nepodařilo nainstalovat automaticky (%1).%n%nV prohlížeči se otevře stránka ke stažení.
+english.AppStillRunning=NoirPad is still running and cannot be removed while it is open.%n%nClose it now? Unsaved changes in an open note may be lost.
+czech.AppStillRunning=NoirPad pořád běží a nejde odebrat, dokud je otevřený.%n%nZavřít ho teď? Neuložené změny v otevřené poznámce se mohou ztratit.
 english.DeleteData=Also delete your notes, backups and settings?%n%n%1%n%nThis cannot be undone. Choose No to keep them (recommended if you plan to reinstall).
 czech.DeleteData=Smazat i vaše poznámky, zálohy a nastavení?%n%n%1%n%nTo nejde vrátit. Zvolte Ne, pokud si je chcete nechat (doporučeno, pokud budete NoirPad instalovat znovu).
 
@@ -106,8 +111,10 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename:
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{app}\_internal"
-Type: files;          Name: "{app}\{#AppExeName}"
+; Everything in the install dir, including files added after installing.
+; Only program files live here (AppendDefaultDirName keeps a browsed-to
+; folder from being used as {app} itself); notes are in %LOCALAPPDATA%\NoirPad.
+Type: filesandordirs; Name: "{app}"
 
 [Code]
 var
@@ -170,17 +177,148 @@ begin
   end;
 end;
 
+function DataDir(): String;
+begin
+  Result := ExpandConstant('{localappdata}\{#DataDirName}');
+end;
+
+// ---- Processes that lock the install dir ----------------------------------
+// NoirPad.exe (or anything else) started from the install dir, plus the
+// WebView2 processes of NoirPad's profile (--user-data-dir inside the data
+// folder). NoirPad holds AppMutex until its process is gone, so Setup and
+// Uninstall already wait for an open NoirPad; this is the fallback for a
+// process that is still shutting down or hangs. Nothing else is closed.
+
+function StartsWithText(const S, Prefix: String): Boolean;
+begin
+  Result := (Length(S) >= Length(Prefix)) and
+            (CompareText(Copy(S, 1, Length(Prefix)), Prefix) = 0);
+end;
+
+function VarText(const V: Variant): String;
+begin
+  if VarIsNull(V) or VarIsEmpty(V) then
+    Result := ''
+  else
+    Result := V;
+end;
+
+var
+  Wmi: Variant;
+
+{ Space-separated PIDs, '' when none. The uninstaller itself (unins000.exe
+  in the install dir) is not NoirPad and never matches. }
+function AppProcessIds(): String;
+var
+  Locator, Items, Item: Variant;
+  AppDir, Profile: String;
+  I: Integer;
+begin
+  Result := '';
+  AppDir := AddBackslash(ExpandConstant('{app}'));
+  Profile := Lowercase(AddBackslash(DataDir()) + 'webview\');
+  try
+    if VarIsEmpty(Wmi) then
+    begin
+      Locator := CreateOleObject('WbemScripting.SWbemLocator');
+      Wmi := Locator.ConnectServer('.', 'root\CIMV2');
+    end;
+    Items := Wmi.ExecQuery('SELECT ProcessId, Name, ExecutablePath, CommandLine FROM Win32_Process ' +
+                           'WHERE Name = ''{#AppExeName}'' OR Name = ''msedgewebview2.exe''');
+    for I := 0 to Items.Count - 1 do
+    begin
+      Item := Items.ItemIndex(I);
+      if StartsWithText(VarText(Item.ExecutablePath), AppDir) or
+         ((CompareText(VarText(Item.Name), 'msedgewebview2.exe') = 0) and
+          (Pos(Profile, Lowercase(VarText(Item.CommandLine))) > 0)) then
+        Result := Result + ' ' + IntToStr(Item.ProcessId);
+    end;
+  except
+    Log('Listing processes failed: ' + GetExceptionMessage);
+  end;
+  Result := Trim(Result);
+end;
+
+function GetTickCount: DWORD; external 'GetTickCount@kernel32.dll stdcall';
+
+function WaitForAppExit(Seconds: Integer): Boolean;
+var
+  Deadline: DWORD;
+begin
+  Deadline := GetTickCount + Seconds * 1000;
+  repeat
+    Result := AppProcessIds() = '';
+    if Result or (GetTickCount >= Deadline) then
+      exit;
+    Sleep(250);
+  until False;
+end;
+
+procedure KillProcesses(Pids: String; Force: Boolean);
+var
+  Pid: String;
+  P, Code: Integer;
+begin
+  Pids := Pids + ' ';
+  while Trim(Pids) <> '' do
+  begin
+    P := Pos(' ', Pids);
+    Pid := Copy(Pids, 1, P - 1);
+    Delete(Pids, 1, P);
+    if Pid = '' then
+      continue;
+    if Force then
+      Pid := '/F /PID ' + Pid
+    else
+      Pid := '/PID ' + Pid;
+    Log('taskkill ' + Pid);
+    Exec(ExpandConstant('{sys}\taskkill.exe'), Pid, '', SW_HIDE, ewWaitUntilTerminated, Code);
+  end;
+end;
+
+// True when nothing from the install dir runs any more (asks first unless silent).
+function CloseAppProcesses(Silent: Boolean): Boolean;
+begin
+  Result := True;
+  if WaitForAppExit(10) then
+    exit;
+  Log('Still running from the install dir: ' + AppProcessIds());
+  if not Silent and
+     (MsgBox(CustomMessage('AppStillRunning'), mbConfirmation, MB_YESNO) <> IDYES) then
+  begin
+    Result := False;
+    exit;
+  end;
+  KillProcesses(AppProcessIds(), False);    { WM_CLOSE first }
+  if WaitForAppExit(5) then
+    exit;
+  KillProcesses(AppProcessIds(), True);
+  Result := WaitForAppExit(5);
+  if not Result then
+    Log('Could not stop: ' + AppProcessIds());
+end;
+
+// Upgrade: [InstallDelete] removes the old _internal, which NoirPad locks.
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  Result := '';
+  if not CloseAppProcesses(WizardSilent()) then
+    Result := SetupMessage(msgSetupAppRunningError);
+end;
+
+function InitializeUninstall(): Boolean;
+begin
+  Result := CloseAppProcesses(UninstallSilent());
+end;
+
 { Ask (default: No) whether the notes in %LOCALAPPDATA%\NoirPad go too. }
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
-var
-  DataDir: String;
 begin
   if (CurUninstallStep <> usPostUninstall) or UninstallSilent() then
     exit;
-  DataDir := ExpandConstant('{localappdata}\NoirPad');
-  if not DirExists(DataDir) then
+  if not DirExists(DataDir()) then
     exit;
-  if MsgBox(FmtMessage(CustomMessage('DeleteData'), [DataDir]), mbConfirmation,
+  if MsgBox(FmtMessage(CustomMessage('DeleteData'), [DataDir()]), mbConfirmation,
             MB_YESNO or MB_DEFBUTTON2) = IDYES then
-    DelTree(DataDir, True, True, True);
+    DelTree(DataDir(), True, True, True);
 end;

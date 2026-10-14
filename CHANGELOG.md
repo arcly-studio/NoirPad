@@ -35,3 +35,11 @@ First public release.
   longer be picked up by the new one.
 - Every build is smoke-tested: the packed `NoirPad.exe` must start and answer before an installer
   is made.
+
+### From the release test of the installer
+- Uninstalling removes the whole program folder. Before, an uninstall started while NoirPad was
+  still shutting down (a few seconds after its window closed) could not delete the locked
+  `NoirPad.exe`, `python314.dll` and libraries and left them behind. NoirPad now holds its
+  installer mutex until the process has really ended, and Setup/Uninstall wait for (and, if
+  needed, close) programs running from the install folder and NoirPad's WebView2 processes.
+  Notes in `%LOCALAPPDATA%\NoirPad` are still deleted only when you answer Yes.

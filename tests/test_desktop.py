@@ -211,3 +211,54 @@ def test_installer_removes_the_previous_build_first():
     iss = (ROOT / "installer.iss").read_text(encoding="utf-8")
     section = iss.split("[InstallDelete]", 1)[1].split("\n[", 1)[0]
     assert r'Type: filesandordirs; Name: "{app}\_internal"' in section
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows mutex")
+def test_installer_mutex_stays_held_until_the_process_ends(desk, np_backend, monkeypatch):
+    """B8: releasing AppMutex when the window closed let the uninstaller
+    start while NoirPad.exe was still shutting down and locking its files."""
+    import ctypes
+    monkeypatch.setattr(desktop, "_webview2_version", lambda: None)
+    assert desktop.main([]) == 2
+    handle = ctypes.windll.kernel32.OpenMutexW(0x00100000, False, desktop.APP_MUTEX)  # SYNCHRONIZE
+    assert handle, "AppMutex was released before the process ended"
+    ctypes.windll.kernel32.CloseHandle(handle)
+
+
+def test_webview_profile_lives_in_the_data_dir(tmp_path, monkeypatch):
+    """B8: nothing NoirPad writes at run time may land in the install dir."""
+    calls = {}
+    fake = types.SimpleNamespace(
+        settings={},
+        create_window=lambda *a, **kw: None,
+        start=lambda **kw: calls.update(kw),
+    )
+    monkeypatch.setitem(sys.modules, "webview", fake)
+    desktop._show_window(1234, "tok", tmp_path)
+    assert Path(calls["storage_path"]) == tmp_path / "webview"
+    assert calls["private_mode"] is False
+
+
+def _installer_section(name):
+    iss = (ROOT / "installer.iss").read_text(encoding="utf-8-sig")
+    return iss.split(f"[{name}]", 1)[1].split("\n[", 1)[0]
+
+
+def test_uninstaller_removes_the_whole_install_dir():
+    """B8: the uninstall left NoirPad.exe, python314.dll, … behind."""
+    section = _installer_section("UninstallDelete")
+    assert 'Type: filesandordirs; Name: "{app}"' in section
+    entries = [line for line in section.splitlines() if line.startswith("Type:")]
+    assert not any("localappdata" in line.lower() for line in entries)   # notes: only on "Yes"
+
+
+def test_installer_closes_noirpad_processes_first():
+    code = _installer_section("Code")
+    assert "function InitializeUninstall(): Boolean;" in code
+    assert "Result := CloseAppProcesses(UninstallSilent());" in code
+    assert "function PrepareToInstall(" in code
+    # Only processes started from {app} or using NoirPad's WebView2 profile.
+    assert "StartsWithText(VarText(Item.ExecutablePath), AppDir)" in code
+    assert "'msedgewebview2.exe'" in code
+    # The data folder is deleted only after the user said Yes.
+    assert "MB_YESNO or MB_DEFBUTTON2) = IDYES then\n    DelTree(DataDir()" in code
