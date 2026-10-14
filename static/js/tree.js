@@ -168,8 +168,21 @@ window.NP = window.NP || {};
                 container.appendChild(sep);
 
                 var header = document.createElement("div");
-                header.style.cssText = "padding:4px 12px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--fg-dim);opacity:0.6;user-select:none;";
-                header.textContent = NP.t("tree.trashHeader");
+                header.className = "tree-trash-header";
+                var label = document.createElement("span");
+                label.className = "tree-trash-title";
+                label.textContent = NP.t("tree.trashHeader");
+                header.appendChild(label);
+                var emptyBtn = document.createElement("button");
+                emptyBtn.type = "button";
+                emptyBtn.className = "trash-btn trash-btn--danger trash-btn--text tree-trash-empty";
+                emptyBtn.textContent = NP.t("trash.emptyTitle");
+                emptyBtn.title = NP.t("trash.emptyTitle");
+                emptyBtn.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    if (NP.trash && NP.trash.empty) NP.trash.empty();
+                });
+                header.appendChild(emptyBtn);
                 container.appendChild(header);
 
                 for (var t = 0; t < trashTree.length; t++) {
@@ -251,22 +264,24 @@ window.NP = window.NP || {};
             div.className = "tree-item tree-item--trash";
             div.setAttribute("data-id", item.id);
             div.style.paddingLeft = (depth * 20 + 12) + "px";
-            div.style.opacity = "0.5";
 
             var isFolder = item.type === "folder";
-            var html = "";
+            var html = "<span class='tree-trash-name'>";
 
             if (isFolder) {
                 html += "<span style='margin-right:4px;'>&#128193;</span>";
             } else {
                 html += "<span style='margin-right:4px;font-size:8px;color:var(--fg-dim);'>\u25c6</span>";
             }
-            html += "<span style='color:var(--fg-dim);'>" + NP.escapeHtml(item.name) + "</span>";
-            html += "<span class='tree-trash-restore' style='margin-left:auto;cursor:pointer;padding:0 3px;color:var(--fg-dim);font-size:11px;' title='" + NP.escapeHtml(NP.t("common.restore")) + "'>\u21a9</span>";
-            html += "<span class='tree-trash-delete' style='cursor:pointer;padding:0 3px;color:var(--fg-dim);font-size:10px;' title='" + NP.escapeHtml(NP.t("tree.deletePermanently")) + "'>\u00d7</span>";
+            html += "<span class='tree-trash-label'>" + NP.escapeHtml(item.name) + "</span></span>";
+            /* Big targets (32×32), icon + tooltip/aria-label, delete in red. */
+            var restoreLabel = NP.escapeHtml(NP.t("trash.restoreItem", { name: item.name }));
+            var deleteLabel = NP.escapeHtml(NP.t("trash.deleteItem", { name: item.name }));
+            html += "<button type='button' class='trash-btn trash-btn--restore tree-trash-restore' title='" +
+                NP.escapeHtml(NP.t("common.restore")) + "' aria-label='" + restoreLabel + "'>\u21a9</button>";
+            html += "<button type='button' class='trash-btn trash-btn--danger tree-trash-delete' title='" +
+                NP.escapeHtml(NP.t("tree.deletePermanently")) + "' aria-label='" + deleteLabel + "'>\u00d7</button>";
 
-            div.style.display = "flex";
-            div.style.alignItems = "center";
             div.innerHTML = html;
 
             /* Restore button */
@@ -304,8 +319,7 @@ window.NP = window.NP || {};
 
             /* Click on trash item to view (read-only) */
             div.addEventListener("click", function (e) {
-                if (e.target.classList.contains("tree-trash-restore") ||
-                    e.target.classList.contains("tree-trash-delete")) return;
+                if (e.target.closest(".trash-btn")) return;
                 if (item.type === "note" && NP.editor) {
                     NP.editor.loadNote(item.id);
                 }

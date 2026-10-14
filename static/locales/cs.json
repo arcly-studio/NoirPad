@@ -649,7 +649,9 @@
   },
   "trash": {
     "confirmEmpty": "Trvale smazat všechny položky v koši? Tuto akci nelze vrátit.",
-    "emptyTitle": "Vysypat koš"
+    "emptyTitle": "Vysypat koš",
+    "restoreItem": "Obnovit „{name}“",
+    "deleteItem": "Trvale smazat „{name}“"
   },
   "ui": {
     "splash": {

@@ -53,3 +53,6 @@ First public release.
   "127.0.0.1 says", always in the UI language): Enter confirms, Escape cancels, the name field
   is focused and checked (not empty, none of `\ / : * ? " < > |`, at most 300 characters), and
   actions that cannot be undone get a red button. Rename starts with the current name.
+- Trash in the sidebar: Restore (↩) and Delete permanently (×) are real buttons with a 32×32 px
+  target, a tooltip and a screen-reader label; delete is red and asks first. The trash header
+  has an "Empty trash" button (also with a confirmation).

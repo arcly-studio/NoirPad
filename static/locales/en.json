@@ -617,7 +617,9 @@
   },
   "trash": {
     "confirmEmpty": "Permanently delete all items in trash? This cannot be undone.",
-    "emptyTitle": "Empty trash"
+    "emptyTitle": "Empty trash",
+    "restoreItem": "Restore '{name}'",
+    "deleteItem": "Delete '{name}' permanently"
   },
   "ui": {
     "splash": {
