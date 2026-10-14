@@ -128,7 +128,7 @@ window.NP = window.NP || {};
            keepalive has the same ~64KB body limit. */
         _flushBeacon: function (leaving) {
             var id = NP.editor._currentNoteId;
-            if (!id) return;
+            if (!id || NP.editor._loadedNoteId !== id) return;
             var token = NP.editor._unlockToken;
             if (NP.editor._currentNoteEncrypted && !token) return;
             var mdActive = NP.markdown && NP.markdown.isActive &&
@@ -180,6 +180,9 @@ window.NP = window.NP || {};
 
             NP.editor._currentNoteId = id;
             NP.state.currentNoteId = id;
+            /* Until this note's content is in the editor, the editor still
+               shows the previous note: nothing may be saved (K1). */
+            NP.editor._loadedNoteId = null;
 
             /* Sidebar highlight follows whichever note is open,
                regardless of how it was opened (tree click, tab,
@@ -199,7 +202,8 @@ window.NP = window.NP || {};
             }
 
             return NP.api.getNote(id).then(function (data) {
-                if (!NP.editor.el) return;
+                /* The user opened another note meanwhile: this answer is stale. */
+                if (!NP.editor.el || NP.editor._currentNoteId !== id) return;
 
                 var content = data.content || "";
                 var formats = data.formats || [];
@@ -259,6 +263,7 @@ window.NP = window.NP || {};
                         if (NP.markdown && NP.markdown.applyForLoadedNote) {
                             NP.markdown.applyForLoadedNote(id, decContent);
                         }
+                        NP.editor._loadedNoteId = id;
                     }).catch(function (err) {
                         NP.dialog.alert(NP.t("editor.unlockFailed", {
                             error: err && err.message ? err.message : err }));
@@ -284,6 +289,7 @@ window.NP = window.NP || {};
                 if (NP.markdown && NP.markdown.applyForLoadedNote) {
                     NP.markdown.applyForLoadedNote(id, content);
                 }
+                NP.editor._loadedNoteId = id;
             }).catch(function (err) {
                 console.error("loadNote error:", err);
                 if (NP.editor.el) {
@@ -751,7 +757,8 @@ window.NP = window.NP || {};
 
         save: function (silent) {
             var id = NP.editor._currentNoteId;
-            if (!id || !NP.editor.el) {
+            if (!id || !NP.editor.el || NP.editor._loadedNoteId !== id) {
+                /* Nothing open, or the editor still holds another note. */
                 return Promise.resolve();
             }
 
