@@ -169,7 +169,7 @@ input, textarea {
 /* Button bar */
 #button-bar {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 4px;
     padding: 8px;
     border-bottom: 1px solid var(--border);
@@ -180,7 +180,8 @@ input, textarea {
 }
 
 #button-bar button {
-    padding: 4px 3px;   /* long Czech labels (Přejmenovat) need the room (C8) */
+    padding: 4px 6px;
+    grid-column: span 2;
     font-size: 10px;
     min-height: 24px;
     min-width: 0;
@@ -205,11 +206,12 @@ input, textarea {
     text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur-sm, 12px) var(--glow);
 }
 
-/* 5 buttons in a 3-col grid: Backup spans the 2nd+3rd cell of row 2 so
-   there is no empty slot (row 1: +Folder / +Note / Delete, row 2:
-   Rename / Backup[span 2]). */
+/* 5 buttons on a 6-column grid: row 1 +Folder / +Note / Delete (a third
+   each), row 2 Rename / Backup (half each), so a long label such as the
+   Czech "Přejmenovat" has room (C8). */
+#button-bar #btn-rename,
 #button-bar #btn-backup {
-    grid-column: span 2;
+    grid-column: span 3;
 }
 
 /* Tree container */

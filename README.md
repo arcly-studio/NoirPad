@@ -33,7 +33,7 @@
 
 ### Writing
 
-![A Markdown note with a Python code block, the folder tree on the left](docs/screenshots/hero.png)
+![A rich-text note with a large heading, italic text and a picture; the folder tree on the left](docs/screenshots/hero.png)
 
 - Each note is **rich text** or **Markdown** (`Ctrl+M`), with tabs for open notes and a focus mode.
 - **Images**: paste, drag & drop or insert them; `Ctrl`+wheel resizes an image in the note.
@@ -41,7 +41,7 @@
 
 ### Markdown & code
 
-![Markdown split view: the source on the left, the rendered table and task list on the right](docs/screenshots/split-preview.png)
+![Markdown split view in the Tokyo Night theme: the source on the left; the rendered table, highlighted Python code and task list on the right](docs/screenshots/split-preview.png)
 
 - Source on the left, **live preview** on the right.
 - **Tables, task lists, quotes** and fenced **code blocks with syntax highlighting**.

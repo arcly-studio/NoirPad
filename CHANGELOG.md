@@ -76,3 +76,26 @@ First public release.
   The sources are in `docs/brand/`.
 - The image viewer, Ctrl+wheel resizing and the picture styles apply only to pictures in a note;
   the logo and other interface images cannot be clicked, dragged or highlighted.
+
+### From the deep review before release
+- Switching notes quickly can no longer save one note's text under another note.
+- Switching an unlocked locked note to Markdown (`Ctrl+M`) kept it encrypted only in memory and
+  saved it as plain text; it now stays encrypted, and the server refuses to overwrite a locked
+  note with plain text.
+- Auto-lock and opening a locked note no longer leave Markdown text visible on screen.
+- Emptying the trash no longer deletes an image that another note still shows.
+- A long note typed into just before closing the window is saved (the desktop app saves first,
+  then closes; text is also saved one second after you stop typing).
+- The status bar counts characters and words in Markdown mode; a failed save is reported.
+- Restoring a backup checks it first: malformed, damaged or password-protected archives and
+  oversized images are refused without touching your notes.
+- HTML exports include the note's images. A note in the trash can be opened read-only and
+  restored from there; restored favorites keep their star.
+- Search ignores accents and letter case (`cestina` finds `Čeština`).
+- Readable secondary text in every theme, Matrix rain no longer runs under the note title, `F11`
+  toggles full screen, guessing a note's password is rate-limited.
+- Clicking anywhere on a folder row opens or closes it.
+- Smaller fixes: shortcuts no longer act behind Settings or Help, `:matrix` really toggles,
+  `Ctrl+Shift+E` wraps the selection in a code block, drag and drop refuses impossible targets,
+  tags are de-duplicated, cut-off image uploads are refused.
+- The installer always installs to `%LOCALAPPDATA%\Programs\NoirPad` (no folder page).

@@ -33,7 +33,7 @@
 
 ### Psaní
 
-![Poznámka v Markdownu s blokem kódu v Pythonu, vlevo strom složek (české rozhraní)](docs/screenshots/hero-cs.png)
+![Formátovaná poznámka s velkým nadpisem, kurzívou a obrázkem, vlevo strom složek (české rozhraní)](docs/screenshots/hero-cs.png)
 
 - Každá poznámka je **formátovaný text** nebo **Markdown** (`Ctrl+M`); otevřené poznámky jsou
   v záložkách, k dispozici je i režim soustředění.
@@ -43,7 +43,7 @@
 
 ### Markdown a kód
 
-![Markdown vedle sebe: vlevo zdroj, vpravo vykreslená tabulka a seznam úkolů](docs/screenshots/split-preview.png)
+![Markdown vedle sebe v motivu Tokyo Night: vlevo zdroj, vpravo vykreslená tabulka, zvýrazněný kód v Pythonu a seznam úkolů](docs/screenshots/split-preview.png)
 
 - Vlevo zdroj, vpravo **živý náhled**.
 - **Tabulky, úkoly, citace** a **bloky kódu se zvýrazněním syntaxe**.

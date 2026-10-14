@@ -9,6 +9,7 @@ docs/screenshots/ and docs/demo.gif at any time.
 """
 
 import json
+import math
 import struct
 import sys
 import zlib
@@ -41,6 +42,9 @@ SQL_ID = _id(10)
 DEBOUNCE_ID = _id(11)
 SIDE_ID = _id(12)
 TRIP_ID = _id(13)
+PHOTO_ID = _id(14)        # hero: a rich-text note with a picture
+
+PHOTO_IMAGE = "22222222-2222-4222-8222-000000000002.png"
 
 CHART_IMAGE = "22222222-2222-4222-8222-000000000001.png"
 
@@ -96,6 +100,13 @@ def retry(times=3, delay=0.5):
 | Run the full test suite | CI | done |
 | Update the changelog | Tom | in review |
 | Build and sign | Anna | waiting |
+
+```python
+VERSION = "2.4"
+if run_tests() != 0:
+    raise SystemExit("tests must pass")
+tag(f"v{VERSION}", message="Release 2.4")
+```
 
 ## Before tagging
 
@@ -218,6 +229,24 @@ Trail: 14 km, 900 m up. Start before 8:00.
 """,
 }
 
+# A rich-text note: plain text + format runs ("line.col" positions).
+PHOTO = f"""Trip to the Tatras
+
+Three days, two huts and one very cold lake.
+
+<<IMG:{PHOTO_IMAGE}|w=520>>
+
+Day 1 – Štrbské Pleso to Popradské pleso, 12 km
+Day 2 – Rysy (2,499 m), start at 6:00
+Day 3 – down to Hrebienok, lunch, train home
+
+Packing: headlamp, rain jacket, thermos, plasters."""
+PHOTO_FORMATS = [
+    {"start": "1.0", "end": "1.18", "size": 24},
+    {"start": "3.0", "end": "3.44", "italic": True},
+    {"start": "11.0", "end": "11.8", "underline": True},
+]
+
 SECRET = """# Journal — private
 
 The interview went better than expected. They want a second round next week.
@@ -232,6 +261,7 @@ TREE = [
         {"id": ROADMAP_ID, "name": "Roadmap", "type": "note", "tags": ["planning"]},
     ]},
     {"id": JOURNAL_ID, "name": "Journal", "type": "folder", "children": [
+        {"id": PHOTO_ID, "name": "Tatras trip", "type": "note", "tags": ["travel"]},
         {"id": REVIEW_ID, "name": "Weekly review", "type": "note", "tags": ["review"]},
         {"id": READING_ID, "name": "Reading list", "type": "note", "tags": ["books"]},
         {"id": SECRET_ID, "name": "Private journal", "type": "note", "tags": ["private"]},
@@ -275,8 +305,57 @@ def chart_png(width: int = 720, height: int = 300) -> bytes:
             + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
 
 
+def photo_png(width: int = 720, height: int = 400) -> bytes:
+    """A small landscape (sky, two mountain ridges, a lake), drawn pixel by
+    pixel so the demo needs no image files or Pillow."""
+    def lerp(a, b, f):
+        return tuple(round(x + (y - x) * f) for x, y in zip(a, b))
+
+    sky_top, sky_low = (28, 44, 92), (236, 156, 104)
+    far, near = (92, 82, 120), (38, 40, 62)
+    lake_hi, lake_lo = (120, 110, 150), (24, 32, 58)
+    horizon = int(height * 0.68)
+    rows = []
+    for y in range(height):
+        row = []
+        for x in range(width):
+            far_ridge = (horizon - 105 - 55 * math.sin(x / 61) - 22 * math.sin(x / 19 + 1)
+                         - 9 * math.sin(x / 7 + 2))
+            near_ridge = horizon - 28 - 22 * math.sin(x / 43 + 2) - 8 * math.sin(x / 13)
+            if y >= horizon:                       # lake, reflecting the sky
+                f = (y - horizon) / (height - horizon)
+                px = lerp(lake_hi, lake_lo, f)
+                if (y + x // 9) % 11 == 0:
+                    px = lerp(px, (250, 200, 150), 0.35)
+            elif y >= near_ridge:
+                px = near
+            elif y >= far_ridge:
+                px = lerp(far, sky_low, 0.15)
+            else:
+                px = lerp(sky_top, sky_low, y / horizon)
+                if (x - 560) ** 2 + (y - horizon + 70) ** 2 < 26 ** 2:   # low sun
+                    px = (255, 214, 150)
+            row.append(px)
+        rows.append(row)
+    return _png(rows)
+
+
+def _png(rows) -> bytes:
+    height, width = len(rows), len(rows[0])
+    raw = b"".join(b"\x00" + bytes(c for p in row for c in p) for row in rows)
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return (struct.pack(">I", len(data)) + kind + data
+                + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF))
+
+    return (b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
+
+
 def build_demo_data(lang: str = "en") -> dict:
     notes = dict(NOTES)
+    notes[PHOTO_ID] = PHOTO
     notes[SECRET_ID] = encrypt_content(SECRET, DEMO_PASSWORD)
     return {
         "tree": json.loads(json.dumps(TREE)),
@@ -284,8 +363,8 @@ def build_demo_data(lang: str = "en") -> dict:
         "note_modes": {nid: "markdown" for nid in NOTES if nid != TRIP_ID},
         "favorites": [TOUR_ID, CHECKLIST_ID],
         "trash": {"tree": [], "notes": {}},
-        "note_formats": {},
-        "note_images": {REVIEW_ID: [CHART_IMAGE]},
+        "note_formats": {PHOTO_ID: PHOTO_FORMATS},
+        "note_images": {REVIEW_ID: [CHART_IMAGE], PHOTO_ID: [PHOTO_IMAGE]},
         "theme": "matrix",
         "language": lang,
         "font_size": 13,
@@ -304,6 +383,7 @@ def write_demo(data_dir: Path, lang: str = "en") -> Path:
     images = data_dir / "images"
     images.mkdir(exist_ok=True)
     (images / CHART_IMAGE).write_bytes(chart_png())
+    (images / PHOTO_IMAGE).write_bytes(photo_png())
     target.write_text(json.dumps(build_demo_data(lang), ensure_ascii=False, indent=2),
                       encoding="utf-8")
     return target

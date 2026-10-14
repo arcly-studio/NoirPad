@@ -39,6 +39,8 @@ VIEW = {"width": 1280, "height": 800}
 # Main theme for the hero shots: the signature terminal green reads best on
 # GitHub's light and dark pages and is what NoirPad looks like out of the box.
 HERO_THEME = "matrix"
+# The Markdown split view: a calmer theme where the syntax colours stand out.
+SPLIT_THEME = "tokyo-night"
 COLLAGE_THEMES = ["matrix", "tokyo-night", "amber", "dracula"]
 CDP_PORT = 9333
 
@@ -171,12 +173,14 @@ def screenshots(pw) -> None:
     app = App(pw, "en")
     try:
         app.theme(HERO_THEME)
-        app.open_folders(demo_data.SNIPPETS_ID)
-        app.open_note(demo_data.TOUR_ID)
+        app.open_folders(demo_data.PROJECTS_ID)
+        app.open_note(demo_data.PHOTO_ID)          # rich text with a picture, no split view
         optimize(app.shot(SHOTS_DIR / "hero.png"))
 
-        app.open_note(demo_data.CHECKLIST_ID)
+        app.theme(SPLIT_THEME)
+        app.open_note(demo_data.CHECKLIST_ID)      # Markdown: table, code, tasks
         optimize(app.shot(SHOTS_DIR / "split-preview.png"))
+        app.theme(HERO_THEME)
 
         app.open_note(demo_data.TOUR_ID)
         with tempfile.TemporaryDirectory() as tmp:
@@ -209,8 +213,8 @@ def screenshots(pw) -> None:
     app = App(pw, "cs")
     try:
         app.theme(HERO_THEME)
-        app.open_folders(demo_data.SNIPPETS_ID)
-        app.open_note(demo_data.TOUR_ID)
+        app.open_folders(demo_data.PROJECTS_ID)
+        app.open_note(demo_data.PHOTO_ID)
         optimize(app.shot(SHOTS_DIR / "hero-cs.png"))
     finally:
         app.close()
