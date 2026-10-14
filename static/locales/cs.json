@@ -214,7 +214,8 @@
         "many": "{n} řádku",
         "other": "{n} řádků"
       }
-    }
+    },
+    "notSaved": "Neuloženo"
   },
   "markdown": {
     "linkTextPlaceholder": "text",

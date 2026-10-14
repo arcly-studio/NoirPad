@@ -195,3 +195,26 @@ describe("opening a locked note from a Markdown note (K3)", () => {
         expect(win.document.body.textContent).not.toContain("PŘEDCHOZÍ POZNÁMKA");
     });
 });
+
+describe("status bar counts in Markdown mode (D1)", () => {
+    it("counts the Markdown source, also while typing", async () => {
+        win.document.body.insertAdjacentHTML("beforeend",
+            '<span id="char-count"></span><span id="word-count"></span><span id="line-count"></span>');
+        win.eval(fs.readFileSync(path.resolve(import.meta.dirname, "../../static/js/editor.js"), "utf8"));
+        win.NP.state = { currentNoteId: "n1", data: { tree: [], note_modes: {} } };
+        win.NP.editor.init();
+        win.NP.editor._currentNoteId = "n1";
+        win.NP.editor._loadedNoteId = "n1";
+        win.NP.editor.el.contentEditable = "true";
+        win.NP.api = { saveNote: () => Promise.resolve({}) };
+        win.NP.markdown.toggleForCurrentNote();          // → Markdown, empty note
+        const ta = win.document.getElementById("editor-md");
+        ta.value = "hello brave new world";
+        ta.dispatchEvent(new win.Event("input", { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 450));
+        expect(win.document.getElementById("char-count").textContent).toBe("21 chars");
+        expect(win.document.getElementById("word-count").textContent).toBe("4 words");
+        win.NP.markdown.toggleForCurrentNote();          // back to rich text keeps the count
+        expect(win.document.getElementById("char-count").textContent).toBe("21 chars");
+    });
+});

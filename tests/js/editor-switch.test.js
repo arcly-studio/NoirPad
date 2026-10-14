@@ -83,3 +83,37 @@ describe("long notes are saved before the window closes (K5)", () => {
         expect(saved).toEqual([["A", "y".repeat(90000)]]);
     });
 });
+
+describe("a failed save is never silent (D3)", () => {
+    function failNextSave() {
+        win.NP.api.saveNote = vi.fn(() => Promise.reject(Object.assign(new Error("Server error 500"), { status: 500 })));
+        win.NP.dialog = { failed: vi.fn() };
+    }
+
+    it("Ctrl+S shows the error; the status says the note is not saved", async () => {
+        win.document.body.insertAdjacentHTML("beforeend", '<div id="status-label">Ready</div>');
+        await open("A", "text");
+        failNextSave();
+        win.NP.editor.el.textContent = "changed";
+        await win.NP.editor.save(false);
+        expect(win.NP.dialog.failed).toHaveBeenCalledTimes(1);
+        const status = win.document.getElementById("status-label");
+        expect(status.textContent).toBe("Not saved");
+        expect(status.classList.contains("status-error")).toBe(true);
+        // the next successful save clears it
+        win.NP.api.saveNote = vi.fn(() => Promise.resolve({}));
+        await win.NP.editor.save(false);
+        expect(status.textContent).toBe("Ready");
+        expect(status.classList.contains("status-error")).toBe(false);
+    });
+
+    it("an autosave failure does not pop up a dialog but marks the status", async () => {
+        win.document.body.insertAdjacentHTML("beforeend", '<div id="status-label">Ready</div>');
+        await open("A", "text");
+        failNextSave();
+        win.NP.editor.el.textContent = "changed";
+        await win.NP.editor.save(true);
+        expect(win.NP.dialog.failed).not.toHaveBeenCalled();
+        expect(win.document.getElementById("status-label").textContent).toBe("Not saved");
+    });
+});

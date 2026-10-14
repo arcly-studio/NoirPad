@@ -190,7 +190,8 @@
         "one": "{n} line",
         "other": "{n} lines"
       }
-    }
+    },
+    "notSaved": "Not saved"
   },
   "markdown": {
     "linkTextPlaceholder": "text",

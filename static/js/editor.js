@@ -103,6 +103,9 @@ window.NP = window.NP || {};
                         NP.editor.save(true);
                     }
                 }, 800));
+                ta.addEventListener("input", NP.debounce(function () {
+                    NP.editor.updateCharCount();
+                }, 300));
             }
 
             /* Flush the in-flight note on tab close / navigation.
@@ -278,6 +281,7 @@ window.NP = window.NP || {};
                             NP.markdown.applyForLoadedNote(id, decContent);
                         }
                         NP.editor._loadedNoteId = id;
+                        NP.editor.updateCharCount();   /* Markdown: count the source (D1) */
                     }).catch(function (err) {
                         NP.dialog.alert(NP.t("editor.unlockFailed", {
                             error: err && err.message ? err.message : err }));
@@ -304,6 +308,7 @@ window.NP = window.NP || {};
                     NP.markdown.applyForLoadedNote(id, content);
                 }
                 NP.editor._loadedNoteId = id;
+                NP.editor.updateCharCount();   /* Markdown: count the source (D1) */
             }).catch(function (err) {
                 console.error("loadNote error:", err);
                 if (NP.editor.el) {
@@ -825,12 +830,32 @@ window.NP = window.NP || {};
 
             return savePromise.then(function () {
                 NP.editor._lastSavedKey = key;
+                NP.editor._setSaveStatus(null);
                 if (!silent) {
                     NP.editor._showSaveFlash();
                 }
             }).catch(function (err) {
+                /* Never silent (D3): Ctrl+S explains why; an autosave marks
+                   the status until a save succeeds again. */
                 console.error("Save failed:", err);
+                NP.editor._setSaveStatus(err);
+                if (!silent && NP.dialog && NP.dialog.failed) NP.dialog.failed(err);
             });
+        },
+
+        /* Top-bar status: "Ready", or "Not saved" (+ the reason as tooltip). */
+        _setSaveStatus: function (err) {
+            var el = document.getElementById("status-label");
+            if (!el) return;
+            if (err) {
+                el.textContent = NP.t("editor.notSaved");
+                el.title = err && err.message ? err.message : String(err);
+                el.classList.add("status-error");
+            } else if (el.classList.contains("status-error")) {
+                el.textContent = NP.t("ui.topBar.ready");
+                el.removeAttribute("title");
+                el.classList.remove("status-error");
+            }
         },
 
         _showSaveFlash: function () {
@@ -852,15 +877,16 @@ window.NP = window.NP || {};
             var wordEl = NP.$("#word-count");
             var lineEl = NP.$("#line-count");
 
-            if (!NP.editor.el || NP.editor.el.contentEditable !== "true") {
+            /* Markdown mode: the source in the textarea is the note (D1). */
+            var mdActive = NP.markdown && NP.markdown.isActive && NP.markdown.isActive();
+            if (!mdActive && (!NP.editor.el || NP.editor.el.contentEditable !== "true")) {
                 if (charEl) charEl.textContent = NP.t("editor.count.chars", { n: 0 });
                 if (wordEl) wordEl.textContent = NP.t("editor.count.words", { n: 0 });
                 if (lineEl) lineEl.textContent = NP.t("editor.count.lines", { n: 0 });
                 return;
             }
 
-            var result = NP.editor._htmlToTextWithImages();
-            var text = result.text;
+            var text = mdActive ? NP.markdown.getRawText() : NP.editor._htmlToTextWithImages().text;
             var chars = text.length;
             var words = text.trim() ? text.trim().split(/\s+/).length : 0;
             var lines = text.split("\n").length;

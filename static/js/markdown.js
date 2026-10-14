@@ -258,6 +258,7 @@ window.NP = window.NP || {};
             var formats = (nextMode !== "markdown" &&
                 NP.editor && NP.editor._extractFormats)
                 ? NP.editor._extractFormats() : [];
+            if (NP.editor && NP.editor.updateCharCount) NP.editor.updateCharCount();
             /* A locked note stays encrypted on disk: re-encrypt with its
                unlock token, never a plain save (K2). */
             if (locked) {
