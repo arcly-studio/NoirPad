@@ -23,7 +23,7 @@ def test_create_note_in_folder_and_read_back(client):
     assert t[0]["children"][0] == {"id": nid, "name": "Úkoly", "type": "note"}
 
     note = client.get(f"/api/note/{nid}").json()
-    assert note == {"content": "ahoj\nsvěte", "formats": [], "mode": "rich-text"}
+    assert note == {"content": "ahoj\nsvěte", "formats": [], "mode": "rich-text", "trashed": False}
 
 
 def test_note_in_missing_parent_is_rejected(client):
@@ -37,7 +37,7 @@ def test_save_formats_and_markdown_mode(client):
     r = client.put(f"/api/note/{nid}", json={"content": "# hi", "formats": fmt, "mode": "markdown"})
     assert r.status_code == 200
     assert client.get(f"/api/note/{nid}").json() == {
-        "content": "# hi", "formats": fmt, "mode": "markdown"}
+        "content": "# hi", "formats": fmt, "mode": "markdown", "trashed": False}
 
     client.put(f"/api/note/{nid}", json={"content": "x", "formats": [], "mode": "rich-text"})
     assert client.get(f"/api/note/{nid}").json()["mode"] == "rich-text"
@@ -192,3 +192,58 @@ def test_tag_limits(client, np_backend):
                       json={"tags": ["t"] * (np_backend.MAX_TAGS + 1)}).status_code == 422
     assert client.put(f"/api/tags/{nid}",
                       json={"tags": ["x" * (np_backend.MAX_TAG_LEN + 1)]}).status_code == 422
+
+
+# ---- D8: a note in the trash can be viewed, read-only ------------------------
+
+def test_d8_trashed_note_can_be_read_but_not_written(client):
+    nid = new_note(client, name="Old", content="obsah v koši")
+    client.post("/api/tree/delete", json={"id": nid})
+    r = client.get(f"/api/note/{nid}")
+    assert r.status_code == 200
+    assert r.json()["content"] == "obsah v koši" and r.json()["trashed"] is True
+    assert client.put(f"/api/note/{nid}", json={"content": "x"}).status_code == 404
+    data = client.get("/api/data").json()
+    assert nid not in data["notes"]          # no stray copy outside the trash
+
+
+def test_d8_live_note_is_not_marked_trashed(client):
+    nid = new_note(client, name="Live", content="x")
+    assert client.get(f"/api/note/{nid}").json()["trashed"] is False
+
+
+# ---- D9: favorites and the trash ----------------------------------------------
+
+def favorites(client):
+    return client.get("/api/data").json()["favorites"]
+
+
+def test_d9_trashed_note_cannot_become_a_favorite(client):
+    nid = new_note(client, name="Old")
+    client.post("/api/tree/delete", json={"id": nid})
+    assert client.post("/api/favorites/toggle", json={"id": nid}).status_code == 404
+    assert favorites(client) == []
+
+
+def test_d9_restore_brings_the_star_back(client):
+    folder = new_folder(client, name="F")
+    a = new_note(client, name="A", parent_id=folder)
+    b = new_note(client, name="B")
+    client.post("/api/favorites/toggle", json={"id": a})
+    client.post("/api/favorites/toggle", json={"id": b})
+    client.post("/api/tree/delete", json={"id": folder})
+    assert favorites(client) == [b]
+    client.post("/api/trash/restore", json={"id": folder})
+    assert sorted(favorites(client)) == sorted([a, b])
+
+
+def test_d9_purge_forgets_favorites_and_modes(client, np_backend):
+    a = new_note(client, name="A")
+    client.put(f"/api/note/{a}", json={"content": "# md", "mode": "markdown"})
+    client.post("/api/favorites/toggle", json={"id": a})
+    client.post("/api/tree/delete", json={"id": a})
+    client.post("/api/trash/empty")
+    data = np_backend._read_data()
+    assert a not in data["favorites"]
+    assert a not in data.get("note_modes", {})
+    assert a not in (data.get("trash") or {}).get("favorites", [])

@@ -125,3 +125,33 @@ describe("favorites stay in their folder (N2)", () => {
         expect(data.map((i) => i.id)).toEqual(["n1", "f1", "n2", "f2"]);
     });
 });
+
+describe("folder rows (D2 / N8)", () => {
+    function setupFolders() {
+        const state = { f1: false };
+        setup({ tree: [{ id: "f1", name: "Work", type: "folder", children: [{ id: "a", name: "A", type: "note" }] }] });
+        win.NP.state.getFolderOpenState = (id) => !!state[id];
+        win.NP.state.setFolderOpenState = (id, open) => { state[id] = open; };
+        win.NP.tree.render();
+        return state;
+    }
+    const row = () => win.document.querySelector('.tree-item[data-id="f1"]');
+
+    it("a click anywhere on the row opens and selects the folder; the next one closes it", () => {
+        const state = setupFolders();
+        row().querySelector("span:last-child").click();      // the name
+        expect(state.f1).toBe(true);
+        expect(win.NP.state.selectedId).toBe("f1");
+        expect(win.document.querySelector('.tree-item[data-id="a"]')).not.toBeNull();
+        row().click();                                        // the row itself
+        expect(state.f1).toBe(false);
+        expect(win.NP.state.selectedId).toBe("f1");
+    });
+
+    it("the arrow still only toggles", () => {
+        const state = setupFolders();
+        row().querySelector(".tree-arrow").click();
+        expect(state.f1).toBe(true);
+        expect(win.NP.state.selectedId).toBeNull();
+    });
+});

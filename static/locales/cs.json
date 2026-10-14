@@ -217,7 +217,8 @@
         "other": "{n} řádků"
       }
     },
-    "notSaved": "Neuloženo"
+    "notSaved": "Neuloženo",
+    "trashedNote": "Tato poznámka je v koši – jen pro čtení."
   },
   "markdown": {
     "linkTextPlaceholder": "text",

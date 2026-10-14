@@ -7,8 +7,8 @@ from ..errors import ApiError
 from ..images import delete_images, extract_image_names, referenced_images
 from ..models import IdReq, NoteBody, TagsBody
 from ..storage import read_data, update_data
-from ..tree import (collect_note_ids, find_item_by_id, find_parent_list, note_exists,
-                    restore_from_trash)
+from ..tree import (collect_all_ids, collect_note_ids, find_item_by_id, find_parent_list,
+                    live_note_exists, note_exists, restore_from_trash)
 
 router = APIRouter()
 
@@ -18,14 +18,19 @@ router = APIRouter()
 
 @router.get("/api/note/{note_id}")
 async def get_note(note_id: str):
+    """A note's content; a note in the trash comes back with trashed: true,
+    for the read-only view (D8)."""
     data = read_data()
-    content = data.get("notes", {}).get(note_id)
+    trashed = not live_note_exists(data, note_id)
+    store = (data.get("trash") or {}) if trashed else data
+    content = (store.get("notes") or {}).get(note_id)
     if content is None or not note_exists(data, note_id):
         raise ApiError(404, "note_not_found")
     return {
         "content": content,
-        "formats": data.get("note_formats", {}).get(note_id, []),
+        "formats": (store.get("note_formats") or {}).get(note_id, []),
         "mode": data.get("note_modes", {}).get(note_id, "rich-text"),
+        "trashed": trashed,
     }
 
 
@@ -42,7 +47,7 @@ def set_mode(data: dict, note_id: str, mode) -> None:
 @router.put("/api/note/{note_id}")
 async def put_note(note_id: str, body: NoteBody):
     def _mut(data: dict) -> None:
-        if not note_exists(data, note_id):
+        if not live_note_exists(data, note_id):   # a note in the trash is read-only
             raise ApiError(404, "note_not_found")
         # A locked note is only ever written encrypted (/api/save-encrypted,
         # /api/decrypt): never let a stale window or a mode switch put its
@@ -68,7 +73,8 @@ async def put_note(note_id: str, body: NoteBody):
 @router.post("/api/favorites/toggle")
 async def toggle_favorite(req: IdReq):
     def _mut(data: dict) -> bool:
-        if not note_exists(data, req.id):
+        item = find_item_by_id(data.get("tree") or [], req.id)   # not from the trash (D9)
+        if item is None:
             raise ApiError(404, "note_not_found")
         favs: list[str] = data.setdefault("favorites", [])
         if req.id in favs:
@@ -113,7 +119,7 @@ async def set_tags(item_id: str, body: TagsBody):
 # ---- Trash ----
 
 
-def _purge(data: dict, trash: dict, note_ids) -> None:
+def _purge(data: dict, trash: dict, note_ids, purged_ids=None) -> None:
     """Drop trashed notes for good, with their images.
 
     Images come from the tracked map (encrypted notes) + a regex over the
@@ -129,6 +135,10 @@ def _purge(data: dict, trash: dict, note_ids) -> None:
         trash.get("notes", {}).pop(nid, None)
         trash.get("note_formats", {}).pop(nid, None)
         note_images.pop(nid, None)
+        data.get("note_modes", {}).pop(nid, None)
+    gone = set(note_ids) | set(purged_ids or ())
+    data["favorites"] = [f for f in data.get("favorites", []) if f not in gone]
+    trash["favorites"] = [f for f in trash.get("favorites", []) if f not in gone]
     delete_images(candidates - referenced_images(data))
 
 
@@ -155,9 +165,11 @@ async def trash_empty():
     def _mut(data: dict) -> None:
         trash = data.setdefault("trash", {"tree": [], "notes": {}})
         trashed_ids: set[str] = set()
+        all_ids: set[str] = set()
         for root_item in trash.get("tree") or []:
             trashed_ids.update(collect_note_ids(root_item))
-        _purge(data, trash, trashed_ids)
+            all_ids.update(collect_all_ids(root_item))
+        _purge(data, trash, trashed_ids, all_ids)
         trash["tree"] = []
 
     update_data(_mut)
@@ -174,7 +186,7 @@ async def trash_delete_item(req: IdReq):
             raise ApiError(404, "trash_item_not_found")
         item = next(i for i in parent_list if i["id"] == req.id)
         parent_list.remove(item)
-        _purge(data, trash, collect_note_ids(item))
+        _purge(data, trash, collect_note_ids(item), collect_all_ids(item))
 
     update_data(_mut)
     return {"ok": True}

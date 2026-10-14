@@ -117,3 +117,24 @@ describe("a failed save is never silent (D3)", () => {
         expect(win.document.getElementById("status-label").textContent).toBe("Not saved");
     });
 });
+
+describe("a note in the trash (D8)", () => {
+    it("opens read-only, offers Restore and is never saved", async () => {
+        win.NP.toast = vi.fn();
+        const p = win.NP.editor.loadNote("A");
+        pending.A({ content: "old text", formats: [], trashed: true });
+        await p;
+        expect(win.NP.editor.el.textContent).toContain("old text");
+        expect(win.NP.editor.el.contentEditable).toBe("false");
+        expect(win.NP.toast.mock.calls[0][1].actionLabel).toBe("Restore");
+        await win.NP.editor.save(false);
+        expect(saved).toEqual([]);
+    });
+
+    it("a note that cannot be loaded leaves nothing selected", async () => {
+        win.NP.api.getNote = vi.fn(() => Promise.reject(new Error("The note no longer exists.")));
+        await win.NP.editor.loadNote("B");
+        expect(win.NP.editor._currentNoteId).toBeNull();
+        expect(win.NP.state.currentNoteId).toBeNull();
+    });
+});

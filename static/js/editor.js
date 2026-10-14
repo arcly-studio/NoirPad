@@ -248,6 +248,12 @@ window.NP = window.NP || {};
 
                 NP.editor._currentNoteEncrypted = isEncrypted;
 
+                /* A note in the trash: shown read-only, never saved (D8). */
+                if (data.trashed) {
+                    NP.editor._showTrashed(id, isEncrypted ? null : content);
+                    return;
+                }
+
                 if (isEncrypted) {
                     NP.editor.stopAutosave();
                     /* Show the lock screen while the password dialog is
@@ -311,12 +317,46 @@ window.NP = window.NP || {};
                 NP.editor.updateCharCount();   /* Markdown: count the source (D1) */
             }).catch(function (err) {
                 console.error("loadNote error:", err);
+                /* Nothing is open: no star, save or lock may act on this id (D8). */
+                if (NP.editor._currentNoteId === id) {
+                    NP.editor._currentNoteId = null;
+                    if (NP.state.currentNoteId === id) NP.state.currentNoteId = null;
+                }
                 if (NP.editor.el) {
                     NP.editor.el.innerHTML =
                         "<p style='color:var(--fg-dim);'>" +
                         NP.escapeHtml(NP.t("editor.loadError", { error: err.message })) + "</p>";
                 }
             });
+        },
+
+        /* Read-only view of a note in the trash (content null: a locked
+           one, which cannot be opened there). Offers "Restore". */
+        _showTrashed: function (id, content) {
+            NP.editor.stopAutosave();
+            if (NP.markdown && NP.markdown.leaveForLoad) NP.markdown.leaveForLoad();
+            if (content === null) {
+                NP.editor._showLockScreen();
+            } else {
+                NP.editor.renderContent(NP.editor.el, content, []);
+                NP.editor.el.contentEditable = "false";
+                NP.editor.el.style.opacity = "0.75";
+                NP.editor.updateCharCount();
+            }
+            var titleInput = NP.$("#note-title-input");
+            if (titleInput) titleInput.readOnly = true;
+            NP.editor._refreshLockButton();
+            if (NP.toast) {
+                NP.toast(NP.t("editor.trashedNote"), {
+                    actionLabel: NP.t("common.restore"),
+                    action: function () {
+                        if (!NP.trash || !NP.trash.restore) return;
+                        NP.trash.restore(id).then(function () {
+                            if (NP.editor._currentNoteId === id) NP.editor.loadNote(id);
+                        });
+                    }
+                });
+            }
         },
 
         _showLockScreen: function () {

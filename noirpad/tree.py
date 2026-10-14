@@ -48,6 +48,12 @@ def collect_all_ids(item: dict) -> list[str]:
     return ids
 
 
+def live_note_exists(data: dict, note_id: str) -> bool:
+    """True if *note_id* is a note in the active tree (not in the trash)."""
+    item = find_item_by_id(data.get("tree") or [], note_id)
+    return item is not None and item.get("type") == "note"
+
+
 def note_exists(data: dict, note_id: str) -> bool:
     """True if *note_id* is a note in the tree or in the trash."""
     for root in (data.get("tree") or [], (data.get("trash") or {}).get("tree") or []):
@@ -92,10 +98,12 @@ def move_to_trash(data: dict, item_id: str) -> None:
     data["trash"]["tree"].append(item)
     data["trash"]["notes"].update(trash_notes)
 
+    # Stars go to the trash too, so a restore brings them back (D9).
     favs: list[str] = data.get("favorites", [])
-    for nid in note_ids:
-        if nid in favs:
-            favs.remove(nid)
+    for fid in collect_all_ids(item):
+        if fid in favs:
+            favs.remove(fid)
+            data["trash"].setdefault("favorites", []).append(fid)
 
     # Formats go to a trash sub-key so a restore brings them back.
     for nid in note_ids:
@@ -124,5 +132,13 @@ def restore_from_trash(data: dict, item_id: str) -> None:
         fmt = trash_formats.pop(nid, None)
         if fmt is not None:
             data.setdefault("note_formats", {})[nid] = fmt
+
+    trash_favs: list = data.get("trash", {}).get("favorites", [])
+    favs = data.setdefault("favorites", [])
+    for fid in collect_all_ids(item):
+        if fid in trash_favs:
+            trash_favs.remove(fid)
+            if fid not in favs:
+                favs.append(fid)
 
     data["tree"].append(item)

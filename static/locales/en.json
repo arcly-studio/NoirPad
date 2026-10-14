@@ -193,7 +193,8 @@
         "other": "{n} lines"
       }
     },
-    "notSaved": "Not saved"
+    "notSaved": "Not saved",
+    "trashedNote": "This note is in the trash: read-only."
   },
   "markdown": {
     "linkTextPlaceholder": "text",

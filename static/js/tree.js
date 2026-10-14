@@ -342,15 +342,12 @@ window.NP = window.NP || {};
             if (type === "folder") {
                 var onArrow = !!(e && e.target && e.target.closest &&
                     e.target.closest(".tree-arrow"));
-                if (onArrow) {
-                    /* Chevron ▾▸ → expand/collapse only (no selection) */
-                    NP.state.setFolderOpenState(
-                        id, !NP.state.getFolderOpenState(id)
-                    );
-                } else {
-                    /* Name/icon → select the folder (no expand/collapse) */
-                    NP.state.selectedId = id;
-                }
+                /* Anywhere on the row → open/close (N8); except the
+                   chevron ▾▸, the click also selects the folder. */
+                NP.state.setFolderOpenState(
+                    id, !NP.state.getFolderOpenState(id)
+                );
+                if (!onArrow) NP.state.selectedId = id;
                 NP.tree.render();
             } else {
                 NP.state.selectedId = id;
