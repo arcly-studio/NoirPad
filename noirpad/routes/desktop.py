@@ -10,6 +10,15 @@ from ..runtime import RUNTIME
 router = APIRouter()
 
 
+@router.post("/api/desktop/fullscreen")
+def toggle_fullscreen():
+    """F11 / :fullscreen in the desktop app: the real window, not just the page."""
+    if RUNTIME.mode != "desktop" or RUNTIME.toggle_fullscreen is None:
+        raise ApiError(404, "not_desktop")
+    RUNTIME.toggle_fullscreen()
+    return {"ok": True}
+
+
 @router.post("/api/desktop/reveal")
 def reveal_saved_file(req: SavedFileReq):
     """Show a file this run saved (export toast → "Open folder") in Explorer."""

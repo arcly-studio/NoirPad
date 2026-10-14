@@ -266,11 +266,7 @@ window.NP = window.NP || {};
             } else if (lower === ":decrypt") {
                 if (NP.encryption) NP.encryption.decrypt();
             } else if (lower === ":fullscreen") {
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().catch(function () {});
-                } else {
-                    document.exitFullscreen().catch(function () {});
-                }
+                NP.fullscreen.toggle();
             } else if (lower === ":autosave") {
                 if (NP.state && NP.state.data) {
                     NP.state.data.autosave = !NP.state.data.autosave;

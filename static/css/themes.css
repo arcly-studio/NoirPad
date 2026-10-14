@@ -122,6 +122,17 @@
 [data-theme="orange"] { --accent: #ff6600; }
 [data-theme="ice"]    { --accent: #88ddff; }
 
+/* Darker accents: the default --fg-dim (accent + black) is under 4.5:1 on
+   --bg-light for small text. A greyer, lighter tint keeps it "dim" but
+   readable: >= 4.8:1 (D12). */
+[data-theme="red"],
+[data-theme="purple"],
+[data-theme="blue"],
+[data-theme="orange"],
+[data-theme="pink"] {
+    --fg-dim: color-mix(in srgb, var(--accent) 60%, #9a9aa2);
+}
+
 /* ------------------------------------------------------------
    Popular dev themes. Unlike the neon set above (accent-only),
    these have their OWN surfaces + a LIGHT foreground (not the
@@ -179,7 +190,7 @@
     --accent:    #88c0d0;
     --fg:        #d8dee9;
     --fg-bright: #eceff4;
-    --fg-dim:    #9aa4b6;
+    --fg-dim:    #aeb6c6;   /* 4.9:1 on --bg-light (D12) */
     --fg-muted:  #6b748a;
     --border:        #434c5e;
     --border-strong: #4c566a;

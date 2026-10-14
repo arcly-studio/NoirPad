@@ -30,6 +30,7 @@ class _Runtime:
     # Desktop app (desktop.py): native "Save as" dialog, suggested name →
     # chosen path or None; files saved through it, token -> path (N6).
     save_dialog: Optional[Callable[[str], Optional[str]]] = None
+    toggle_fullscreen: Optional[Callable[[], None]] = None   # desktop window (D13)
     saved_files: dict[str, Path] = {}
 
 

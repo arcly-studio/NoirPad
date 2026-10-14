@@ -432,6 +432,7 @@ def _show_window(port: int, token: str, data_dir: Path) -> None:
     )
     from noirpad.runtime import RUNTIME
     RUNTIME.save_dialog = lambda name: _ask_save_path(window, name)
+    RUNTIME.toggle_fullscreen = window.toggle_fullscreen
     _save_before_close(window)
     # Persistent WebView2 profile so localStorage (open folders, CRT
     # toggle) survives restarts; it lives next to the notes.

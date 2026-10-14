@@ -368,6 +368,7 @@ input, textarea {
     padding: 6px 12px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
+    background: var(--bg);   /* opaque: Matrix rain must not run under the title (D11) */
 }
 
 #note-prefix {
@@ -434,6 +435,7 @@ input, textarea {
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
+    background: var(--bg);
 }
 
 #tab-bar::-webkit-scrollbar {
@@ -474,7 +476,7 @@ input, textarea {
     padding: 0 2px;
     border-radius: 50%;
     line-height: 1;
-    opacity: 0.5;
+    opacity: 0.8;   /* 0.5 fell under 3:1 in the darker themes (D12) */
     transition: opacity 0.15s;
 }
 
@@ -493,6 +495,7 @@ input, textarea {
     flex-shrink: 0;
     flex-wrap: wrap;
     min-height: 28px;
+    background: var(--bg);
 }
 
 .tag-badge {

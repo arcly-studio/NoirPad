@@ -79,7 +79,8 @@
     "open_folder_failed": "Složku se nepodařilo otevřít: {error}",
     "note_is_encrypted": "Poznámka je zamčená. Nejdřív ji odemkněte; ukládá se jen zašifrovaná.",
     "backup_image_too_large": "Záloha obsahuje příliš velký obrázek ({name}). Nic se nezměnilo.",
-    "backup_write_failed": "Obrázky ze zálohy se nepodařilo uložit ({error}). Nic se nezměnilo."
+    "backup_write_failed": "Obrázky ze zálohy se nepodařilo uložit ({error}). Nic se nezměnilo.",
+    "not_desktop": "Funguje jen v desktopové aplikaci."
   },
   "notice": {
     "data_restored": "Soubor s poznámkami byl poškozený. Zůstal uložený jako {file} a obnovila se poslední dobrá záloha ({when}). Změny provedené po této záloze mohou chybět.",

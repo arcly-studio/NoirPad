@@ -40,6 +40,23 @@ window.NP = window.NP || {};
        values (quotes included). Prefer textContent / setAttribute when
        building DOM directly. */
     var HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+    /* Full screen (F11, :fullscreen). The desktop app switches the real
+       window (pywebview, via /api/desktop/fullscreen); a browser uses the
+       Fullscreen API (D13). */
+    NP.fullscreen = {
+        toggle: function () {
+            if (NP.api && NP.api.hasToken && NP.api.hasToken()) {
+                return NP.api.fetch("/api/desktop/fullscreen", { method: "POST" })
+                    .catch(function () { /* nothing to do */ });
+            }
+            var doc = document;
+            var p = doc.fullscreenElement
+                ? doc.exitFullscreen()
+                : doc.documentElement.requestFullscreen();
+            return Promise.resolve(p).catch(function () { /* refused by the browser */ });
+        }
+    };
+
     /* Text for searching: lower case, no diacritics ("Čeština" → "cestina"),
        folded one UTF-16 unit at a time, so every index in the result is
        the same index in the original (for highlighting) (D10). */

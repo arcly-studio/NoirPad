@@ -119,3 +119,16 @@ def test_filename_from_content_disposition():
         "attachment; filename=\"N_kup.txt\"; filename*=UTF-8''N%C3%A1kup.txt") == "Nákup.txt"
     assert desktop_save.filename_from('attachment; filename="a.zip"') == "a.zip"
     assert desktop_save.filename_from("attachment") == ""
+
+
+def test_d13_fullscreen_toggles_the_desktop_window(desk, monkeypatch):
+    c, _, _, _ = desk
+    calls = []
+    monkeypatch.setattr(RUNTIME, "toggle_fullscreen", lambda: calls.append(1))
+    assert c.post("/api/desktop/fullscreen").status_code == 200
+    assert calls == [1]
+
+
+def test_d13_fullscreen_endpoint_is_desktop_only(client, monkeypatch):
+    monkeypatch.setattr(RUNTIME, "toggle_fullscreen", lambda: pytest.fail("toggled in web mode"))
+    assert client.post("/api/desktop/fullscreen").status_code == 404

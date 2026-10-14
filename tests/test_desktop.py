@@ -246,7 +246,7 @@ def test_webview_profile_lives_in_the_data_dir(tmp_path, monkeypatch):
     fake = types.SimpleNamespace(
         settings={},
         create_window=lambda *a, **kw: types.SimpleNamespace(
-            events=types.SimpleNamespace(closing=_Handlers())),
+            events=types.SimpleNamespace(closing=_Handlers()), toggle_fullscreen=lambda: None),
         start=lambda **kw: calls.update(kw),
     )
     monkeypatch.setitem(sys.modules, "webview", fake)
