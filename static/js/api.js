@@ -121,7 +121,7 @@ window.NP = window.NP || {};
                 return res.headers;
             });
         }).catch(function (err) {
-            alert(NP.t("api.downloadFailed", { error: err && err.message ? err.message : err }));
+            NP.dialog.alert(NP.t("api.downloadFailed", { error: err && err.message ? err.message : err }));
         });
     }
 

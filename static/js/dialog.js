@@ -1,0 +1,184 @@
+/* dialog.js - NoirPad's own modal dialogs (replace alert/confirm/prompt).
+
+   NP.dialog.alert(message, opts)    → Promise<void>
+   NP.dialog.confirm(message, opts)  → Promise<boolean>
+   NP.dialog.prompt(message, opts)   → Promise<string|null>   // trimmed; null = cancelled
+
+   opts (all optional):
+       title                 heading (default: "NoirPad")
+       okLabel, cancelLabel  button texts (default: OK / Cancel, translated)
+       danger: true          red OK button, for actions that cannot be undone
+       value, placeholder    prompt: initial text / placeholder
+       validate(value)       prompt: error text, or null when the value is fine
+                             (default: NP.dialog.validateName)
+       maxLength             prompt: default 300 (MAX_NAME_LEN in config.py)
+
+   Enter = OK, Escape = Cancel (alert: close). While a dialog is open, keys
+   do not reach the app's shortcuts. Texts are set with textContent only. */
+window.NP = window.NP || {};
+
+(function (NP) {
+    "use strict";
+
+    var MAX_NAME = 300;
+    /* The characters Windows forbids in file names (and export.py replaces):
+       a note or folder name becomes a file name in Markdown/ZIP exports. */
+    var BAD_NAME_CHARS = /[\\\/:*?"<>|\u0000-\u001f]/;
+
+    var stack = [];   /* open dialogs, topmost last */
+
+    function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text != null) node.textContent = text;
+        return node;
+    }
+
+    function validateName(value) {
+        var v = (value || "").trim();
+        if (!v) return NP.t("dialog.errorEmptyName");
+        if (BAD_NAME_CHARS.test(v)) return NP.t("dialog.errorBadChars", { chars: '\\ / : * ? " < > |' });  // i18n-ignore (characters)
+        if (v.length > MAX_NAME) return NP.t("dialog.errorTooLong", { n: MAX_NAME });
+        return null;
+    }
+
+    /* kind: "alert" | "confirm" | "prompt". Resolves with true/false
+       (alert, confirm) or the text / null (prompt). */
+    function open(kind, message, opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+            var previousFocus = document.activeElement;
+            var overlay = el("div", "dialog-overlay visible np-dialog" + (opts.danger ? " np-dialog--danger" : ""));  // i18n-ignore (CSS classes)
+            overlay.setAttribute("role", kind === "alert" ? "alertdialog" : "dialog");
+            overlay.setAttribute("aria-modal", "true");
+
+            var box = el("form", "dialog-box");
+            box.setAttribute("novalidate", "");
+            var title = el("div", "dialog-title", opts.title || "NoirPad");  // i18n-ignore (brand)
+            title.id = "np-dialog-title-" + stack.length;
+            overlay.setAttribute("aria-labelledby", title.id);
+            box.appendChild(title);
+            if (message) box.appendChild(el("div", "dialog-message np-dialog-message", message));  // i18n-ignore (CSS classes)
+
+            var input = null;
+            var error = null;
+            if (kind === "prompt") {
+                input = el("input", "dialog-input");
+                input.type = "text";
+                input.id = "np-dialog-input";
+                input.value = opts.value || "";
+                if (opts.placeholder) input.placeholder = opts.placeholder;
+                input.setAttribute("maxlength", String(opts.maxLength || MAX_NAME));
+                input.setAttribute("spellcheck", "false");
+                input.setAttribute("autocomplete", "off");
+                if (message) input.setAttribute("aria-label", message);
+                box.appendChild(input);
+                error = el("div", "dialog-message np-dialog-error");  // i18n-ignore (CSS classes)
+                error.setAttribute("role", "alert");
+                box.appendChild(error);
+            }
+
+            var buttons = el("div", "dialog-buttons");
+            var cancel = null;
+            if (kind !== "alert") {
+                cancel = el("button", "dialog-btn", opts.cancelLabel || NP.t("common.cancel"));
+                cancel.type = "button";
+                buttons.appendChild(cancel);
+            }
+            var ok = el("button", "dialog-btn " + (opts.danger ? "danger" : "primary"),
+                        opts.okLabel || NP.t("common.ok"));
+            ok.type = "submit";
+            buttons.appendChild(ok);
+            box.appendChild(buttons);
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+
+            var entry = { overlay: overlay };
+            stack.push(entry);
+
+            function close(result) {
+                var i = stack.indexOf(entry);
+                if (i !== -1) stack.splice(i, 1);
+                window.removeEventListener("keydown", onKey, true);
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                if (previousFocus && previousFocus.focus && document.contains(previousFocus)) {
+                    try { previousFocus.focus(); } catch (e) { /* gone */ }
+                }
+                resolve(result);
+            }
+
+            function submit() {
+                if (kind !== "prompt") { close(true); return; }
+                var validate = opts.validate || validateName;
+                var problem = validate(input.value);
+                if (problem) {
+                    error.textContent = problem;
+                    input.setAttribute("aria-invalid", "true");
+                    input.focus();
+                    return;
+                }
+                close(input.value.trim());
+            }
+
+            function dismiss() {
+                close(kind === "prompt" ? null : kind === "alert");
+            }
+
+            /* Window capture: runs before every document-level handler
+               (shortcuts, the shortcut recorder, overlay Escape). */
+            function onKey(e) {
+                if (stack[stack.length - 1] !== entry) return;
+                e.stopPropagation();
+                if (e.key === "Escape") {
+                    e.preventDefault();
+                    dismiss();
+                } else if (e.key === "Enter" && !e.isComposing) {
+                    e.preventDefault();
+                    if (document.activeElement === cancel) dismiss();
+                    else submit();
+                } else if (e.key === "Tab") {
+                    /* Keep focus inside the dialog. */
+                    var focusable = [input, cancel, ok].filter(Boolean);
+                    var at = focusable.indexOf(document.activeElement);
+                    var next = e.shiftKey ? at - 1 : at + 1;
+                    if (next < 0) next = focusable.length - 1;
+                    if (next >= focusable.length || at === -1) next = 0;
+                    e.preventDefault();
+                    focusable[next].focus();
+                }
+            }
+
+            box.addEventListener("submit", function (e) { e.preventDefault(); submit(); });
+            if (cancel) cancel.addEventListener("click", dismiss);
+            if (input) {
+                input.addEventListener("input", function () {
+                    error.textContent = "";
+                    input.removeAttribute("aria-invalid");
+                });
+            }
+            window.addEventListener("keydown", onKey, true);
+
+            if (input) {
+                input.focus();
+                input.select();
+            } else {
+                ok.focus();
+            }
+        });
+    }
+
+    NP.dialog = {
+        alert: function (message, opts) {
+            return open("alert", message, opts).then(function () { /* void */ });
+        },
+        confirm: function (message, opts) {
+            return open("confirm", message, opts);
+        },
+        prompt: function (message, opts) {
+            return open("prompt", message, opts);
+        },
+        validateName: validateName,
+        isOpen: function () { return stack.length > 0; }
+    };
+
+})(window.NP);

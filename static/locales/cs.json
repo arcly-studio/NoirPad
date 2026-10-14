@@ -623,7 +623,9 @@
   "backup": {
     "importConfirm": "Importovat „{name}“?\n\nTímto se VŠECHNY vaše poznámky, složky a koš NAHRADÍ obsahem zálohy. Vaše současné poznámky se nejprve uloží do složky backups (pre-import-….zip) v datové složce NoirPadu.\n\nNastavení se nemění.",
     "importSuccess": "Záloha byla úspěšně importována.",
-    "importFailed": "Import se nezdařil: {error}"
+    "importFailed": "Import se nezdařil: {error}",
+    "importTitle": "Obnovit zálohu",
+    "importOk": "Nahradit a obnovit"
   },
   "search": {
     "placeholder": "Hledat…",
@@ -646,7 +648,8 @@
     "none": "(žádné)"
   },
   "trash": {
-    "confirmEmpty": "Trvale smazat všechny položky v koši? Tuto akci nelze vrátit."
+    "confirmEmpty": "Trvale smazat všechny položky v koši? Tuto akci nelze vrátit.",
+    "emptyTitle": "Vysypat koš"
   },
   "ui": {
     "splash": {
@@ -778,9 +781,6 @@
       "source": "Zdrojový kód",
       "storageUsed": "Zabrané místo"
     },
-    "dialog": {
-      "title": "Dialog"
-    },
     "shortcuts": {
       "title": "Klávesové zkratky",
       "searchPlaceholder": "Hledat zkratky…",
@@ -830,6 +830,18 @@
     "resetConfirmDetail": "Obnoví se motiv, písma, přepínače, automatické zamykání a vlastní klávesové zkratky. Vašich poznámek, složek ani koše se to NEDOTKNE.",
     "serverError": "Chyba serveru {status}",
     "resetFailed": "Nastavení se nepodařilo obnovit: {error}",
-    "logoutConfirm": "Odhlásit se z NoirPadu?"
+    "logoutConfirm": "Odhlásit se z NoirPadu?",
+    "resetOk": "Obnovit nastavení"
+  },
+  "dialog": {
+    "newNoteTitle": "Nová poznámka",
+    "newFolderTitle": "Nová složka",
+    "renameTitle": "Přejmenovat",
+    "create": "Vytvořit",
+    "moveToTrashTitle": "Přesunout do koše",
+    "moveToTrash": "Přesunout do koše",
+    "errorEmptyName": "Zadejte název.",
+    "errorBadChars": "Název nesmí obsahovat tyto znaky: {chars}",
+    "errorTooLong": "Název je příliš dlouhý (nejvýš {n} znaků)."
   }
 }

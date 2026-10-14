@@ -505,7 +505,7 @@ window.NP = window.NP || {};
                 NP.api.download("/api/notes/export-md").then(function (headers) {
                     var skipped = headers ? parseInt(headers.get("x-noirpad-skipped"), 10) : 0;
                     if (skipped > 0) {
-                        alert(NP.t("settings.exportMdSkipped", { n: skipped }));
+                        NP.dialog.alert(NP.t("settings.exportMdSkipped", { n: skipped }));
                     }
                 }).finally(function () { exportMd.disabled = false; });
             });
@@ -532,10 +532,10 @@ window.NP = window.NP || {};
                                     notes: NP.t("settings.importNotes", { n: res.notes })
                                 });
                             if (res.skipped) msg += "\n" + NP.t("settings.importSkipped", { n: res.skipped });
-                            alert(msg);
+                            NP.dialog.alert(msg);
                         });
                     }).catch(function (err) {
-                        alert(NP.t("settings.importFailed", { error: err && err.message ? err.message : err }));
+                        NP.dialog.alert(NP.t("settings.importFailed", { error: err && err.message ? err.message : err }));
                     });
                 });
                 input.click();
@@ -553,30 +553,32 @@ window.NP = window.NP || {};
         var resetAll = document.getElementById("setting-reset-all");
         if (resetAll) {
             resetAll.addEventListener("click", function () {
-                var ok = window.confirm(
-                    NP.t("settings.resetConfirm") + "\n\n" + NP.t("settings.resetConfirmDetail")
-                );
-                if (!ok) return;
+                NP.dialog.confirm(
+                    NP.t("settings.resetConfirm") + "\n\n" + NP.t("settings.resetConfirmDetail"),
+                    { okLabel: NP.t("settings.resetOk"), danger: true }
+                ).then(function (ok) {
+                    if (!ok) return;
 
-                NP.api.fetch("/api/settings/reset", { method: "POST" })
-                    .then(function (r) {
-                        if (!r.ok) {
-                            throw new Error(NP.t("settings.serverError", { status: r.status }));
-                        }
-                        return r.json();
-                    })
-                    .then(function () {
-                        /* Reload — simpler and more reliable than
-                           re-applying every setting in JS (theme, font,
-                           glow multiplier, CRT/matrix rain, autosave
-                           timer, shortcut bindings, ...). */
-                        window.location.reload();
-                    })
-                    .catch(function (err) {
-                        alert(NP.t("settings.resetFailed", {
-                            error: err && err.message ? err.message : err
-                        }));
-                    });
+                    return NP.api.fetch("/api/settings/reset", { method: "POST" })
+                        .then(function (r) {
+                            if (!r.ok) {
+                                throw new Error(NP.t("settings.serverError", { status: r.status }));
+                            }
+                            return r.json();
+                        })
+                        .then(function () {
+                            /* Reload — simpler and more reliable than
+                               re-applying every setting in JS (theme, font,
+                               glow multiplier, CRT/matrix rain, autosave
+                               timer, shortcut bindings, ...). */
+                            window.location.reload();
+                        })
+                        .catch(function (err) {
+                            NP.dialog.alert(NP.t("settings.resetFailed", {
+                                error: err && err.message ? err.message : err
+                            }));
+                        });
+                });
             });
         }
 
@@ -598,11 +600,9 @@ window.NP = window.NP || {};
         var logoutBtn = document.getElementById("settings-logout-btn");
         if (logoutBtn) {
             logoutBtn.addEventListener("click", function () {
-                var ok = window.confirm(NP.t("settings.logoutConfirm"));
-                if (!ok) return;
-                if (NP.auth && NP.auth.logout) {
-                    NP.auth.logout();
-                }
+                NP.dialog.confirm(NP.t("settings.logoutConfirm")).then(function (ok) {
+                    if (ok && NP.auth && NP.auth.logout) NP.auth.logout();
+                });
             });
         }
     }

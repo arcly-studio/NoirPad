@@ -143,7 +143,7 @@ window.NP = window.NP || {};
                 /* Server returns { tags: ["foo", "bar", ...] } */
                 var list = (res && Array.isArray(res.tags)) ? res.tags : [];
                 var msg = NP.t("tags.allTags") + "\n\n" + (list.length ? list.sort().join(", ") : NP.t("tags.none"));
-                alert(msg);
+                NP.dialog.alert(msg);
             }).catch(function (err) {
                 console.error("Failed to get tags:", err);
             });

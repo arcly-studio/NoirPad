@@ -287,11 +287,17 @@ window.NP = window.NP || {};
             if (deleteBtn) {
                 deleteBtn.addEventListener("click", function (e) {
                     e.stopPropagation();
-                    if (!confirm(NP.t("tree.confirmDeletePermanently", { name: item.name }))) return;
-                    NP.api.deleteTrashItem(item.id).then(function () {
-                        return NP.state.init();
-                    }).then(function () {
-                        NP.tree.render();
+                    NP.dialog.confirm(NP.t("tree.confirmDeletePermanently", { name: item.name }), {
+                        title: NP.t("tree.deletePermanently"),
+                        okLabel: NP.t("tree.deletePermanently"),
+                        danger: true
+                    }).then(function (ok) {
+                        if (!ok) return;
+                        return NP.api.deleteTrashItem(item.id).then(function () {
+                            return NP.state.init();
+                        }).then(function () {
+                            NP.tree.render();
+                        });
                     });
                 });
             }
@@ -442,58 +448,76 @@ window.NP = window.NP || {};
             var msg = isFolder
                 ? NP.t("tree.confirmTrashFolder", { name: name })
                 : NP.t("tree.confirmTrashNote", { name: name });
-            if (!skipConfirm && !confirm(msg)) return;
-            NP.api.deleteItem(id).then(function () {
-                if (NP.state.currentNoteId === id) {
-                    NP.state.currentNoteId = null;
-                    if (NP.tabs) NP.tabs.close(id);
-                    if (NP.editor) NP.editor.showWelcome();
-                }
-                if (NP.state.selectedId === id) {
-                    NP.state.selectedId = null;
-                }
-                return NP.state.init();
-            }).then(function () {
-                NP.tree.render();
+            var ask = skipConfirm ? Promise.resolve(true) : NP.dialog.confirm(msg, {
+                title: NP.t("dialog.moveToTrashTitle"),
+                okLabel: NP.t("dialog.moveToTrash")
+            });
+            return ask.then(function (ok) {
+                if (!ok) return;
+                return NP.api.deleteItem(id).then(function () {
+                    if (NP.state.currentNoteId === id) {
+                        NP.state.currentNoteId = null;
+                        if (NP.tabs) NP.tabs.close(id);
+                        if (NP.editor) NP.editor.showWelcome();
+                    }
+                    if (NP.state.selectedId === id) {
+                        NP.state.selectedId = null;
+                    }
+                    return NP.state.init();
+                }).then(function () {
+                    NP.tree.render();
+                });
             });
         },
 
         _handleContextAction: function (action, id, type) {
             switch (action) {
                 case "new-note":
-                    var noteName = prompt(NP.t("tree.promptNoteName"));
-                    if (noteName) {
-                        NP.api.newNote(id, noteName).then(function () {
+                    NP.dialog.prompt(NP.t("tree.promptNoteName"), {
+                        title: NP.t("dialog.newNoteTitle"),
+                        okLabel: NP.t("dialog.create")
+                    }).then(function (noteName) {
+                        if (!noteName) return;
+                        return NP.api.newNote(id, noteName).then(function () {
                             NP.state.setFolderOpenState(id, true);
                             return NP.state.init();
                         }).then(function () {
                             NP.tree.render();
                         });
-                    }
+                    });
                     break;
 
                 case "new-folder":
-                    var folderName = prompt(NP.t("tree.promptFolderName"));
-                    if (folderName) {
-                        NP.api.newFolder(id, folderName).then(function () {
+                    NP.dialog.prompt(NP.t("tree.promptFolderName"), {
+                        title: NP.t("dialog.newFolderTitle"),
+                        okLabel: NP.t("dialog.create")
+                    }).then(function (folderName) {
+                        if (!folderName) return;
+                        return NP.api.newFolder(id, folderName).then(function () {
                             NP.state.setFolderOpenState(id, true);
                             return NP.state.init();
                         }).then(function () {
                             NP.tree.render();
                         });
-                    }
+                    });
                     break;
 
                 case "rename":
-                    var newName = prompt(NP.t("tree.promptNewName"));
-                    if (newName) {
-                        NP.api.rename(id, newName).then(function () {
+                    var current = findItemById(NP.state.data.tree, id);
+                    var oldName = current ? current.name : "";
+                    NP.dialog.prompt(NP.t("tree.promptNewName"), {
+                        title: NP.t("dialog.renameTitle"),
+                        okLabel: NP.t("common.rename"),
+                        value: oldName
+                    }).then(function (newName) {
+                        if (!newName || newName === oldName) return;
+                        return NP.api.rename(id, newName).then(function () {
                             return NP.state.init();
                         }).then(function () {
                             NP.tree.render();
                             if (NP.tabs) NP.tabs.render();
                         });
-                    }
+                    });
                     break;
 
                 case "delete":

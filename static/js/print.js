@@ -372,11 +372,11 @@ window.NP = window.NP || {};
     NP.print = {
         exportCurrentNote: function () {
             if (!NP.state || !NP.state.currentNoteId) {
-                alert(NP.t("print.noNoteSelected"));
+                NP.dialog.alert(NP.t("print.noNoteSelected"));
                 return;
             }
             if (isCurrentNoteLocked()) {
-                alert(NP.t("print.unlockFirst"));
+                NP.dialog.alert(NP.t("print.unlockFirst"));
                 return;
             }
 

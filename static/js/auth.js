@@ -166,7 +166,7 @@ window.NP = window.NP || {};
         var notice = session.data_notice;
         session.data_notice = null;
         setTimeout(function () {
-            window.alert("NoirPad: " + NP.t("notice." + notice.code, notice.params));  // i18n-ignore (brand)
+            NP.dialog.alert(NP.t("notice." + notice.code, notice.params));
             NP.api.dismissNotice().catch(function () { /* shown anyway */ });
         }, 300);
     }

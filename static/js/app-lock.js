@@ -71,7 +71,7 @@ window.NP = window.NP || {};
                 return NP.api.appLockEnable(password).then(function () {
                     NP.appLock.enabled = true;
                 });
-            }).catch(function (err) { alert(NP.t("appLock.failed", { error: message(err) })); });
+            }).catch(function (err) { NP.dialog.alert(NP.t("appLock.failed", { error: message(err) })); });
         },
 
         change: function () {
@@ -81,7 +81,7 @@ window.NP = window.NP || {};
                     if (!password) return;
                     return NP.api.appLockEnable(password, current);
                 });
-            }).catch(function (err) { alert(NP.t("appLock.failed", { error: message(err) })); });
+            }).catch(function (err) { NP.dialog.alert(NP.t("appLock.failed", { error: message(err) })); });
         },
 
         disable: function () {
@@ -90,7 +90,7 @@ window.NP = window.NP || {};
                 return NP.api.appLockDisable(password).then(function () {
                     NP.appLock.enabled = false;
                 });
-            }).catch(function (err) { alert(NP.t("appLock.failed", { error: message(err) })); });
+            }).catch(function (err) { NP.dialog.alert(NP.t("appLock.failed", { error: message(err) })); });
         },
 
         /* Save, lock (the server also forgets unlocked note keys), and

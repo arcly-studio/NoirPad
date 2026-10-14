@@ -49,3 +49,7 @@ First public release.
 - The minimum password length for the app lock and for locked notes is now 4 characters (was 8).
   When locking a note with fewer than 8 characters NoirPad shows a hint that short passwords are
   easy to crack; it does not block saving.
+- NoirPad's own dialogs replace every browser `prompt()`, `confirm()` and `alert()` (no more
+  "127.0.0.1 says", always in the UI language): Enter confirms, Escape cancels, the name field
+  is focused and checked (not empty, none of `\ / : * ? " < > |`, at most 300 characters), and
+  actions that cannot be undone get a red button. Rename starts with the current name.

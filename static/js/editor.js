@@ -260,7 +260,7 @@ window.NP = window.NP || {};
                             NP.markdown.applyForLoadedNote(id, decContent);
                         }
                     }).catch(function (err) {
-                        alert(NP.t("editor.unlockFailed", {
+                        NP.dialog.alert(NP.t("editor.unlockFailed", {
                             error: err && err.message ? err.message : err }));
                         NP.editor._showLockScreen();
                         /* STATE C: encrypted + locked */

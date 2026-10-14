@@ -204,13 +204,21 @@ window.NP = window.NP || {};
 
         var conflict = NP.shortcuts.findConflict(keystroke, recordingState.id);
         if (conflict) {
-            if (!confirm(NP.t("shortcutsManager.conflictConfirm", {
+            /* The dialog takes the keyboard (Enter/Escape) while it is open. */
+            var rs = recordingState;
+            NP.dialog.confirm(NP.t("shortcutsManager.conflictConfirm", {
                 keys: keystroke, label: conflict.label
-            }))) {
-                recordingState.displayEl.textContent = NP.t("shortcutsManager.pressKeys");
-                return;
-            }
-            NP.shortcuts.setCurrent(conflict.id, "");
+            })).then(function (ok) {
+                if (recordingState !== rs) return;    /* cancelled meanwhile */
+                if (!ok) {
+                    rs.displayEl.textContent = NP.t("shortcutsManager.pressKeys");
+                    return;
+                }
+                NP.shortcuts.setCurrent(conflict.id, "");
+                NP.shortcuts.setCurrent(rs.id, keystroke);
+                finishRecording();
+            });
+            return;
         }
 
         NP.shortcuts.setCurrent(recordingState.id, keystroke);
@@ -277,10 +285,13 @@ window.NP = window.NP || {};
             var resetAllBtn = document.getElementById("shortcuts-reset-all");
             if (resetAllBtn) {
                 resetAllBtn.addEventListener("click", function () {
-                    if (confirm(NP.t("shortcutsManager.resetAllConfirm"))) {
+                    NP.dialog.confirm(NP.t("shortcutsManager.resetAllConfirm"), {
+                        danger: true
+                    }).then(function (ok) {
+                        if (!ok) return;
                         NP.shortcuts.resetAll();
                         renderList();
-                    }
+                    });
                 });
             }
 

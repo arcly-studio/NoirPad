@@ -10,7 +10,7 @@ beforeEach(() => {
         currentNoteId: "n1",
         data: { tree: [{ id: "n1", name: "Úkoly – řešení", type: "note" }] },
     };
-    win.alert = vi.fn();
+    win.NP.dialog = { alert: vi.fn(() => Promise.resolve()) };
 });
 
 describe("PDF export", () => {
@@ -31,6 +31,6 @@ describe("PDF export", () => {
         win.NP.state.currentNoteId = null;
         win.NP.print.exportCurrentNote();
         expect(win.print).not.toHaveBeenCalled();
-        expect(win.alert).toHaveBeenCalled();
+        expect(win.NP.dialog.alert).toHaveBeenCalled();
     });
 });

@@ -591,7 +591,9 @@
   "backup": {
     "importConfirm": "Import \"{name}\"?\n\nThis REPLACES ALL your notes, folders and trash with the contents of the backup. Your current notes are saved first to the backups folder (pre-import-….zip) in the NoirPad data directory.\n\nSettings are not changed.",
     "importSuccess": "Backup imported successfully.",
-    "importFailed": "Import failed: {error}"
+    "importFailed": "Import failed: {error}",
+    "importTitle": "Restore backup",
+    "importOk": "Replace and restore"
   },
   "search": {
     "placeholder": "Find...",
@@ -614,7 +616,8 @@
     "none": "(none)"
   },
   "trash": {
-    "confirmEmpty": "Permanently delete all items in trash? This cannot be undone."
+    "confirmEmpty": "Permanently delete all items in trash? This cannot be undone.",
+    "emptyTitle": "Empty trash"
   },
   "ui": {
     "splash": {
@@ -746,9 +749,6 @@
       "source": "Source",
       "storageUsed": "Storage used"
     },
-    "dialog": {
-      "title": "Dialog"
-    },
     "shortcuts": {
       "title": "Shortcuts",
       "searchPlaceholder": "Search shortcuts...",
@@ -790,6 +790,18 @@
     "resetConfirmDetail": "This restores theme, fonts, toggles, idle-lock, and custom shortcuts. Your notes, folders, and trash will NOT be affected.",
     "serverError": "Server error {status}",
     "resetFailed": "Failed to reset settings: {error}",
-    "logoutConfirm": "Log out of NoirPad?"
+    "logoutConfirm": "Log out of NoirPad?",
+    "resetOk": "Reset settings"
+  },
+  "dialog": {
+    "newNoteTitle": "New note",
+    "newFolderTitle": "New folder",
+    "renameTitle": "Rename",
+    "create": "Create",
+    "moveToTrashTitle": "Move to trash",
+    "moveToTrash": "Move to trash",
+    "errorEmptyName": "Enter a name.",
+    "errorBadChars": "A name cannot contain these characters: {chars}",
+    "errorTooLong": "The name is too long (at most {n} characters)."
   }
 }

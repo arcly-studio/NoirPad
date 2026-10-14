@@ -104,7 +104,7 @@ window.NP = window.NP || {};
                 if (NP.editor && NP.editor.save) NP.editor.save(true);
             }).catch(function (err) {
                 console.error("Image upload failed:", err);
-                alert(NP.t("images.uploadFailed", { error: err && err.message ? err.message : err }));
+                NP.dialog.alert(NP.t("images.uploadFailed", { error: err && err.message ? err.message : err }));
             });
         },
 
@@ -225,7 +225,7 @@ window.NP = window.NP || {};
                 if (NP.editor && NP.editor.save) NP.editor.save(true);
             }).catch(function (err) {
                 console.error("Image upload failed:", err);
-                alert(NP.t("images.uploadFailed", { error: err && err.message ? err.message : err }));
+                NP.dialog.alert(NP.t("images.uploadFailed", { error: err && err.message ? err.message : err }));
             });
         },
 

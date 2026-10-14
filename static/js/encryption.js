@@ -23,11 +23,11 @@ window.NP = window.NP || {};
         encrypt: function () {
             var noteId = NP.state && NP.state.currentNoteId;
             if (!noteId) {
-                alert(NP.t("encryption.noNoteSelected"));
+                NP.dialog.alert(NP.t("encryption.noNoteSelected"));
                 return Promise.resolve();
             }
             if (NP.encryption.isEncrypted(noteId) || (editor() && editor()._currentNoteEncrypted)) {
-                alert(NP.t("encryption.alreadyEncrypted"));
+                NP.dialog.alert(NP.t("encryption.alreadyEncrypted"));
                 return Promise.resolve();
             }
 
@@ -58,7 +58,7 @@ window.NP = window.NP || {};
                     NP.encryption.updateLockButtonState();
                 });
             }).catch(function (err) {
-                alert(NP.t("encryption.encryptFailed", { error: err && err.message ? err.message : err }));
+                NP.dialog.alert(NP.t("encryption.encryptFailed", { error: err && err.message ? err.message : err }));
             });
         },
 
@@ -66,7 +66,7 @@ window.NP = window.NP || {};
         decrypt: function () {
             var noteId = NP.state && NP.state.currentNoteId;
             if (!noteId) {
-                alert(NP.t("encryption.noNoteSelected"));
+                NP.dialog.alert(NP.t("encryption.noNoteSelected"));
                 return Promise.resolve();
             }
             var ed = editor();
@@ -74,7 +74,7 @@ window.NP = window.NP || {};
                 return NP.encryption.removeEncryption();
             }
             if (!NP.encryption.isEncrypted(noteId)) {
-                alert(NP.t("encryption.notEncrypted"));
+                NP.dialog.alert(NP.t("encryption.notEncrypted"));
                 return Promise.resolve();
             }
             return NP.passwordDialog.ask({
@@ -87,7 +87,7 @@ window.NP = window.NP || {};
                     if (ed && ed.loadNote) return ed.loadNote(noteId);
                 });
             }).catch(function (err) {
-                alert(NP.t("encryption.decryptFailed", { error: err && err.message ? err.message : err }));
+                NP.dialog.alert(NP.t("encryption.decryptFailed", { error: err && err.message ? err.message : err }));
             });
         },
 
@@ -152,7 +152,7 @@ window.NP = window.NP || {};
             var ed = editor();
             var id = ed && ed._currentNoteId;
             if (!id) {
-                alert(NP.t("encryption.noNoteSelected"));
+                NP.dialog.alert(NP.t("encryption.noNoteSelected"));
                 return;
             }
 
@@ -181,28 +181,33 @@ window.NP = window.NP || {};
             var id = ed && ed._currentNoteId;
             if (!id) return Promise.resolve();
             if (!ed._unlockToken) {
-                alert(NP.t("encryption.unlockFirst"));
+                NP.dialog.alert(NP.t("encryption.unlockFirst"));
                 return Promise.resolve();
             }
 
-            var ok = window.confirm(NP.t("encryption.removeConfirm"));
-            if (!ok) return Promise.resolve();
+            return NP.dialog.confirm(NP.t("encryption.removeConfirm"), {
+                title: NP.t("encryption.removeTitle"),
+                okLabel: NP.t("encryption.removeOk"),
+                danger: true
+            }).then(function (ok) {
+                if (!ok) return;
 
-            /* Stop autosave up front: an encrypted autosave firing during
-               the decrypt request would immediately re-encrypt the note. */
-            if (ed.stopAutosave) ed.stopAutosave();
+                /* Stop autosave up front: an encrypted autosave firing during
+                   the decrypt request would immediately re-encrypt the note. */
+                if (ed.stopAutosave) ed.stopAutosave();
 
-            /* Flush the latest edits (encrypted), then decrypt for good. */
-            var flush = ed.save ? ed.save(true) : Promise.resolve();
-            return flush.then(function () {
-                return NP.api.decrypt(id, { unlock_token: ed._unlockToken });
-            }).then(function () {
-                ed._unlockToken = null;
-                ed._currentNoteEncrypted = false;
-                if (ed.loadNote) return ed.loadNote(id);
-            }).catch(function (err) {
-                if (ed.startAutosave) ed.startAutosave();
-                alert(NP.t("encryption.removeFailed", { error: err && err.message ? err.message : err }));
+                /* Flush the latest edits (encrypted), then decrypt for good. */
+                var flush = ed.save ? ed.save(true) : Promise.resolve();
+                return flush.then(function () {
+                    return NP.api.decrypt(id, { unlock_token: ed._unlockToken });
+                }).then(function () {
+                    ed._unlockToken = null;
+                    ed._currentNoteEncrypted = false;
+                    if (ed.loadNote) return ed.loadNote(id);
+                }).catch(function (err) {
+                    if (ed.startAutosave) ed.startAutosave();
+                    NP.dialog.alert(NP.t("encryption.removeFailed", { error: err && err.message ? err.message : err }));
+                });
             });
         },
 

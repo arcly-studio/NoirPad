@@ -262,13 +262,16 @@ window.NP = window.NP || {};
             var btnNewFolder = NP.$("#btn-new-folder");
             if (btnNewFolder) {
                 btnNewFolder.addEventListener("click", function () {
-                    var name = prompt(NP.t("tree.promptFolderName"));
-                    if (!name) return;
-                    var parentId = NP.state.currentNoteId ? null : null;
-                    NP.api.newFolder(parentId, name).then(function () {
-                        return NP.state.init();
-                    }).then(function () {
-                        NP.tree.render();
+                    NP.dialog.prompt(NP.t("tree.promptFolderName"), {
+                        title: NP.t("dialog.newFolderTitle"),
+                        okLabel: NP.t("dialog.create")
+                    }).then(function (name) {
+                        if (!name) return;
+                        return NP.api.newFolder(null, name).then(function () {
+                            return NP.state.init();
+                        }).then(function () {
+                            NP.tree.render();
+                        });
                     });
                 });
             }
@@ -276,55 +279,60 @@ window.NP = window.NP || {};
             var btnNewNote = NP.$("#btn-new-note");
             if (btnNewNote) {
                 btnNewNote.addEventListener("click", function () {
-                    var name = prompt(NP.t("tree.promptNoteName"));
-                    if (!name) return;
+                    /* The parent is decided now, before the dialog takes focus. */
                     var parentId = (NP.tree && NP.tree.getNewItemParentId)
                         ? NP.tree.getNewItemParentId() : null;
-                    NP.api.newNote(parentId, name).then(function (res) {
-                        /* Make the new note visible inside its folder */
-                        if (parentId && NP.state.setFolderOpenState) {
-                            NP.state.setFolderOpenState(parentId, true);
-                        }
-                        return NP.state.init().then(function () {
-                            NP.tree.render();
-                            if (res && res.id) {
-                                /* Use tabs.add (which delegates to
-                                   tabs.activate → save current →
-                                   loadNote new). Calling
-                                   editor.loadNote here too caused a
-                                   race: it bumped _currentNoteId to
-                                   the new id, then tabs.activate's
-                                   save() wrote the PREVIOUS textarea
-                                   content under the NEW id — content
-                                   bleeding. */
-                                var loaded;
-                                if (NP.tabs) {
-                                    NP.tabs.add(res.id, name);
-                                    /* tabs.activate returns void but
-                                       kicks off loadNote internally;
-                                       we don't have a handle on its
-                                       promise, so fall back to a
-                                       resolved promise for the
-                                       encrypt step below. */
-                                    loaded = Promise.resolve();
-                                } else {
-                                    loaded = NP.editor.loadNote(res.id);
-                                }
-                                /* Settings v2: default_encrypted — after the
-                                   note is loaded (so currentNoteId is set and
-                                   editor state is ready), prompt to encrypt.
-                                   Cancel inside NP.encryption.encrypt() leaves
-                                   the note plain — we never delete it. */
-                                var defEnc = NP.state.data &&
-                                    NP.state.data.default_encrypted === true;
-                                if (defEnc && NP.encryption && NP.encryption.encrypt) {
-                                    var after = loaded && loaded.then
-                                        ? loaded : Promise.resolve();
-                                    after.then(function () {
-                                        NP.encryption.encrypt();
-                                    });
-                                }
+                    NP.dialog.prompt(NP.t("tree.promptNoteName"), {
+                        title: NP.t("dialog.newNoteTitle"),
+                        okLabel: NP.t("dialog.create")
+                    }).then(function (name) {
+                        if (!name) return;
+                        return NP.api.newNote(parentId, name).then(function (res) {
+                            /* Make the new note visible inside its folder */
+                            if (parentId && NP.state.setFolderOpenState) {
+                                NP.state.setFolderOpenState(parentId, true);
                             }
+                            return NP.state.init().then(function () {
+                                NP.tree.render();
+                                if (res && res.id) {
+                                    /* Use tabs.add (which delegates to
+                                       tabs.activate → save current →
+                                       loadNote new). Calling
+                                       editor.loadNote here too caused a
+                                       race: it bumped _currentNoteId to
+                                       the new id, then tabs.activate's
+                                       save() wrote the PREVIOUS textarea
+                                       content under the NEW id — content
+                                       bleeding. */
+                                    var loaded;
+                                    if (NP.tabs) {
+                                        NP.tabs.add(res.id, name);
+                                        /* tabs.activate returns void but
+                                           kicks off loadNote internally;
+                                           we don't have a handle on its
+                                           promise, so fall back to a
+                                           resolved promise for the
+                                           encrypt step below. */
+                                        loaded = Promise.resolve();
+                                    } else {
+                                        loaded = NP.editor.loadNote(res.id);
+                                    }
+                                    /* Settings v2: default_encrypted — after the
+                                       note is loaded (so currentNoteId is set and
+                                       editor state is ready), prompt to encrypt.
+                                       Cancel inside NP.encryption.encrypt() leaves
+                                       the note plain — we never delete it. */
+                                    var defEnc = NP.state.data &&
+                                        NP.state.data.default_encrypted === true;
+                                    if (defEnc && NP.encryption && NP.encryption.encrypt) {
+                                        var after = loaded && loaded.then
+                                            ? loaded : Promise.resolve();
+                                        after.then(function () {
+                                            NP.encryption.encrypt();
+                                        });
+                                    }
+                                }
+                            });
                         });
                     });
                 });
@@ -345,13 +353,19 @@ window.NP = window.NP || {};
                     if (!NP.state.currentNoteId) return;
                     var item = NP.editor._findItemInTree(NP.state.data.tree, NP.state.currentNoteId);
                     var oldName = item ? item.name : "";
-                    var newName = prompt(NP.t("tree.promptNewName"), oldName);
-                    if (!newName || newName === oldName) return;
-                    NP.api.rename(NP.state.currentNoteId, newName).then(function () {
-                        if (item) item.name = newName;
-                        if (titleInput) titleInput.value = newName;
-                        NP.tree.render();
-                        if (NP.tabs) NP.tabs.render();
+                    var noteId = NP.state.currentNoteId;
+                    NP.dialog.prompt(NP.t("tree.promptNewName"), {
+                        title: NP.t("dialog.renameTitle"),
+                        okLabel: NP.t("common.rename"),
+                        value: oldName
+                    }).then(function (newName) {
+                        if (!newName || newName === oldName) return;
+                        return NP.api.rename(noteId, newName).then(function () {
+                            if (item) item.name = newName;
+                            if (titleInput && NP.state.currentNoteId === noteId) titleInput.value = newName;
+                            NP.tree.render();
+                            if (NP.tabs) NP.tabs.render();
+                        });
                     });
                 });
             }

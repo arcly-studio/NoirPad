@@ -4093,6 +4093,34 @@ body.auth-active #matrix-canvas {
     .auth-ascii { font-size: 8px; }
 }
 
+/* ---- NoirPad dialogs (dialog.js: alert / confirm / prompt) ---- */
+.np-dialog {
+    z-index: 450;
+}
+.np-dialog .np-dialog-message {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+.np-dialog .dialog-input {
+    display: block;
+    margin-bottom: 6px;
+}
+.np-dialog .dialog-input[aria-invalid="true"] {
+    border-color: #ff5555;
+}
+.np-dialog .np-dialog-error {
+    color: #ff5555;
+    min-height: 1.6em;
+    margin-bottom: 8px;
+}
+.np-dialog--danger .dialog-box {
+    border-color: #ff3333;
+}
+.np-dialog .dialog-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
 /* ---- Password dialog (password-dialog.js) ---- */
 .np-password-dialog {
     z-index: 400;
