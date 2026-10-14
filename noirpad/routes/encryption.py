@@ -18,6 +18,7 @@ from ..crypto import (MAX_NOTE_PASSWORD, MIN_NOTE_PASSWORD, InvalidToken, decryp
                       decrypt_with_key, derive_key, encrypt_with_key, is_encrypted_content,
                       unlock_content)
 from ..errors import ApiError
+from ..server_auth import LOGIN_MAX_FAILURES, LOGIN_WINDOW
 from .notes import set_mode
 from ..images import extract_image_names
 from ..models import DecryptReq, LockReq, PasswordReq, SaveEncryptedReq
@@ -95,18 +96,34 @@ async def encrypt_note(req: PasswordReq):
     return {"ok": True, "unlock_token": _remember_key(req.id, key, salt)}
 
 
+def _check_guess_rate() -> None:
+    """D15: at most LOGIN_MAX_FAILURES wrong note passwords per
+    LOGIN_WINDOW (all notes, all clients), as for the app lock."""
+    now = time.time()
+    RUNTIME.note_password_failures[:] = [t for t in RUNTIME.note_password_failures
+                                         if t > now - LOGIN_WINDOW]
+    if len(RUNTIME.note_password_failures) >= LOGIN_MAX_FAILURES:
+        raise ApiError(429, "too_many_attempts")
+
+
+def _wrong_password() -> ApiError:
+    RUNTIME.note_password_failures.append(time.time())
+    return ApiError(400, "wrong_password")
+
+
 @router.post("/api/unlock")
 async def unlock_note(req: PasswordReq):
     """Check the password and return the plaintext + an unlock token.
 
     The file stays encrypted.
     """
+    _check_guess_rate()
     data = read_data()
     stored = _stored_note(data, req.id)
     try:
         text, key, salt = unlock_content(stored, req.password)
     except (InvalidToken, ValueError):
-        raise ApiError(400, "wrong_password")
+        raise _wrong_password()
     return {
         "content": text,
         "formats": data.get("note_formats", {}).get(req.id, []),
@@ -126,6 +143,8 @@ async def save_encrypted(req: SaveEncryptedReq):
         data["notes"][req.id] = encrypt_with_key(req.content, entry["key"], entry["salt"])
         if req.formats:
             data.setdefault("note_formats", {})[req.id] = req.formats
+        else:   # cleared formatting must stay cleared (D16)
+            data.get("note_formats", {}).pop(req.id, None)
         set_mode(data, req.id, req.mode)
 
     update_data(_mut)
@@ -143,10 +162,11 @@ async def decrypt_note(req: DecryptReq):
     stored_before = read_data().get("notes", {}).get(req.id)
     key = entry["key"] if entry else None
     if key is None and stored_before is not None:
+        _check_guess_rate()
         try:
             unlock_content(stored_before, req.password)   # KDF outside the lock
         except (InvalidToken, ValueError):
-            raise ApiError(400, "wrong_password")
+            raise _wrong_password()
 
     def _mut(data: dict) -> None:
         stored = _stored_note(data, req.id)

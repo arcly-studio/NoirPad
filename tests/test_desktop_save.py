@@ -132,3 +132,15 @@ def test_d13_fullscreen_toggles_the_desktop_window(desk, monkeypatch):
 def test_d13_fullscreen_endpoint_is_desktop_only(client, monkeypatch):
     monkeypatch.setattr(RUNTIME, "toggle_fullscreen", lambda: pytest.fail("toggled in web mode"))
     assert client.post("/api/desktop/fullscreen").status_code == 404
+
+
+def test_d14_a_failed_export_never_logs_the_path(desk, tmp_path, caplog):
+    c, _, target, _ = desk
+    target["path"] = str(tmp_path / "Soukrome_Prace" / "neexistuje" / "tajny-projekt.zip")
+    with caplog.at_level("DEBUG"):
+        r = c.get("/api/backup", headers=SAVE)
+    assert r.status_code == 500 and r.json()["detail"]["code"] == "save_failed"
+    logged = "\n".join(rec.getMessage() for rec in caplog.records)
+    assert "Saving an export failed" in logged
+    assert "tajny-projekt" not in logged and "Soukrome_Prace" not in logged
+    assert "tajny-projekt" not in r.json()["detail"]["params"]["error"]

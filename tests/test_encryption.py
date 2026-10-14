@@ -220,3 +220,27 @@ def test_k2_mode_change_of_an_unlocked_note_stays_encrypted(client, np_backend):
     client.post("/api/save-encrypted", json={"id": nid, "unlock_token": token,
                                              "content": "# tajné", "mode": "rich-text"})
     assert client.get(f"/api/note/{nid}").json()["mode"] == "rich-text"
+
+
+# D15: guessing a note's password is rate-limited like the app lock.
+@pytest.mark.parametrize("endpoint", ["/api/unlock", "/api/decrypt"])
+def test_d15_note_password_guesses_are_limited(client, np_backend, endpoint):
+    nid = new_note(client, content="tajné")
+    lock(client, nid)
+    codes = [client.post(endpoint, json={"id": nid, "password": f"guess-{i}"}).status_code
+             for i in range(np_backend.LOGIN_MAX_FAILURES + 1)]
+    assert codes[:-1] == [400] * np_backend.LOGIN_MAX_FAILURES
+    assert codes[-1] == 429
+    r = client.post(endpoint, json={"id": nid, "password": PW})   # even the right one waits
+    assert r.status_code == 429 and r.json()["detail"]["code"] == "too_many_attempts"
+
+
+# D16: clearing the formatting of an unlocked note sticks.
+def test_d16_save_encrypted_can_clear_formats(client):
+    nid = new_note(client, content="tučně")
+    token = lock(client, nid)
+    fmt = [{"start": "1.0", "end": "1.5", "bold": True}]
+    client.post("/api/save-encrypted", json={"id": nid, "unlock_token": token, "content": "tučně", "formats": fmt})
+    assert unlock(client, nid).json()["formats"] == fmt
+    client.post("/api/save-encrypted", json={"id": nid, "unlock_token": token, "content": "tučně", "formats": []})
+    assert unlock(client, nid).json()["formats"] == []

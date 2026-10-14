@@ -82,6 +82,7 @@ def configure(*, mode: Optional[str] = None, password: Any = ...,
     RUNTIME.unlocked.clear()
     RUNTIME.app_lock_tokens.clear()
     RUNTIME.app_lock_failures.clear()
+    RUNTIME.note_password_failures.clear()
 
 
 def password_matches(candidate: str) -> bool:

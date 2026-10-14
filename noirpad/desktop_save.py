@@ -100,8 +100,10 @@ async def save_response(response: Response) -> Response:
     try:
         await run_in_threadpool(_write, path, body)
     except OSError as exc:
-        log.error("Saving an export failed: %s", exc)
-        return _failed(exc.strerror or str(exc))
+        # errno/strerror only: the message would carry the chosen path, i.e.
+        # the user name, folders and a file name taken from the note (D14).
+        log.error("Saving an export failed: errno %s (%s)", exc.errno, exc.strerror)
+        return _failed(exc.strerror or type(exc).__name__)
     log.info("Export saved (%d bytes)", len(body))   # never the path: it can name the user
     return JSONResponse({"saved": True, "name": path.name, "token": _remember(path)}, headers=extra)
 

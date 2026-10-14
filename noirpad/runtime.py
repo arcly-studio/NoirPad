@@ -27,6 +27,7 @@ class _Runtime:
     app_lock: Optional[dict] = None
     app_lock_tokens: set[str] = set()
     app_lock_failures: list[float] = []
+    note_password_failures: list[float] = []   # wrong note passwords (D15)
     # Desktop app (desktop.py): native "Save as" dialog, suggested name →
     # chosen path or None; files saved through it, token -> path (N6).
     save_dialog: Optional[Callable[[str], Optional[str]]] = None
