@@ -237,7 +237,7 @@
     "copied": "Copied!",
     "overview": {
       "title": "Overview",
-      "p1": "NoirPad is a note-taking app with a hacker/terminal aesthetic: green text on a black background, a monospace font and ASCII effects.",
+      "p1": "NoirPad is a note-taking app with a hacker/terminal aesthetic: neon text on a dark background (17 themes), a monospace editor font and ASCII effects.",
       "p2": "It supports a tree of folders and notes, encryption, export, tags, themes and more."
     },
     "keys": {

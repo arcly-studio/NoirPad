@@ -243,7 +243,7 @@ window.NP = window.NP || {};
         var html = "";
 
         /* Overlay container */
-        html += '<div id="help-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;' +
+        html += '<div id="help-overlay" class="np-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;' +
             'z-index:5000;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;">';
 
         /* Modal box */

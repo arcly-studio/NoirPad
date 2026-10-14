@@ -42,14 +42,6 @@ window.NP = window.NP || {};
         animId: null,
         _lastTime: 0,
 
-        toggle: function () {
-            if (this.running) {
-                this.stop();
-            } else {
-                this.start();
-            }
-        },
-
         /* Settings v2: gate visibility on the matrix_rain_enabled setting. */
         setEnabled: function (v) {
             if (v) {
@@ -57,6 +49,18 @@ window.NP = window.NP || {};
             } else {
                 this.stop();
             }
+        },
+
+        /* :matrix — really toggles: switching on also turns the setting on
+           (start() refuses while matrix_rain_enabled is false) (C7). */
+        toggle: function () {
+            var on = !this.running;
+            if (NP.state && NP.state.data) NP.state.data.matrix_rain_enabled = on;
+            if (NP.api && NP.api.saveSettings) {
+                NP.api.saveSettings({ matrix_rain_enabled: on }).catch(function () {});
+            }
+            if (on) this.start(); else this.stop();
+            return on;
         },
 
         start: function () {

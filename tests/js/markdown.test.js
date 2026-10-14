@@ -218,3 +218,27 @@ describe("status bar counts in Markdown mode (D1)", () => {
         expect(win.document.getElementById("char-count").textContent).toBe("21 chars");
     });
 });
+
+describe("Ctrl+Shift+E code block (C13)", () => {
+    function run(value, start, end) {
+        const ta = win.document.getElementById("editor-md");
+        ta.value = value;
+        ta.setSelectionRange(start, end);
+        return ta;
+    }
+
+    it("wraps the selected lines and keeps them selected", () => {
+        win.document.body.classList.add("editor-md-active");
+        const ta = run("intro\nprint(1)\nprint(2)\nend", 6, 23);
+        win.NP.markdown._insertCodeBlock(ta);
+        expect(ta.value).toBe("intro\n```\nprint(1)\nprint(2)\n```\n\nend");
+        expect(ta.value.substring(ta.selectionStart, ta.selectionEnd)).toBe("print(1)\nprint(2)");
+    });
+
+    it("without a selection inserts an empty block with the caret inside", () => {
+        const ta = run("abc", 3, 3);
+        win.NP.markdown._insertCodeBlock(ta);
+        expect(ta.value).toBe("abc\n```\n\n```\n");
+        expect(ta.selectionStart).toBe(8);
+    });
+});

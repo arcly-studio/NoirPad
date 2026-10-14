@@ -261,7 +261,7 @@
     "copied": "Zkopírováno!",
     "overview": {
       "title": "Přehled",
-      "p1": "NoirPad je poznámková aplikace s hackerskou/terminálovou estetikou: zelený text na černém pozadí, písmo s pevnou šířkou znaků a ASCII efekty.",
+      "p1": "NoirPad je poznámková aplikace s hackerskou/terminálovou estetikou: neonový text na tmavém pozadí (17 motivů), písmo s pevnou šířkou znaků a ASCII efekty.",
       "p2": "Aplikace podporuje stromovou strukturu složek a poznámek, šifrování, export, štítky, motivy a další funkce."
     },
     "keys": {

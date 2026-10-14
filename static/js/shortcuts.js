@@ -271,6 +271,14 @@ window.NP = window.NP || {};
 
         _bound: false,
 
+        /* True while a modal window covers the app. */
+        modalOpen: function () {
+            return !!document.querySelector(
+                "#settings-overlay.visible, #help-overlay.visible, #shortcuts-overlay.visible, " +
+                "#font-overlay.visible, .np-modal, .np-findall-overlay, .np-dialog, " +
+                ".np-password-dialog, #image-viewer-overlay");
+        },
+
         init: function () {
             NP.shortcuts.loadFromState();
 
@@ -282,9 +290,14 @@ window.NP = window.NP || {};
                    keystroke pass through to the recorder (no dispatch,
                    no preventDefault). */
                 if (NP.shortcuts._recordingActive) return;
+                /* Settings, help, pickers and dialogs are modal: under them
+                   only F1 (help) works, so e.g. Delete can't trash the note
+                   behind the Settings window (C2). Escape is theirs. */
+                var modal = NP.shortcuts.modalOpen();
                 for (var id in registry) {
                     var ks = registry[id].current;
                     if (!ks) continue;
+                    if (modal && id !== "open-help") continue;
                     if (!matchesKeystroke(e, ks)) continue;
 
                     var handler = handlers[id];

@@ -134,6 +134,7 @@ window.NP = window.NP || {};
             /* Build overlay */
             var overlay = document.createElement("div");
             overlay.id = "font-picker-overlay";
+            overlay.className = "np-modal";
             overlay.style.cssText =
                 "position:fixed;top:0;left:0;width:100%;height:100%;" +
                 "z-index:5000;background:rgba(0,0,0,0.85);" +

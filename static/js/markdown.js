@@ -156,6 +156,8 @@ window.NP = window.NP || {};
     /* ---- Public API ---- */
 
     NP.markdown = {
+        _insertCodeBlock: function (ta) { insertCodeBlock(ta); },   /* tests */
+
 
         /* Render markdown source *src* as the preview inside *el*. */
         renderInto: function (el, src) {
@@ -396,12 +398,21 @@ window.NP = window.NP || {};
 
     function insertCodeBlock(ta) {
         var s = ta.selectionStart;
+        var e = ta.selectionEnd;
         var lead = (s > 0 && ta.value.charAt(s - 1) !== "\n") ? "\n" : "";
-        var ins = lead + "```\n\n```\n";
-        ta.setRangeText(ins, s, s, "end");
-        /* Caret on the empty line between the fences. */
-        var caret = s + lead.length + 4;  /* lead + "```\n" */
-        ta.setSelectionRange(caret, caret);
+        var sel = ta.value.substring(s, e);
+        if (sel) {
+            /* Wrap the selection, keep it selected inside the fences (C13). */
+            var body = sel.replace(/\n$/, "");
+            ta.setRangeText(lead + "```\n" + body + "\n```\n", s, e, "end");
+            var from = s + lead.length + 4;
+            ta.setSelectionRange(from, from + body.length);
+        } else {
+            ta.setRangeText(lead + "```\n\n```\n", s, s, "end");
+            /* Caret on the empty line between the fences. */
+            var caret = s + lead.length + 4;  /* lead + "```\n" */
+            ta.setSelectionRange(caret, caret);
+        }
         fireInput(ta);
     }
 

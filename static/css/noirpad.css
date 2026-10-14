@@ -180,7 +180,7 @@ input, textarea {
 }
 
 #button-bar button {
-    padding: 4px 6px;
+    padding: 4px 3px;   /* long Czech labels (Přejmenovat) need the room (C8) */
     font-size: 10px;
     min-height: 24px;
     min-width: 0;
@@ -882,7 +882,7 @@ body #editor:has(.welcome-wrap) {
 }
 
 .shortcut-hint {
-    opacity: 0.6;
+    opacity: 0.9;   /* 0.6 was ~1.8:1 in the darker themes (C1) */
 }
 
 .shortcut-hint kbd {

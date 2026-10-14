@@ -461,8 +461,12 @@ window.NP = window.NP || {};
             function refreshAutosaveIndicator() {
                 if (!autosaveIndicator) return;
                 var on = !!(NP.state.data && NP.state.data.autosave);
+                /* Off is told apart by colour and a strike-through, not by
+                   fading it to unreadable (C1). */
                 autosaveIndicator.style.color = on ? "var(--accent)" : "var(--fg-dim)";
-                autosaveIndicator.style.opacity = on ? "1" : "0.4";
+                autosaveIndicator.style.opacity = "1";
+                autosaveIndicator.style.textDecoration = on ? "none" : "line-through";
+                if (btnAutosave) btnAutosave.setAttribute("aria-pressed", on ? "true" : "false");
             }
             refreshAutosaveIndicator();
             if (btnAutosave) {
