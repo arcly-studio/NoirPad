@@ -54,7 +54,7 @@
     "too_many_attempts": "Příliš mnoho pokusů. Zkuste to za minutu.",
     "wrong_password": "Špatné heslo.",
     "password_required": "Zadejte heslo.",
-    "password_too_short": "Heslo musí mít aspoň {min} znaků.",
+    "password_too_short": "Heslo je příliš krátké (minimální délka: {min}).",
     "password_too_long": "Heslo je příliš dlouhé.",
     "note_not_found": "Poznámka už neexistuje.",
     "note_locked": "Poznámka je zamčená. Odemkněte ji znovu.",
@@ -98,7 +98,12 @@
     "startFailed": "NoirPad neodpovídá: {error}"
   },
   "appLock": {
-    "chooseMessage": "Zvolte heslo dlouhé alespoň {min} znaků.",
+    "chooseMessage": {
+      "one": "Zvolte heslo dlouhé alespoň {n} znak.",
+      "few": "Zvolte heslo dlouhé alespoň {n} znaky.",
+      "many": "Zvolte heslo dlouhé alespoň {n} znaku.",
+      "other": "Zvolte heslo dlouhé alespoň {n} znaků."
+    },
     "chooseWarning": "Zapomenuté heslo k zámku aplikace NoirPad neumí obnovit. Zámek vaše poznámky nešifruje.",
     "setPassword": "Nastavit heslo",
     "currentMessage": "Zadejte současné heslo k zámku aplikace.",
@@ -114,7 +119,12 @@
     "alreadyEncrypted": "Poznámka už je zašifrovaná.",
     "notEncrypted": "Poznámka není zašifrovaná.",
     "lockTitle": "Zamknout poznámku heslem",
-    "lockMessage": "Zvolte heslo dlouhé alespoň {n} znaků.",
+    "lockMessage": {
+      "one": "Zvolte heslo dlouhé alespoň {n} znak.",
+      "few": "Zvolte heslo dlouhé alespoň {n} znaky.",
+      "many": "Zvolte heslo dlouhé alespoň {n} znaku.",
+      "other": "Zvolte heslo dlouhé alespoň {n} znaků."
+    },
     "lockWarning": "Zapomenuté heslo = tuto poznámku už nikdy neotevřete. Obnovit ji nelze.\nŠifruje se pouze text poznámky. Její název, štítky a obrázky zůstávají na disku nešifrované.",
     "lock": "Zamknout",
     "unlock": "Odemknout",
@@ -133,7 +143,13 @@
     "reunlockMessage": "Poznámka se zamkla. Zadejte její heslo, aby se vaše změny uložily.",
     "unlockFirst": "Nejprve poznámku odemkněte, pak zrušte šifrování.",
     "removeConfirm": "Zrušit šifrování této poznámky?\n\nOchrana heslem bude trvale odstraněna a obsah se uloží jako prostý text.",
-    "removeFailed": "Zrušení šifrování se nezdařilo: {error}"
+    "removeFailed": "Zrušení šifrování se nezdařilo: {error}",
+    "shortPasswordHint": {
+      "one": "Krátké heslo jde snadno prolomit, pokud se někdo dostane k datům. Doporučujeme aspoň {n} znak.",
+      "few": "Krátké heslo jde snadno prolomit, pokud se někdo dostane k datům. Doporučujeme aspoň {n} znaky.",
+      "many": "Krátké heslo jde snadno prolomit, pokud se někdo dostane k datům. Doporučujeme aspoň {n} znaku.",
+      "other": "Krátké heslo jde snadno prolomit, pokud se někdo dostane k datům. Doporučujeme aspoň {n} znaků."
+    }
   },
   "passwordDialog": {
     "title": "Heslo",
@@ -142,7 +158,12 @@
     "cancel": "Zrušit",
     "ok": "OK",
     "errorEmpty": "Zadejte heslo.",
-    "errorTooShort": "Použijte alespoň {n} znaků.",
+    "errorTooShort": {
+      "one": "Použijte alespoň {n} znak.",
+      "few": "Použijte alespoň {n} znaky.",
+      "many": "Použijte alespoň {n} znaku.",
+      "other": "Použijte alespoň {n} znaků."
+    },
     "errorMismatch": "Hesla se neshodují."
   },
   "editor": {

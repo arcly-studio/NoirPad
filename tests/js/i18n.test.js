@@ -175,7 +175,9 @@ describe("NP.t", () => {
         expect(win.NP.t("common.notes", { n: 1 })).toBe("1 poznámka");
         expect(win.NP.t("common.notes", { n: 3 })).toBe("3 poznámky");
         expect(win.NP.t("common.notes", { n: 7 })).toBe("7 poznámek");
-        expect(win.NP.t("errors.password_too_short", { min: 8 })).toBe("Heslo musí mít aspoň 8 znaků.");
+        expect(win.NP.t("errors.password_too_short", { min: 4 })).toBe("Heslo je příliš krátké (minimální délka: 4).");
+        expect(win.NP.t("passwordDialog.errorTooShort", { n: 4 })).toBe("Použijte alespoň 4 znaky.");
+        expect(win.NP.t("encryption.lockMessage", { n: 4 })).toBe("Zvolte heslo dlouhé alespoň 4 znaky.");
         expect(win.NP.t("no.such.key")).toBe("no.such.key");
     });
 

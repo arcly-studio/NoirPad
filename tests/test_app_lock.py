@@ -89,7 +89,7 @@ def test_change_and_disable_need_current_password(client, np_backend):
 
 
 def test_min_length_and_rate_limit(client, np_backend):
-    assert enable(client, "kratke").status_code == 400
+    assert enable(client, "abc").status_code == 400
     enable(client)
     other = other_client(np_backend)
     codes = [other.post("/api/app-lock/unlock", json={"password": "x" * 8}).status_code
@@ -121,3 +121,12 @@ def test_locking_the_app_forgets_note_keys(client):
     client.post("/api/app-lock/unlock", json={"password": PW})
     r = client.post("/api/save-encrypted", json={"id": nid, "unlock_token": token, "content": "y"})
     assert r.status_code == 401
+
+
+def test_n5_minimum_is_four_characters(client, np_backend):
+    r = enable(client, password="abc")
+    assert r.status_code == 400
+    assert r.json()["detail"] == {"code": "password_too_short", "params": {"min": 4}}
+    assert enable(client, password="1234").status_code == 200
+    other = other_client(np_backend)
+    assert other.post("/api/app-lock/unlock", json={"password": "1234"}).status_code == 200

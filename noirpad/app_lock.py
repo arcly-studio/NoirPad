@@ -21,7 +21,7 @@ from fastapi import Request, Response
 from .runtime import RUNTIME
 
 COOKIE_NAME = "noirpad_applock"
-MIN_PASSWORD = 8
+MIN_PASSWORD = 4
 MAX_PASSWORD = 1024
 
 # scrypt cost: ~50–100 ms and 32 MiB per check on a desktop CPU.

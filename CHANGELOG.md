@@ -46,3 +46,6 @@ First public release.
 - The installer passes its language to NoirPad (`%LOCALAPPDATA%\NoirPad\install-language.txt`).
   It is used while Settings → Language is "Automatic" (the default, nothing picked); a language
   chosen in Settings always wins and is never overwritten.
+- The minimum password length for the app lock and for locked notes is now 4 characters (was 8).
+  When locking a note with fewer than 8 characters NoirPad shows a hint that short passwords are
+  easy to crack; it does not block saving.

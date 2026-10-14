@@ -10,7 +10,8 @@ window.NP = window.NP || {};
 (function (NP) {
     "use strict";
 
-    var MIN_PASSWORD = 8;   // same rule as the backend (MIN_NOTE_PASSWORD)
+    var MIN_PASSWORD = 4;   // same rule as the backend (MIN_NOTE_PASSWORD)
+    var GOOD_PASSWORD = 8;  // shorter ones are allowed, with a hint
 
     var reunlockPending = null;
     var unlockPending = {};   // noteId -> promise of the open unlock dialog
@@ -36,6 +37,8 @@ window.NP = window.NP || {};
                 warning: NP.t("encryption.lockWarning"),
                 confirm: true,
                 minLength: MIN_PASSWORD,
+                weakBelow: GOOD_PASSWORD,
+                weakHint: NP.t("encryption.shortPasswordHint", { n: GOOD_PASSWORD }),
                 okLabel: NP.t("encryption.lock")
             }).then(function (password) {
                 if (!password) return;

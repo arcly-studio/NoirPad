@@ -10,7 +10,7 @@ window.NP = window.NP || {};
 (function (NP) {
     "use strict";
 
-    var MIN_PASSWORD = 8;
+    var MIN_PASSWORD = 4;   // same rule as the backend (app_lock.MIN_PASSWORD)
 
     function $(id) { return document.getElementById(id); }
 
@@ -21,7 +21,7 @@ window.NP = window.NP || {};
     function askNew(title) {
         return NP.passwordDialog.ask({
             title: title,
-            message: NP.t("appLock.chooseMessage", { min: MIN_PASSWORD }),
+            message: NP.t("appLock.chooseMessage", { n: MIN_PASSWORD }),
             warning: NP.t("appLock.chooseWarning"),
             confirm: true,
             minLength: MIN_PASSWORD,

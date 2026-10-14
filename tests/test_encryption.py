@@ -60,12 +60,20 @@ def test_wrong_password(client, np_backend):
     assert stored(np_backend, nid) == before
 
 
-@pytest.mark.parametrize("password", ["", "short", "1234567"])
+@pytest.mark.parametrize("password", ["", "a", "abc"])
 def test_d2_too_short_password_rejected(client, np_backend, password):
     nid = new_note(client, content="x")
     r = client.post("/api/encrypt", json={"id": nid, "password": password})
     assert r.status_code == 400
     assert stored(np_backend, nid) == "x"
+
+
+def test_n5_four_characters_are_enough(client, np_backend):
+    nid = new_note(client, content="krátké")
+    r = client.post("/api/encrypt", json={"id": nid, "password": "1234"})
+    assert r.status_code == 200
+    assert stored(np_backend, nid) != "krátké"
+    assert unlock(client, nid, "1234").status_code == 200
 
 
 def test_double_encrypt_is_rejected(client):

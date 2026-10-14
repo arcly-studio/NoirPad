@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 PBKDF2_ITERATIONS = 480_000
-MIN_NOTE_PASSWORD = 8
+MIN_NOTE_PASSWORD = 4          # shorter than 8: the UI warns, see encryption.js
 MAX_NOTE_PASSWORD = 1024
 
 

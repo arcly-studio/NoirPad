@@ -18,8 +18,8 @@ def test_errors_are_codes(client):
 
 def test_error_params(client):
     nid = new_note(client)
-    r = client.post("/api/encrypt", json={"id": nid, "password": "short"})
-    assert r.json()["detail"] == {"code": "password_too_short", "params": {"min": 8}}
+    r = client.post("/api/encrypt", json={"id": nid, "password": "abc"})
+    assert r.json()["detail"] == {"code": "password_too_short", "params": {"min": 4}}
 
 
 def test_guard_errors_are_codes(client):

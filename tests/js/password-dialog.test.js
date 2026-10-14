@@ -38,6 +38,23 @@ describe("password dialog", () => {
         expect(await p).toBe("long-enough");
     });
 
+    it("a weak-password hint shows while short but never blocks (N5)", async () => {
+        const p = win.NP.passwordDialog.ask({ minLength: 4, weakBelow: 8, weakHint: "Short = weak" });
+        const input = dialog().querySelector("#np-pw-1");
+        const hint = dialog().querySelector(".np-password-hint");
+        const type = (v) => { input.value = v; input.dispatchEvent(new win.Event("input")); };
+        expect(hint.hidden).toBe(true);
+        type("abc");
+        expect(hint.hidden).toBe(true);         // too short: the error says so on submit
+        type("abcd");
+        expect(hint.hidden).toBe(false);
+        expect(hint.textContent).toBe("Short = weak");
+        type("abcdefgh");
+        expect(hint.hidden).toBe(true);
+        submit("abcd");
+        expect(await p).toBe("abcd");
+    });
+
     it("asks twice when setting a password and needs a match", async () => {
         const p = win.NP.passwordDialog.ask({ confirm: true, minLength: 8 });
         expect(dialog().querySelector("#np-pw-2").type).toBe("password");

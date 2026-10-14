@@ -4,7 +4,8 @@
        title, message,          // text only
        warning,                 // optional text, shown highlighted
        confirm: true,           // ask twice (setting a new password)
-       minLength: 8,            // rejected inline when shorter
+       minLength: 4,            // rejected inline when shorter
+       weakBelow: 8, weakHint,  // optional: hint (never blocks) while shorter
        okLabel: "Unlock"
    }) → Promise<string|null>    // null = cancelled
 
@@ -52,6 +53,16 @@ window.NP = window.NP || {};
             if (opts.confirm) {
                 second = passwordInput("np-pw-2", NP.t("passwordDialog.repeatPlaceholder"), auto);
                 box.appendChild(second);
+            }
+            var hint = null;
+            if (opts.weakBelow && opts.weakHint) {
+                hint = el("div", "dialog-message np-password-hint", opts.weakHint);  // i18n-ignore (CSS classes)
+                hint.hidden = true;
+                box.appendChild(hint);
+                first.addEventListener("input", function () {
+                    var n = first.value.length;
+                    hint.hidden = !(n >= minLength && n > 0 && n < opts.weakBelow);
+                });
             }
             var error = el("div", "dialog-message np-password-error");  // i18n-ignore (CSS classes)
             error.setAttribute("role", "alert");

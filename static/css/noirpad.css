@@ -4107,6 +4107,14 @@ body.auth-active #matrix-canvas {
     padding-left: 10px;
     white-space: pre-line;
 }
+.np-password-dialog .np-password-hint {
+    color: var(--fg-dim);
+    font-size: 0.92em;
+    margin-bottom: 8px;
+}
+.np-password-dialog .np-password-hint[hidden] {
+    display: none;
+}
 .np-password-dialog .np-password-error {
     color: #ff5555;
     min-height: 1.6em;

@@ -46,7 +46,7 @@
     "too_many_attempts": "Too many attempts. Try again in a minute.",
     "wrong_password": "Wrong password.",
     "password_required": "Enter the password.",
-    "password_too_short": "The password must have at least {min} characters.",
+    "password_too_short": "The password is too short (minimum length: {min}).",
     "password_too_long": "The password is too long.",
     "note_not_found": "The note no longer exists.",
     "note_locked": "The note is locked. Unlock it again.",
@@ -90,7 +90,10 @@
     "startFailed": "Failed to reach NoirPad: {error}"
   },
   "appLock": {
-    "chooseMessage": "Choose a password of at least {min} characters.",
+    "chooseMessage": {
+      "one": "Choose a password of at least {n} character.",
+      "other": "Choose a password of at least {n} characters."
+    },
     "chooseWarning": "NoirPad cannot reset a forgotten app-lock password. The lock does not encrypt your notes.",
     "setPassword": "Set password",
     "currentMessage": "Enter the current app-lock password.",
@@ -106,7 +109,10 @@
     "alreadyEncrypted": "Note is already encrypted.",
     "notEncrypted": "Note is not encrypted.",
     "lockTitle": "Lock note with a password",
-    "lockMessage": "Choose a password of at least {n} characters.",
+    "lockMessage": {
+      "one": "Choose a password of at least {n} character.",
+      "other": "Choose a password of at least {n} characters."
+    },
     "lockWarning": "Forgotten password = this note can never be opened again. There is no recovery.\nOnly the note text is encrypted. Its title, tags and images stay unencrypted on disk.",
     "lock": "Lock",
     "unlock": "Unlock",
@@ -125,7 +131,11 @@
     "reunlockMessage": "The note was locked. Enter its password to save your changes.",
     "unlockFirst": "Unlock this note first, then remove encryption.",
     "removeConfirm": "Remove encryption from this note?\n\nThe password protection will be permanently removed and the content saved as plain text.",
-    "removeFailed": "Failed to remove encryption: {error}"
+    "removeFailed": "Failed to remove encryption: {error}",
+    "shortPasswordHint": {
+      "one": "A short password is easy to crack if someone gets hold of your data. We recommend at least {n} character.",
+      "other": "A short password is easy to crack if someone gets hold of your data. We recommend at least {n} characters."
+    }
   },
   "passwordDialog": {
     "title": "Password",
@@ -134,7 +144,10 @@
     "cancel": "Cancel",
     "ok": "OK",
     "errorEmpty": "Enter a password.",
-    "errorTooShort": "Use at least {n} characters.",
+    "errorTooShort": {
+      "one": "Use at least {n} character.",
+      "other": "Use at least {n} characters."
+    },
     "errorMismatch": "The passwords do not match."
   },
   "editor": {
