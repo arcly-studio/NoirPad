@@ -215,6 +215,7 @@ def _recover_corrupt_data(reason: Exception) -> dict[str, Any]:
             data = _load_json_file(candidate)
         except (OSError, ValueError):
             continue
+        _noir_effects_upgrade(data)      # a snapshot from before the redesign
         _atomic_write_json(DATA_FILE, data)
         when = time.strftime("%Y-%m-%d %H:%M", time.localtime(candidate.stat().st_mtime))
         RUNTIME.data_notice = {"code": "data_restored",
@@ -316,14 +317,20 @@ def _migrate_noir_effects() -> None:
             data = read_data_unlocked()
         except OSError:
             return
-        if "glow_enabled" in data:
-            return
-        data["glow_enabled"] = True
-        data["matrix_rain_enabled"] = data.get("matrix_rain_enabled", True) is not False
-        if data.get("ui_font", "orbitron") == "orbitron":
-            data["ui_font"] = "jetbrains-mono"
-        write_data_unlocked(data)
-        log.info("Noir effects: kept the effects of the existing data")
+        if _noir_effects_upgrade(data):
+            write_data_unlocked(data)
+            log.info("Noir effects: kept the effects of the existing data")
+
+
+def _noir_effects_upgrade(data: dict[str, Any]) -> bool:
+    """Make pre-redesign *data* keep its effects (see above). False = nothing to do."""
+    if "glow_enabled" in data:
+        return False
+    data["glow_enabled"] = True
+    data["matrix_rain_enabled"] = data.get("matrix_rain_enabled", True) is not False
+    if data.get("ui_font", "orbitron") == "orbitron":
+        data["ui_font"] = "jetbrains-mono"
+    return True
 
 
 def _migrate_to_single_profile() -> None:

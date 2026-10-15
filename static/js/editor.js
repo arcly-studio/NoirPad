@@ -885,8 +885,9 @@ window.NP = window.NP || {};
 
             var key = id + "\u0000" + text + "\u0000" + JSON.stringify(formats);
             if (silent && key === NP.editor._lastSavedKey) {
-                /* Typed and undid it: nothing to write, but it is saved. */
-                if (NP.editor._saveState === "dirty") NP.editor._setSaveStatus(null);
+                /* Typed and undid it (or a failed save's text is back to what
+                   is stored): nothing to write, and it is saved. */
+                if (NP.editor._saveState) NP.editor._setSaveStatus(null);
                 return Promise.resolve();
             }
 

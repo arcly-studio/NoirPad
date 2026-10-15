@@ -3155,8 +3155,9 @@ body.md-no-preview #md-preview { display: none; }
         font-size: 12px;
         letter-spacing: 1px;
     }
-    #status-label {
-        display: none;          /* not enough room on mobile */
+    /* Narrow: just the ● / ○ dot (a failed save must stay visible). */
+    #status-label .status-text {
+        display: none;
     }
 
     #note-header {
@@ -4345,10 +4346,6 @@ body.auth-active #matrix-canvas {
 }
 
 /* Top-bar status "Not saved" (editor.js _setSaveStatus). */
-#status-label.status-error {
-    color: #ff5555;
-    text-shadow: none;
-}
 
 /* ---- Trash in the sidebar (tree.js) ---- */
 .tree-trash-header {

@@ -120,3 +120,16 @@ def test_g8_tabs_scroll_tools_stay():
     assert re.search(r"flex-shrink:\s*0", rule("#top-tools"))
     assert re.search(r"max-width:\s*200px", rule(".tab-pill"))
     assert re.search(r"text-overflow:\s*ellipsis", rule(".tab-pill .tab-name"))
+
+
+def test_g6_snapshot_restored_after_damage_keeps_its_effects(np_backend, tmp_path):
+    d = tmp_path / "dmg"
+    d.mkdir()
+    storage.set_data_dir(d)                               # new install: effects off
+    storage.backups_dir().mkdir(parents=True, exist_ok=True)
+    (storage.backups_dir() / "notes_data-20260101-000000.json").write_text(
+        json.dumps({"tree": [], "notes": {}, "matrix_rain_enabled": True}), encoding="utf-8")
+    (d / "notes_data.json").write_text("{ damaged", encoding="utf-8")
+    data = storage.read_data()                            # recovers from the old snapshot
+    assert data["glow_enabled"] is True
+    assert data["matrix_rain_enabled"] is True

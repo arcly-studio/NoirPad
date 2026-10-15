@@ -194,6 +194,7 @@ window.NP = window.NP || {};
 
         open: function () {
             ensureDOM();
+            clearTimeout(overlay._hideTimer);     /* reopened during the fade-out */
             overlay.style.display = "block";
             NP.commandBar.visible = true;
             input.value = "";
@@ -210,7 +211,8 @@ window.NP = window.NP || {};
             if (!overlay) return;
             NP.commandBar.visible = false;
             overlay._bar.classList.remove("open");
-            setTimeout(function () {
+            clearTimeout(overlay._hideTimer);
+            overlay._hideTimer = setTimeout(function () {
                 overlay.style.display = "none";
             }, 200);
         },

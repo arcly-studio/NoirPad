@@ -163,7 +163,9 @@ window.NP = window.NP || {};
             }
         }
         if (NP.api && NP.api.saveSettings) {
-            NP.api.saveSettings(patch);
+            Promise.resolve(NP.api.saveSettings(patch)).catch(function (err) {
+                console.error("Settings not saved:", err);   // i18n-ignore (console log)
+            });
         } else {
             NP.api.fetch("/api/settings", {
                 method: "PUT",
@@ -229,8 +231,12 @@ window.NP = window.NP || {};
         if (!d || d.crt_enabled !== undefined) return;
         var old = false;
         try { old = localStorage.getItem("noirpad_crt") === "1"; } catch (e) { /* none */ }
-        saveSetting({ crt_enabled: old });
-        try { localStorage.removeItem("noirpad_crt"); } catch (e) { /* none */ }
+        if (NP.state && NP.state.data) NP.state.data.crt_enabled = old;
+        Promise.resolve(NP.api && NP.api.saveSettings && NP.api.saveSettings({ crt_enabled: old }))
+            .then(function () {
+                try { localStorage.removeItem("noirpad_crt"); } catch (e) { /* none */ }
+            })
+            .catch(function () { /* next start tries again */ });
     }
 
     /* No existing layout module applies orientation; keep it to a safe,

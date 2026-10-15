@@ -188,7 +188,12 @@ window.NP = window.NP || {};
                 /* Escape works even when no item has focus (all disabled,
                    or a context menu that keeps the editor's focus). */
                 escape: function (e) {
-                    if (e.key !== "Escape") return;
+                    /* A context menu over the editor (keepFocus) goes away
+                       as soon as the user types on. */
+                    if (e.key !== "Escape") {
+                        if (opts.keepFocus && !/^(Shift|Control|Alt|Meta|ContextMenu)$/.test(e.key)) closeMenu(false);
+                        return;
+                    }
                     e.preventDefault();
                     e.stopPropagation();
                     closeMenu(!opts.keepFocus);

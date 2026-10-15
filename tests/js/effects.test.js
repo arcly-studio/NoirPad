@@ -44,11 +44,24 @@ describe("G6: Noir effects", () => {
         expect($("setting-glow-intensity-row").hidden).toBe(false);
     });
 
-    it("CRT from the old browser-only setting is carried over once", () => {
+    it("CRT from the old browser-only setting is carried over once (forgotten only after the save)", async () => {
         const { win, saved } = boot({ glow_enabled: true }, { localCrt: true });
         expect(win.document.body.classList.contains("crt-on")).toBe(true);
         expect(saved()).toEqual([{ crt_enabled: true }]);
+        await new Promise((r) => setTimeout(r, 0));
         expect(win.localStorage.getItem("noirpad_crt")).toBeNull();
+    });
+
+    it("a failed save keeps the old CRT value for the next start", async () => {
+        const win = loadApp(["js/utils.js", "js/effects.js", "js/matrix-rain.js", "js/settings.js"],
+            { body: SETTINGS });
+        win.localStorage.setItem("noirpad_crt", "1");
+        win.NP.api = { saveSettings: () => Promise.reject(new Error("offline")) };
+        win.NP.state = { data: { glow_enabled: false } };
+        win.NP.settings.init();
+        win.NP.settings.applyRuntimeState();
+        await new Promise((r) => setTimeout(r, 0));
+        expect(win.localStorage.getItem("noirpad_crt")).toBe("1");
     });
 
     it("the master switch turns all three on and off", () => {
