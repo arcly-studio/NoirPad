@@ -256,6 +256,16 @@ window.NP = window.NP || {};
             });
     }
 
+    /* Spellcheck (Settings → Editor) for both the rich-text editor and
+       the Markdown source. The browser's own dictionaries decide the
+       language. */
+    function applySpellcheck(on) {
+        ["editor", "editor-md"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.spellcheck = !!on;
+        });
+    }
+
     /* Single source of truth for glow strength. Sets concrete px values
        (JS does the math; CSS just substitutes var(--glow-blur*)) plus the
        multiplier (kept for compat) and updates the live % readout. */
@@ -396,8 +406,7 @@ window.NP = window.NP || {};
             function () { return sget("spellcheck", true) !== false; },
             function (v) {
                 saveSetting({ spellcheck: v });
-                var ed = document.getElementById("editor");
-                if (ed) ed.spellcheck = v;
+                applySpellcheck(v);
             }
         );
 
@@ -716,8 +725,7 @@ window.NP = window.NP || {};
                 );
             }
             applyShortcutHints(sget("show_shortcut_hints", true) !== false);
-            var ed = document.getElementById("editor");
-            if (ed) ed.spellcheck = sget("spellcheck", true) !== false;
+            applySpellcheck(sget("spellcheck", true) !== false);
             /* Startup ALWAYS forces Landscape (user choice) — overrides any
                persisted Portrait. setOrientation keeps the body class, the
                Settings radio and the stored value in sync. Ctrl+L / Settings

@@ -8,7 +8,8 @@
      - /images/<name>   → in-app image viewer.
      - anything else    → nothing happens.
    Exception: download anchors created by the app itself (blob: or /api/
-   with a `download` attribute).
+   with a `download` attribute). A plain click on a link inside the
+   editable note only places the caret; Ctrl+click opens it.
 
    Dropping a file or link onto the window would also navigate it, so
    unhandled drops are cancelled too. */
@@ -29,6 +30,8 @@ window.NP = window.NP || {};
         if (!a || isAppDownload(a)) return;
 
         e.preventDefault();
+        /* In the editable note a click places the caret; Ctrl+click opens. */
+        if (a.isContentEditable && e.type === "click" && !(e.ctrlKey || e.metaKey)) return;
         var href = a.getAttribute("href");
         var kind = NP.linkKind(href);
         if (kind === "external") {

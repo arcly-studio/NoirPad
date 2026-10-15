@@ -94,6 +94,7 @@
 | `Ctrl+D` | Add to / remove from favorites |
 | `F2` / `Delete` | Rename / move to trash |
 | `Ctrl+B` | Sidebar (in the Markdown editor: bold) |
+| `Ctrl+Shift+V` / `Ctrl+Space` | Paste as plain text / clear formatting of the selection |
 | `Ctrl+Tab` / `Ctrl+W` | Next tab / close tab |
 | `Ctrl+,` / `F1` | Settings / help |
 

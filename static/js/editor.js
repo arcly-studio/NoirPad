@@ -551,6 +551,18 @@ window.NP = window.NP || {};
                             fmt.underline = true;
                             hasFormat = true;
                         }
+                        if (tag === "B" || tag === "STRONG") {
+                            fmt.bold = true;
+                            hasFormat = true;
+                        }
+                        if (tag === "S" || tag === "STRIKE" || tag === "DEL") {
+                            fmt.strike = true;
+                            hasFormat = true;
+                        }
+                        if (tag === "A" && NP.linkKind(node.getAttribute("href")) === "external") {
+                            fmt.link = node.getAttribute("href").trim();
+                            hasFormat = true;
+                        }
                         if (tag === "SPAN" || tag === "DIV" || tag === "P") {
                             var style = node.style;
                             if (style.fontFamily) {
@@ -616,7 +628,9 @@ window.NP = window.NP || {};
              ```lang\n…```           → <pre class="np-code"> (read-only)
              <<IMG:name|w=NNN>>      → <img>, only for valid uuid names;
                                        anything else stays visible text
-             formats [{start,end,…}] → <span style> / <em> / <u>
+             formats [{start,end,…}] → <span style> / <em> / <u> /
+                                       <strong> / <s> / <a href> (http,
+                                       https, mailto only)
            Format offsets are positions in the full stored text (that is
            how _extractFormats records them). */
         _buildRichContent: function (text, formats) {
@@ -689,11 +703,15 @@ window.NP = window.NP || {};
             });
             if (!active.length) return leaf;
 
-            var italic = false, underline = false, font = null, size = null, color = null;
+            var italic = false, underline = false, bold = false, strike = false, link = null;
+            var font = null, size = null, color = null;
             active.forEach(function (mk) {
                 var f = mk.fmt;
                 if (f.style === "italic" || f.italic) italic = true;
                 if (f.style === "underline" || f.underline) underline = true;
+                if (f.bold === true) bold = true;
+                if (f.strike === true) strike = true;
+                if (NP.linkKind(f.link) === "external") link = f.link.trim();
                 if (typeof f.font === "string" && f.font) font = f.font;
                 if (f.size !== undefined && f.size !== null) size = parseInt(f.size, 10);
                 if (typeof f.color === "string" && f.color) color = f.color;
@@ -702,6 +720,8 @@ window.NP = window.NP || {};
             var node = leaf;
             if (underline) { var u = document.createElement("u"); u.appendChild(node); node = u; }
             if (italic) { var em = document.createElement("em"); em.appendChild(node); node = em; }
+            if (bold) { var b = document.createElement("strong"); b.appendChild(node); node = b; }
+            if (strike) { var s = document.createElement("s"); s.appendChild(node); node = s; }
             if (font || size || color) {
                 var span = document.createElement("span");
                 /* setProperty drops values that aren't valid CSS for that
@@ -711,6 +731,12 @@ window.NP = window.NP || {};
                 if (color) span.style.setProperty("color", color);
                 span.appendChild(node);
                 node = span;
+            }
+            if (link) {
+                var a = document.createElement("a");
+                a.setAttribute("href", link);
+                a.appendChild(node);
+                node = a;
             }
             return node;
         },

@@ -96,6 +96,7 @@
 | `Ctrl+D` | Přidat do oblíbených / odebrat |
 | `F2` / `Delete` | Přejmenovat / přesunout do koše |
 | `Ctrl+B` | Postranní panel (v editoru Markdownu: tučné písmo) |
+| `Ctrl+Shift+V` / `Ctrl+Mezerník` | Vložit jako prostý text / vymazat formátování označeného textu |
 | `Ctrl+Tab` / `Ctrl+W` | Další záložka / zavřít záložku |
 | `Ctrl+,` / `F1` | Nastavení / nápověda |
 

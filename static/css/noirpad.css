@@ -637,6 +637,13 @@ body.orientation-portrait #editor {
     outline-offset: 2px;
 }
 
+/* Links in a note (pasted): theme colour; Ctrl+click opens (links.js). */
+#editor a[href] {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
 /* Welcome screen = NO "paper": full-bleed, no frame/shadow/centering.
    showWelcome() renders a .welcome-wrap; a note or folder overview does
    NOT — so the paper returns automatically when one is opened. The

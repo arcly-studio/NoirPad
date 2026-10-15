@@ -181,6 +181,18 @@
     "unlockFailed": "Poznámku se nepodařilo odemknout: {error}",
     "loadError": "Chyba při načítání poznámky: {error}",
     "lockedNotSaved": "Poznámka je zamčená; změny nebyly uloženy.",
+    "clearFormatting": {
+      "label": "Vymazat formátování",
+      "noSelection": "Nejdřív označte text, jehož formátování chcete vymazat."
+    },
+    "menu": {
+      "paste": "Vložit",
+      "pastePlain": "Vložit jako prostý text",
+      "pasteBlocked": "Schránku tu nejde z nabídky přečíst. Použijte Ctrl+V / Ctrl+Shift+V.",
+      "systemHint": "Shift+pravé tlačítko: nabídka systému",
+      "cut": "Vyjmout",
+      "copy": "Kopírovat"
+    },
     "lockScreen": {
       "title": "Tato poznámka je zašifrovaná",
       "hint": "Klikněte znovu na poznámku a zadejte heslo"
@@ -279,6 +291,9 @@
       "undo": "Zpět",
       "redo": "Znovu",
       "paste": "Vložit (včetně obrázků)",
+      "pastePlain": "Vložit jako prostý text",
+      "clearFormatting": "Vymazat formátování označeného textu (barva, pozadí, písmo, velikost)",
+      "linkOpen": "Otevřít odkaz v poznámce",
       "commandBar": "Příkazová lišta",
       "nextTab": "Další karta",
       "prevTab": "Předchozí karta",
@@ -525,7 +540,8 @@
       "closeall": "Zavřít všechny karty",
       "crt": "Zapnout/vypnout CRT řádkování",
       "settings": "Otevřít nastavení",
-      "findall": "Hledat ve všech poznámkách"
+      "findall": "Hledat ve všech poznámkách",
+      "clearformat": "Vymazat formátování označeného textu"
     }
   },
   "shortcuts": {
@@ -556,6 +572,7 @@
       "findNext": "Najít další",
       "findPrev": "Najít předchozí",
       "insertImage": "Vložit obrázek",
+      "clearFormatting": "Vymazat formátování",
       "toggleMarkdown": "Přepnout mezi formátovaným textem a Markdownem",
       "newFolder": "Nová složka",
       "newNote": "Nová poznámka",

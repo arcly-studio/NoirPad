@@ -99,3 +99,21 @@ First public release.
   `Ctrl+Shift+E` wraps the selection in a code block, drag and drop refuses impossible targets,
   tags are de-duplicated, cut-off image uploads are refused.
 - The installer always installs to `%LOCALAPPDATA%\Programs\NoirPad` (no folder page).
+
+### From the manual test of the installer
+- Pasting from a web page, Word or Google Docs into a formatted note keeps only the structure:
+  paragraphs, headings, list items (as `•` / `1.` lines), bold, italic, underline, strike-through,
+  links (http/https/mailto) and NoirPad's own pictures. Colours, backgrounds, fonts and sizes of
+  the source are dropped, so pasted text no longer shows up black on white (invisible on dark
+  themes). Text is bold only where the source marks it bold, not because of the page around it.
+- Bold, strike-through and links now survive saving and reopening a formatted note. A link in a
+  note opens with Ctrl+click; a plain click places the cursor.
+- `Ctrl+Shift+V` pastes plain text.
+- New "Clear formatting" (`Ctrl+Space`, `:clearformat`, right-click on a selection): removes
+  colour, background, font and size from the selected text and keeps bold, italic, underline,
+  strike-through and links. For notes that already contain pasted black text. Right-click on a
+  selection opens NoirPad's menu (cut, copy, paste, paste as plain text, clear formatting);
+  Shift+right-click, or right-click without a selection, keeps the system menu with spelling
+  suggestions.
+- Settings → Editor → Spellcheck (on by default) now covers the Markdown source too, not only the
+  formatted editor.

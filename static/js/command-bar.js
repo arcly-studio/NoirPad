@@ -34,7 +34,8 @@ window.NP = window.NP || {};
         { cmd: ":closeall", hint: "", desc: "commands.desc.closeall" },
         { cmd: ":crt", hint: "", desc: "commands.desc.crt" },
         { cmd: ":settings", hint: "", desc: "commands.desc.settings" },
-        { cmd: ":findall", hint: "commands.hints.text", desc: "commands.desc.findall" }
+        { cmd: ":findall", hint: "commands.hints.text", desc: "commands.desc.findall" },
+        { cmd: ":clearformat", hint: "", desc: "commands.desc.clearformat" }
     ];
 
     var overlay = null;
@@ -324,6 +325,12 @@ window.NP = window.NP || {};
                 if (fq && NP.findAll && NP.findAll.show) NP.findAll.show(fq);
             } else if (lower === ":findall") {
                 if (NP.findAll && NP.findAll.show) NP.findAll.show("");
+            } else if (lower === ":clearformat") {
+                /* The palette took focus; paste.js puts the editor
+                   selection back before clearing. */
+                NP.commandBar.close();
+                if (NP.paste && NP.paste.clearFormatting) NP.paste.clearFormatting();
+                return;
             }
 
             NP.commandBar.close();

@@ -165,6 +165,18 @@
     "unlockFailed": "Could not unlock the note: {error}",
     "loadError": "Error loading note: {error}",
     "lockedNotSaved": "Note is locked; changes were not saved.",
+    "clearFormatting": {
+      "label": "Clear formatting",
+      "noSelection": "Select the text to clear its formatting first."
+    },
+    "menu": {
+      "paste": "Paste",
+      "pastePlain": "Paste as plain text",
+      "pasteBlocked": "The clipboard cannot be read from the menu here. Use Ctrl+V / Ctrl+Shift+V.",
+      "systemHint": "Shift+right-click: system menu",
+      "cut": "Cut",
+      "copy": "Copy"
+    },
     "lockScreen": {
       "title": "This note is encrypted",
       "hint": "Click on the note again to enter password"
@@ -255,6 +267,9 @@
       "undo": "Undo",
       "redo": "Redo",
       "paste": "Paste (including images)",
+      "pastePlain": "Paste as plain text",
+      "clearFormatting": "Clear formatting of the selection (colour, background, font, size)",
+      "linkOpen": "Open a link in the note",
       "commandBar": "Command bar",
       "nextTab": "Next tab",
       "prevTab": "Previous tab",
@@ -497,7 +512,8 @@
       "closeall": "Close all tabs",
       "crt": "Toggle CRT scanlines",
       "settings": "Open settings",
-      "findall": "Search across all notes"
+      "findall": "Search across all notes",
+      "clearformat": "Clear formatting of the selected text"
     }
   },
   "shortcuts": {
@@ -528,6 +544,7 @@
       "findNext": "Find next",
       "findPrev": "Find previous",
       "insertImage": "Insert image",
+      "clearFormatting": "Clear formatting",
       "toggleMarkdown": "Toggle markdown mode",
       "newFolder": "New folder",
       "newNote": "New note",

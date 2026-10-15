@@ -30,6 +30,7 @@ window.NP = window.NP || {};
 
     function normalizeKey(key) {
         if (!key) return "";
+        if (key === " " || key === "Spacebar") return "Space";
         if (key.length === 1) return key.toLowerCase();
         return key;
     }
@@ -129,6 +130,7 @@ window.NP = window.NP || {};
         "find-next":            { default: "F3",            current: "F3",            labelKey: "shortcuts.labels.findNext",              categoryKey: "shortcuts.categories.editor" },
         "find-prev":            { default: "Shift+F3",      current: "Shift+F3",      labelKey: "shortcuts.labels.findPrev",          categoryKey: "shortcuts.categories.editor" },
         "insert-image":         { default: "Ctrl+Shift+I",  current: "Ctrl+Shift+I",  labelKey: "shortcuts.labels.insertImage",           categoryKey: "shortcuts.categories.editor" },
+        "clear-formatting":     { default: "Ctrl+Space",    current: "Ctrl+Space",    labelKey: "shortcuts.labels.clearFormatting",  categoryKey: "shortcuts.categories.editor" },
         "toggle-markdown":      { default: "Ctrl+M",        current: "Ctrl+M",        labelKey: "shortcuts.labels.toggleMarkdown",   categoryKey: "shortcuts.categories.editor" },
 
         /* Notes */

@@ -27,6 +27,8 @@ window.NP = window.NP || {};
                 }
                 if (NP.editor && NP.editor.init) NP.editor.init();
                 if (NP.images && NP.images.init) NP.images.init();
+                /* After images.js: an image paste is taken there first. */
+                if (NP.paste && NP.paste.init) NP.paste.init();
                 /* cursor.js disabled while debugging "dot" report */
                 /* if (NP.cursor && NP.cursor.init) NP.cursor.init(); */
 
@@ -92,6 +94,13 @@ window.NP = window.NP || {};
                 S.register("insert-image", function () {
                     var b = document.getElementById("btn-insert-image");
                     if (b) b.click();
+                });
+                S.register("clear-formatting", function () {
+                    /* Only with the rich-text editor in use; else passthrough. */
+                    if (!NP.paste || !NP.paste.clearFormatting) return false;
+                    var a = document.activeElement;
+                    if (!a || a.id !== "editor") return false;
+                    return NP.paste.clearFormatting();
                 });
                 S.register("toggle-markdown", function () {
                     if (NP.markdown && NP.markdown.toggleForCurrentNote) {
