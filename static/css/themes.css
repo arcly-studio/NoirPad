@@ -55,6 +55,9 @@
     --bg-panel:     color-mix(in srgb, var(--bg-light) 35%, var(--bg));
     --folder-color: #e9c46a;
 
+    /* Code blocks: a faint tint of the text colour, no frame. */
+    --code-bg:      color-mix(in srgb, var(--fg) 5%, var(--bg));
+
     /* Active tab / pressed icon: a soft accent wash. */
     --accent-soft: color-mix(in srgb, var(--accent) 13%, var(--bg));
     --danger:      #ff5c5c;

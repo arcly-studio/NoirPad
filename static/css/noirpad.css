@@ -771,7 +771,7 @@ input, textarea {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 24px;
+    padding: 0;
     overflow-y: auto;
     overflow-x: hidden;
     /* min-height: 0 is REQUIRED for overflow-y: auto to work on a
@@ -782,7 +782,7 @@ input, textarea {
        stretch` masked this by locking the editor height to wrapper
        height, which clipped tall content instead of scrolling it. */
     min-height: 0;
-    background: var(--bg);            /* dark "desk" around the page */
+    background: var(--bg);
 }
 
 #editor {
@@ -801,20 +801,20 @@ input, textarea {
        belt-and-suspenders so no later rule can accidentally clip
        tall notes. */
     width: 100%;
-    max-width: min(1600px, 95%);
+    max-width: 100%;
     height: auto;
     min-height: 100%;
     max-height: none;
     overflow: visible;
-    padding: 40px 50px;
+    padding: 16px 34px 34px;
     font-family: var(--font-mono);
     font-size: 14px;
-    line-height: 1.7;
+    line-height: 1.75;
     color: var(--fg);
-    background: var(--bg-entry);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
     box-sizing: border-box;
     caret-color: var(--cursor-color);
     outline: none;
@@ -824,7 +824,8 @@ input, textarea {
     tab-size: 4;
 }
 
-/* Portrait orientation only narrows the paper — height stays
+/* Landscape: the text uses the whole width. Portrait narrows the
+   column (centred) — height stays
    content-driven (inherited from #editor). The old A4-derived
    `min-height: 1131px` capped the paper at one screen on tall
    notes and combined with align-items: stretch to clip overflow;
@@ -2459,12 +2460,11 @@ body.crt-on #crt-overlay {
 
 /* ---- Code blocks ---- */
 .np-code {
-    background: var(--bg-light);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: 4px;
-    padding: 10px 14px;
-    font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+    background: var(--code-bg);
+    border: none;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: var(--font-mono);
     font-size: 13px;
     white-space: pre;
     overflow-x: auto;
@@ -2496,11 +2496,10 @@ body.crt-on #crt-overlay {
 #md-stack {
     display: none;
     flex-direction: row;
-    gap: 16px;
+    gap: 0;
     width: 100%;
-    /* Same responsive cap as #editor — split view follows the paper
-       width so on ultrawide monitors both panes get more room. */
-    max-width: min(1600px, 95%);
+    max-width: 100%;
+    min-height: 100%;
     box-sizing: border-box;
 }
 
@@ -2522,12 +2521,15 @@ body.md-no-preview #md-preview { display: none; }
     height: auto;
     max-height: none;
     overflow: visible;
-    background: var(--bg-entry);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    background: transparent;
+    border: none;
     box-sizing: border-box;
-    padding: 40px 50px;
+    padding: 16px 34px 34px;
+}
+
+/* The only divider: a thin vertical line before the preview. */
+#md-preview {
+    border-left: 1px solid var(--border);
 }
 
 #editor-md {
@@ -2611,9 +2613,10 @@ body.md-no-preview #md-preview { display: none; }
 
 #md-preview .md-codeblock {
     display: block;
-    background: var(--bg-light);
-    padding: 10px 14px;
-    border-radius: 4px;
+    background: var(--code-bg);
+    border: none;
+    padding: 10px 12px;
+    border-radius: 6px;
     color: #ffa657;
     margin: 10px 0;
     overflow-x: auto;
@@ -4027,31 +4030,13 @@ img.np-decorative {
    size.
    ============================================================ */
 @media (min-width: 1920px) {
-    #editor {
-        max-width: min(2000px, 90%);
-    }
     body.orientation-portrait #editor {
-        max-width: min(1100px, 70%);
-    }
-    #md-stack {
-        max-width: min(2000px, 92%);
-    }
-    body.orientation-portrait #md-stack {
         max-width: min(1100px, 70%);
     }
 }
 
 @media (min-width: 2560px) {
-    #editor {
-        max-width: min(2400px, 88%);
-    }
     body.orientation-portrait #editor {
-        max-width: min(1300px, 60%);
-    }
-    #md-stack {
-        max-width: min(2400px, 90%);
-    }
-    body.orientation-portrait #md-stack {
         max-width: min(1300px, 60%);
     }
 }
@@ -4084,7 +4069,7 @@ body.editor-md-active.orientation-landscape #md-stack {
 }
 
 body.editor-md-active #editor-wrapper {
-    padding: 16px 24px !important;
+    padding: 0 !important;
 }
 
 /* ============================================================
