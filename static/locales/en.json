@@ -277,7 +277,8 @@
       "findPrev": "Previous search result",
       "fullscreen": "Fullscreen",
       "delete": "Delete item",
-      "closeOverlay": "Close dialog or overlay"
+      "closeOverlay": "Close dialog or overlay",
+      "findAll": "Search all notes"
     },
     "commands": {
       "title": "Command bar",
@@ -558,7 +559,8 @@
       "fullscreen": "Toggle fullscreen",
       "nextTab": "Next tab",
       "prevTab": "Previous tab",
-      "closeTab": "Close tab"
+      "closeTab": "Close tab",
+      "findAll": "Search all notes"
     },
     "errors": {
       "empty": "Empty keystroke",
@@ -598,8 +600,14 @@
       "newNote": "New Note",
       "newFolder": "New Folder",
       "addFavorite": "Add to favorites",
-      "removeFavorite": "Remove from favorites"
-    }
+      "removeFavorite": "Remove from favorites",
+      "moveTo": "Move to…",
+      "moveToRoot": "Top level"
+    },
+    "favorite": "Favorite",
+    "noTagMatches": "No note has this tag.",
+    "tagFilterOn": "Show only notes tagged #{tag}",
+    "tagFilterOff": "Show all notes (#{tag} is the filter now)"
   },
   "fontPicker": {
     "title": "FONT PICKER",
@@ -682,12 +690,12 @@
       "closeTab": "Close"
     },
     "sidebar": {
-      "newFolder": "+Folder",
-      "newFolderTitle": "New Folder",
-      "newNote": "+Note",
-      "newNoteTitle": "New Note",
-      "backup": "Backup",
-      "backupTitle": "Download backup .zip"
+      "newFolderTitle": "New folder",
+      "newNoteTitle": "New note",
+      "search": "search",
+      "searchTitle": "Search all notes",
+      "notes": "Notes",
+      "tags": "Tags"
     },
     "tags": {
       "addPlaceholder": "Add tag..."

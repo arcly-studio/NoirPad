@@ -33,6 +33,7 @@ window.NP = window.NP || {};
                     ["Ctrl+Space", "help.keys.clearFormatting"],
                     ["Ctrl+Click", "help.keys.linkOpen"],
                     ["Ctrl+Shift+P", "help.keys.commandBar"],
+                    ["Ctrl+Shift+K", "help.keys.findAll"],
                     ["Ctrl+M", "shortcuts.labels.toggleMarkdown"],
                     ["Ctrl+D", "shortcuts.labels.toggleFavorite"],
                     ["Ctrl+Shift+L", "shortcuts.labels.toggleLock"],

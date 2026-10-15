@@ -165,6 +165,9 @@ window.NP = window.NP || {};
                         NP.commandBar.toggle();
                     }
                 });
+                S.register("find-all", function () {
+                    if (NP.findAll && NP.findAll.show) NP.findAll.show("");
+                });
                 S.register("open-font-picker", function () {
                     if (NP.fontPicker && NP.fontPicker.show) {
                         NP.fontPicker.show();
@@ -348,51 +351,14 @@ window.NP = window.NP || {};
                 });
             }
 
-            var btnDelete = NP.$("#btn-delete");
-            if (btnDelete) {
-                btnDelete.addEventListener("click", function () {
-                    if (NP.tree && NP.tree.deleteSelected) {
-                        NP.tree.deleteSelected();
-                    }
-                });
-            }
+            /* Rename / delete / move: right-click in the tree (tree.js);
+               backup: the ⋯ menu (topbar.js). */
 
-            var btnRename = NP.$("#btn-rename");
-            if (btnRename) {
-                btnRename.addEventListener("click", function () {
-                    if (!NP.state.currentNoteId) return;
-                    var item = NP.editor._findItemInTree(NP.state.data.tree, NP.state.currentNoteId);
-                    var oldName = item ? item.name : "";
-                    var noteId = NP.state.currentNoteId;
-                    NP.dialog.prompt(NP.t("tree.promptNewName"), {
-                        title: NP.t("dialog.renameTitle"),
-                        okLabel: NP.t("common.rename"),
-                        value: oldName
-                    }).then(function (newName) {
-                        if (!newName || newName === oldName) return;
-                        return NP.api.rename(noteId, newName).then(function () {
-                            if (item) item.name = newName;
-                            if (titleInput && NP.state.currentNoteId === noteId) titleInput.value = newName;
-                            NP.tree.render();
-                            if (NP.tabs) NP.tabs.render();
-                        });
-                    }).catch(NP.dialog.failed);
-                });
-            }
-
-            /* Sidebar Backup button — download the .zip backup. Reuses the
-               app's established download path (anchor download, no SPA
-               navigation); same as Settings "Download backup" / :backup. */
-            var btnBackup = NP.$("#btn-backup");
-            if (btnBackup) {
-                btnBackup.addEventListener("click", function () {
-                    if (NP.backup && NP.backup.download) {
-                        NP.backup.download();
-                    } else if (NP.api && NP.api.downloadBackup) {
-                        NP.api.downloadBackup();
-                    } else {
-                        window.location.href = "/api/backup";
-                    }
+            /* Search across all notes (the field above the tree). */
+            var sideSearch = NP.$("#sidebar-search");
+            if (sideSearch) {
+                sideSearch.addEventListener("click", function () {
+                    if (NP.findAll && NP.findAll.show) NP.findAll.show("");
                 });
             }
 

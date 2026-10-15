@@ -301,7 +301,8 @@
       "findPrev": "Předchozí výsledek hledání",
       "fullscreen": "Celá obrazovka",
       "delete": "Smazat položku",
-      "closeOverlay": "Zavřít dialog nebo překryvné okno"
+      "closeOverlay": "Zavřít dialog nebo překryvné okno",
+      "findAll": "Hledat ve všech poznámkách"
     },
     "commands": {
       "title": "Příkazová lišta",
@@ -586,7 +587,8 @@
       "fullscreen": "Přepnout celou obrazovku",
       "nextTab": "Další karta",
       "prevTab": "Předchozí karta",
-      "closeTab": "Zavřít kartu"
+      "closeTab": "Zavřít kartu",
+      "findAll": "Hledat ve všech poznámkách"
     },
     "errors": {
       "empty": "Nebyla stisknuta žádná klávesa",
@@ -630,8 +632,14 @@
       "newNote": "Nová poznámka",
       "newFolder": "Nová složka",
       "addFavorite": "Přidat do oblíbených",
-      "removeFavorite": "Odebrat z oblíbených"
-    }
+      "removeFavorite": "Odebrat z oblíbených",
+      "moveTo": "Přesunout do…",
+      "moveToRoot": "Nejvyšší úroveň"
+    },
+    "favorite": "Oblíbená",
+    "noTagMatches": "Žádná poznámka nemá tento štítek.",
+    "tagFilterOn": "Zobrazit jen poznámky se štítkem #{tag}",
+    "tagFilterOff": "Zobrazit všechny poznámky (teď filtruje #{tag})"
   },
   "fontPicker": {
     "title": "VÝBĚR PÍSMA",
@@ -714,12 +722,12 @@
       "closeTab": "Zavřít"
     },
     "sidebar": {
-      "newFolder": "+Složka",
       "newFolderTitle": "Nová složka",
-      "newNote": "+Poznámka",
       "newNoteTitle": "Nová poznámka",
-      "backup": "Záloha",
-      "backupTitle": "Stáhnout zálohu (.zip)"
+      "search": "hledat",
+      "searchTitle": "Hledat ve všech poznámkách",
+      "notes": "Poznámky",
+      "tags": "Štítky"
     },
     "tags": {
       "addPlaceholder": "Přidat štítek…"

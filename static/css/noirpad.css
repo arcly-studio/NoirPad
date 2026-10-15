@@ -322,10 +322,11 @@ input, textarea {
 #sidebar {
     display: flex;
     flex-direction: column;
-    width: 240px;
+    width: 230px;
     min-width: 180px;
     max-width: 400px;
-    background: var(--bg);
+    padding: 10px 8px 0;
+    background: var(--bg-panel);
     border-right: 1px solid var(--border);
     flex-shrink: 0;
     transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
@@ -342,76 +343,166 @@ input, textarea {
     padding: 0;
 }
 
-/* Button bar */
-#button-bar {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 4px;
-    padding: 8px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    /* Permanently pinned just below the top bar (user choice — no
-       tag-bar alignment, no JS). */
-    margin-top: 8px;
-}
-
-#button-bar button {
-    padding: 4px 6px;
-    grid-column: span 2;
-    font-size: 10px;
-    min-height: 24px;
-    min-width: 0;
-    width: 100%;
-    text-align: center;
-    white-space: nowrap;
+/* Search across all notes (opens find-all.js) */
+#sidebar-search {
     display: flex;
     align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    border-radius: 12px;
+    gap: 8px;
+    width: 100%;
+    padding: 5px 9px;
+    margin-bottom: 6px;
     border: 1px solid var(--border);
-    color: var(--fg-dim);
-    background: var(--bg-light);
-    transition: all 0.2s ease;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--fg-muted);
+    text-align: left;
+    flex-shrink: 0;
 }
 
-#button-bar button:hover {
+#sidebar-search:hover {
+    color: var(--fg-dim);
+    border-color: var(--border-strong);
+}
+
+#sidebar-search:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 0;
+}
+
+#sidebar-search .np-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.side-search-label {
+    flex: 1;
+}
+
+#sidebar-search kbd {
+    font-family: inherit;
+    font-size: 10.5px;
+    color: var(--fg-muted);
+}
+
+/* Notes + tags scroll together under the search field. */
+#sidebar-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 10px;
+}
+
+.side-head {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin: 10px 0 4px 8px;
+    min-height: 22px;
+}
+
+.side-label {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+}
+
+.side-icon {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 4px;
+    color: var(--fg-muted);
+}
+
+.side-icon .np-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.side-icon:hover {
     color: var(--fg);
     background: var(--hover-bg);
-    border-color: var(--fg-dim);
-    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur-sm, 12px) var(--glow);
 }
 
-/* 5 buttons on a 6-column grid: row 1 +Folder / +Note / Delete (a third
-   each), row 2 Rename / Backup (half each), so a long label such as the
-   Czech "Přejmenovat" has room (C8). */
-#button-bar #btn-rename,
-#button-bar #btn-backup {
-    grid-column: span 3;
+.side-icon:focus-visible {
+    outline: 1px solid var(--accent);
+}
+
+/* Tags: click = show only that tag's notes (tree.js) */
+.tag-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--fg-dim);
+    text-align: left;
+}
+
+.tag-row-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tag-row-count {
+    font-size: 11px;
+    color: var(--fg-muted);
+}
+
+.tag-row:hover {
+    background: var(--hover-bg);
+    color: var(--fg);
+}
+
+.tag-row.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.tag-row:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: -1px;
+}
+
+.tree-empty {
+    padding: 6px 8px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--fg-muted);
 }
 
 /* Tree container */
 #tree-container {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 4px 0;
+    padding: 0;
 }
 
 .tree-item {
     display: flex;
     align-items: center;
-    padding: 3px 8px;
-    margin: 1px 6px;
+    gap: 7px;
+    padding: 4px 8px;
+    margin: 0;
     cursor: pointer;
-    font-size: 12px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-weight: 400;
     color: var(--fg-dim);
-    border-left: 2px solid transparent;
-    border-radius: 6px;
-    transition: all 0.15s ease;
+    border-radius: 4px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     user-select: none;
 }
 
@@ -421,42 +512,45 @@ input, textarea {
 }
 
 .tree-item.selected {
-    background: var(--select-bg);
+    background: var(--accent-soft);
     color: var(--fg-bright);
-    border-left-color: var(--accent);
 }
 
-.tree-item .tree-icon {
-    margin-right: 6px;
-    font-size: 12px;
-    flex-shrink: 0;
-    width: 16px;
-    text-align: center;
+.tree-item--folder {
+    color: var(--fg);
 }
 
-.tree-item .tree-label {
+.tree-name {
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.tree-item.folder > .tree-icon::before {
-    content: "\25B6";
-    font-size: 9px;
+.tree-item .tree-arrow {
+    width: 12px;
+    height: 12px;
+    color: var(--fg-muted);
 }
 
-.tree-item.folder.open > .tree-icon::before {
-    content: "\25BC";
-    font-size: 9px;
-}
-
-.tree-item.note > .tree-icon::before {
-    content: "\2022";
-}
-
-.tree-indent {
-    display: inline-block;
-    width: 16px;
+.tree-folder-mark {
+    width: 6px;
+    height: 6px;
+    border-radius: 1px;
+    background: var(--folder-color);
     flex-shrink: 0;
+}
+
+.tree-star {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--accent);
+}
+
+.tree-item .tree-badge {
+    width: 12px;
+    height: 12px;
+    color: var(--fg-muted);
 }
 
 /* Trash section */
@@ -2174,11 +2268,6 @@ body.focus-mode #sidebar {
         min-width: 140px;
     }
 
-    #button-bar button {
-        padding: 2px 7px;
-        font-size: 10px;
-    }
-
     #note-header {
         flex-wrap: wrap;
     }
@@ -3156,8 +3245,8 @@ body.md-no-preview #md-preview { display: none; }
    Bigger tap targets for fingers.
    ============================================================ */
 @media (hover: none) and (pointer: coarse) {
-    #button-bar button,
-    .tree-item {
+    .tree-item,
+    .tag-row {
         min-height: 38px;
     }
     .tree-item {
@@ -3201,7 +3290,6 @@ body.md-no-preview #md-preview { display: none; }
     #tab-bar,
     #tag-bar,
     #bottom-bar,
-    #button-bar,
     #note-header,
     #search-bar,
     #command-bar,

@@ -146,6 +146,7 @@ window.NP = window.NP || {};
         "toggle-orientation":   { default: "Ctrl+L",        current: "Ctrl+L",        labelKey: "shortcuts.labels.toggleOrientation",categoryKey: "shortcuts.categories.ui" },
         "open-settings":        { default: "Ctrl+,",        current: "Ctrl+,",        labelKey: "shortcuts.labels.openSettings",          categoryKey: "shortcuts.categories.ui" },
         "open-help":            { default: "F1",            current: "F1",            labelKey: "shortcuts.labels.openHelp",              categoryKey: "shortcuts.categories.ui" },
+        "find-all":             { default: "Ctrl+Shift+K",  current: "Ctrl+Shift+K",  labelKey: "shortcuts.labels.findAll",            categoryKey: "shortcuts.categories.ui" },
         "open-command-palette": { default: "Ctrl+Shift+P",  current: "Ctrl+Shift+P",  labelKey: "shortcuts.labels.openCommandPalette",   categoryKey: "shortcuts.categories.ui" },
         "open-font-picker":     { default: "Ctrl+Shift+T",  current: "Ctrl+Shift+T",  labelKey: "shortcuts.labels.openFontPicker",       categoryKey: "shortcuts.categories.ui" },
         "fullscreen":           { default: "F11",           current: "F11",           labelKey: "shortcuts.labels.fullscreen",      categoryKey: "shortcuts.categories.ui" },

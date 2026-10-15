@@ -6,7 +6,8 @@ let win;
 let calls;
 
 function setup(data, open = {}) {
-    win = loadApp(["js/utils.js", "js/tree.js"], { body: '<div id="tree-container"></div>' });
+    win = loadApp(["js/utils.js", "js/topbar.js", "js/tree.js"], {
+        body: '<div id="tree-container"></div><div class="side-head" id="side-tags-head"></div><div id="tag-list"></div>' });
     calls = [];
     const ok = (name) => vi.fn((...args) => { calls.push([name, ...args]); return Promise.resolve({}); });
     win.NP.state = {
@@ -150,7 +151,8 @@ describe("folder rows (D2 / N8)", () => {
 
     it("the arrow still only toggles", () => {
         const state = setupFolders();
-        row().querySelector(".tree-arrow").click();
+        // the chevron is an SVG icon (G2): no .click() on SVG in jsdom
+        row().querySelector(".tree-arrow").dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
         expect(state.f1).toBe(true);
         expect(win.NP.state.selectedId).toBeNull();
     });
@@ -198,5 +200,72 @@ describe("drag and drop targets (C3, C4)", () => {
         target.dispatchEvent(ev);
         await new Promise((r) => setTimeout(r, 0));
         expect(win.NP.dialog.failed).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("G2: tree rows, TAGS section and the tag filter", () => {
+    const tree = () => [
+        { id: "f1", name: "Projects", type: "folder", children: [
+            { id: "a", name: "Ingest", type: "note", tags: ["python", "Work"] },
+            { id: "b", name: "Checklist", type: "note", tags: ["work"] },
+        ] },
+        { id: "c", name: "Journal", type: "note", tags: ["personal"] },
+    ];
+    const names = () => [...win.document.querySelectorAll("#tree-container .tree-name")].map((e) => e.textContent);
+    const tagRows = () => [...win.document.querySelectorAll("#tag-list .tag-row")];
+
+    it("no ◆ markers; a favourite has its ★ at the end of the row; folders get a mark", () => {
+        setup({ tree: tree(), favorites: ["a"] });
+        const a = win.document.querySelector(".tree-item[data-id='a']");
+        expect(a.textContent).not.toContain("◆");
+        expect(a.lastElementChild.className).toBe("tree-star");
+        expect(win.document.querySelector(".tree-item[data-id='f1'] .tree-folder-mark")).not.toBeNull();
+        expect(win.document.querySelector(".tree-item[data-id='c'] .tree-star")).toBeNull();
+    });
+
+    it("lists every tag once (case ignored) with its note count", () => {
+        setup({ tree: tree() });
+        expect(tagRows().map((b) => b.textContent)).toEqual(["#personal1", "#python1", "#Work2"]);
+        expect(win.document.getElementById("side-tags-head").hidden).toBe(false);
+    });
+
+    it("click on a tag = filter; click again = all notes", () => {
+        setup({ tree: tree() });
+        tagRows()[2].click();                                   // #Work
+        expect(names()).toEqual(["Projects", "Ingest", "Checklist"]);
+        expect(tagRows()[2].getAttribute("aria-pressed")).toBe("true");
+        tagRows()[0].click();                                   // #personal
+        expect(names()).toEqual(["Journal"]);
+        tagRows()[0].click();                                   // off again
+        expect(names()).toEqual(["Projects", "Ingest", "Checklist", "Journal"]);
+        expect(tagRows().every((b) => b.getAttribute("aria-pressed") === "false")).toBe(true);
+    });
+
+    it("the filter opens collapsed folders that hold a match", () => {
+        setup({ tree: tree() }, { f1: false });
+        expect(names()).toEqual(["Projects", "Journal"]);
+        win.NP.tree.setTagFilter("python");
+        expect(names()).toEqual(["Projects", "Ingest"]);
+    });
+
+    it("no tags: the TAGS heading is hidden", () => {
+        setup({ tree: [{ id: "x", name: "X", type: "note" }] });
+        expect(win.document.getElementById("side-tags-head").hidden).toBe(true);
+    });
+
+    it("right-click: rename, move, favourite, delete — and Move to… moves", async () => {
+        setup({ tree: tree() });
+        win.NP.menu.open = vi.fn();
+        win.NP.api.move = vi.fn(() => Promise.resolve({}));
+        const row = win.document.querySelector(".tree-item[data-id='c']");
+        row.dispatchEvent(new win.MouseEvent("contextmenu", { bubbles: true, clientX: 5, clientY: 5 }));
+        const items = win.NP.menu.open.mock.calls[0][1].filter((i) => i !== "-");
+        expect(items.map((i) => i.id)).toEqual(["rename", "move", "favorite", "delete"]);
+        items.find((i) => i.id === "move").run();
+        const targets = win.NP.menu.open.mock.calls[1][1];
+        expect(targets.map((i) => [i.id, !!i.disabled])).toEqual([["root", true], ["f1", false]]);
+        targets[1].run();
+        await flush();
+        expect(win.NP.api.move).toHaveBeenCalledWith("c", "f1", "inside");
     });
 });

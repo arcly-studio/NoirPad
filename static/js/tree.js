@@ -4,13 +4,41 @@ window.NP = window.NP || {};
 (function (NP) {
     "use strict";
 
-    var contextMenu = null;
-
-    function removeContextMenu() {
-        if (contextMenu && contextMenu.parentNode) {
-            contextMenu.parentNode.removeChild(contextMenu);
+    /* Every tag in the tree once (first spelling wins, case ignored),
+       with how many notes carry it. */
+    function collectTags(items, out) {
+        for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            (it.tags || []).forEach(function (t) {
+                var key = String(t).toLowerCase();
+                if (!out[key]) out[key] = { name: String(t), count: 0 };
+                if (it.type !== "folder") out[key].count++;
+            });
+            if (it.children) collectTags(it.children, out);
         }
-        contextMenu = null;
+        return out;
+    }
+
+    function hasTag(item, key) {
+        return (item.tags || []).some(function (t) { return String(t).toLowerCase() === key; });
+    }
+
+    /* A folder stays visible while the filter is on if it holds a match. */
+    function containsMatch(item, key) {
+        if (item.type !== "folder") return hasTag(item, key);
+        return (item.children || []).some(function (c) { return containsMatch(c, key); });
+    }
+
+    /* Folders an item may move into: every folder except itself and its
+       own subfolders, with their depth for indentation. */
+    function moveTargets(items, sourceId, depth, out) {
+        for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            if (it.type !== "folder" || it.id === sourceId) continue;
+            out.push({ item: it, depth: depth });
+            moveTargets(it.children || [], sourceId, depth + 1, out);
+        }
+        return out;
     }
 
     /* Display order of one folder's items (or the root's): subfolders,
@@ -165,6 +193,15 @@ window.NP = window.NP || {};
             for (var i = 0; i < items.length; i++) {
                 NP.tree._renderItem(items[i], 0, container);
             }
+            if (NP.tree.tagFilter && !container.firstChild) {
+                var none = document.createElement("div");
+                none.className = "tree-empty";
+                none.textContent = NP.t("tree.noTagMatches");
+                container.appendChild(none);
+            }
+            NP.tree.renderTags();
+            var keys = document.getElementById("sidebar-search-keys");
+            if (keys && NP.shortcuts) keys.textContent = NP.shortcuts.getCurrent("find-all") || "";
 
             /* ---- Trash section ---- */
             var trash = data.trash;
@@ -201,55 +238,53 @@ window.NP = window.NP || {};
         },
 
         _renderItem: function (item, depth, container) {
+            var isFolder = item.type === "folder";
+            if (!NP.tree._matchesFilter(item)) return;
+
             var div = document.createElement("div");
-            div.className = "tree-item";
+            div.className = "tree-item " + (isFolder ? "tree-item--folder" : "tree-item--note");
             div.setAttribute("data-id", item.id);
             div.setAttribute("draggable", "true");
-            div.style.paddingLeft = (depth * 20) + "px";
+            div.style.paddingLeft = (8 + depth * 16) + "px";
 
             var favs = (NP.state.data && NP.state.data.favorites) || [];
             var isFav = favs.indexOf(item.id) !== -1;
-            var isFolder = item.type === "folder";
-            var isSelected = NP.state.selectedId === item.id;
-            var locked = !isFolder && isEncrypted(item.id);
+            var filtering = !!NP.tree.tagFilter;
+            var isOpen = isFolder && (filtering || NP.state.getFolderOpenState(item.id));
+            if (NP.state.selectedId === item.id) div.className += " selected";
 
             if (isFolder) {
-                div.className += " tree-item--folder";
+                var arrow = NP.icon(isOpen ? "chevron-down" : "chevron-right", "tree-arrow");
+                div.appendChild(arrow);
+                var sq = document.createElement("span");
+                sq.className = "tree-folder-mark";
+                sq.setAttribute("aria-hidden", "true");
+                div.appendChild(sq);
             } else {
-                div.className += " tree-item--note";
-                div.style.paddingLeft = (depth * 20 + 20) + "px";
+                div.style.paddingLeft = (8 + depth * 16 + 18) + "px";
             }
 
-            if (isSelected) {
-                div.className += " selected";
+            var name = document.createElement("span");
+            name.className = "tree-name";
+            name.textContent = item.name;
+            div.appendChild(name);
+
+            if (!isFolder && isEncrypted(item.id)) {
+                div.appendChild(NP.icon("lock", "tree-badge"));
             }
-
-            /* Build inner HTML */
-            var html = "";
-
-            if (isFolder) {
-                var isOpen = NP.state.getFolderOpenState(item.id);
-                var arrow = isOpen ? "\u25bd" : "\u25b7";
-                html += "<span class='tree-arrow' style='margin-right:4px;cursor:pointer;font-size:10px;'>" + arrow + "</span>";
-                html += "<span style='margin-right:4px;'>&#128193;</span>";
-                if (isFav) html += "<span style='color:var(--accent);margin-right:2px;'>\u2605</span>";
-                html += "<span style='font-weight:bold;color:var(--fg-bright);'>" + NP.escapeHtml(item.name) + "</span>";
-            } else {
-                html += "<span style='margin-right:4px;font-size:8px;color:var(--fg-dim);'>\u25c6</span>";
-                if (isFav) html += "<span style='color:var(--accent);margin-right:2px;'>\u2605</span>";
-                if (locked) html += "<span style='margin-right:2px;'>\ud83d\udd12</span>";
-                html += "<span style='color:var(--fg-dim);'>" + NP.escapeHtml(item.name) + "</span>";
+            if (isFav) {
+                var star = document.createElement("span");
+                star.className = "tree-star";
+                star.textContent = "★";
+                star.setAttribute("aria-label", NP.t("tree.favorite"));
+                div.appendChild(star);
             }
+            div.title = item.name;
 
-            div.innerHTML = html;
-
-            /* Click handler */
             div.addEventListener("click", function (e) {
                 NP.tree._onItemClick(e, item.id, item.type);
                 e.stopPropagation();
             });
-
-            /* Right-click handler */
             div.addEventListener("contextmenu", function (e) {
                 e.preventDefault();
                 NP.tree._onRightClick(e, item.id, item.type);
@@ -257,8 +292,7 @@ window.NP = window.NP || {};
 
             container.appendChild(div);
 
-            /* Render children if folder is open */
-            if (isFolder && item.children && NP.state.getFolderOpenState(item.id)) {
+            if (isOpen && item.children) {
                 var children = sortItems(item.children);
                 for (var c = 0; c < children.length; c++) {
                     NP.tree._renderItem(children[c], depth + 1, container);
@@ -382,71 +416,106 @@ window.NP = window.NP || {};
         },
 
         _onRightClick: function (e, id, type) {
-            removeContextMenu();
-
-            var menu = document.createElement("div");
-            menu.style.cssText =
-                "position:fixed;z-index:9999;min-width:160px;padding:4px 0;" +
-                "background:var(--bg-light);border:1px solid var(--border);" +
-                "border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,0.5);";
-            menu.style.left = e.clientX + "px";
-            menu.style.top = e.clientY + "px";
-
+            var A = function (action) { return function () { NP.tree._handleContextAction(action, id, type); }; };
+            var fav = ((NP.state.data && NP.state.data.favorites) || []).indexOf(id) !== -1;
             var items = [];
             if (type === "folder") {
-                items = [
-                    { label: NP.t("tree.contextMenu.newNote"), action: "new-note" },
-                    { label: NP.t("tree.contextMenu.newFolder"), action: "new-folder" },
-                    { label: NP.t("common.rename"), action: "rename" },
-                    { label: NP.t("common.delete"), action: "delete" }
-                ];
+                items.push({ id: "new-note", icon: "file-plus", label: NP.t("tree.contextMenu.newNote"), run: A("new-note") });
+                items.push({ id: "new-folder", icon: "folder-plus", label: NP.t("tree.contextMenu.newFolder"), run: A("new-folder") });
+                items.push("-");
+            }
+            items.push({ id: "rename", icon: "pencil", label: NP.t("common.rename"), run: A("rename") });
+            items.push({ id: "move", icon: "folder", label: NP.t("tree.contextMenu.moveTo"), run: function () {
+                NP.tree._openMoveMenu({ x: e.clientX, y: e.clientY }, id);
+            } });
+            if (type !== "folder") {
+                items.push({ id: "favorite", icon: "star", label: NP.t(fav ? "tree.contextMenu.removeFavorite"
+                    : "tree.contextMenu.addFavorite"), run: A("favorite") });
+            }
+            items.push("-");
+            items.push({ id: "delete", icon: "trash-2", label: NP.t("common.delete"), danger: true, run: A("delete") });
+            NP.menu.open({ x: e.clientX, y: e.clientY }, items);
+        },
+
+        /* "Move to…": the top level or any folder the item may go into. */
+        _openMoveMenu: function (at, id) {
+            var tree = (NP.state.data && NP.state.data.tree) || [];
+            var parent = findParentId(tree, id, null);
+            var roots = tree.filter(function (it) { return it.id !== id; });
+            var items = [{ id: "root", icon: "folder", label: NP.t("tree.contextMenu.moveToRoot"),
+                disabled: parent === null || !roots.length,
+                run: function () { NP.tree._moveTo(id, null); } }];
+            moveTargets(tree, id, 0, []).forEach(function (t) {
+                items.push({ id: t.item.id, icon: "folder",
+                    label: new Array(t.depth + 1).join("  ") + t.item.name,
+                    disabled: t.item.id === parent,
+                    run: function () { NP.tree._moveTo(id, t.item.id); } });
+            });
+            NP.menu.open(at, items, { label: NP.t("tree.contextMenu.moveTo") });
+        },
+
+        /* folderId null = the top level (after the last top-level item). */
+        _moveTo: function (id, folderId) {
+            var tree = (NP.state.data && NP.state.data.tree) || [];
+            var call;
+            if (folderId) {
+                call = NP.api.move(id, folderId, "inside");
             } else {
-                items = [
-                    { label: NP.t("common.rename"), action: "rename" },
-                    { label: NP.t(((NP.state.data && NP.state.data.favorites) || []).indexOf(id) !== -1
-                        ? "tree.contextMenu.removeFavorite" : "tree.contextMenu.addFavorite"), action: "favorite" },
-                    { label: NP.t("common.delete"), action: "delete" }
-                ];
+                var roots = tree.filter(function (it) { return it.id !== id; });
+                if (!roots.length) return Promise.resolve();
+                call = NP.api.move(id, roots[roots.length - 1].id, "after");
             }
+            return call.then(function () {
+                if (folderId) NP.state.setFolderOpenState(folderId, true);
+                return NP.state.init();
+            }).then(function () {
+                NP.tree.render();
+            }).catch(NP.dialog.failed);
+        },
 
-            for (var i = 0; i < items.length; i++) {
-                (function (item) {
-                    var opt = document.createElement("div");
-                    opt.style.cssText =
-                        "padding:6px 16px;cursor:pointer;color:var(--fg);font-size:13px;" +
-                        "white-space:nowrap;";
-                    opt.textContent = item.label;
-                    opt.addEventListener("mouseenter", function () {
-                        opt.style.background = "var(--hover-bg)";
-                    });
-                    opt.addEventListener("mouseleave", function () {
-                        opt.style.background = "none";
-                    });
-                    opt.addEventListener("click", function (ev) {
-                        ev.stopPropagation();
-                        removeContextMenu();
-                        NP.tree._handleContextAction(item.action, id, type);
-                    });
-                    menu.appendChild(opt);
-                })(items[i]);
-            }
+        /* ---- Tags: the TAGS section and the tree filter ---- */
 
-            document.body.appendChild(menu);
-            contextMenu = menu;
+        tagFilter: null,          /* lower-case tag or null; not saved */
 
-            /* Clamp menu to viewport */
-            var rect = menu.getBoundingClientRect();
-            if (rect.right > window.innerWidth) {
-                menu.style.left = (window.innerWidth - rect.width - 4) + "px";
-            }
-            if (rect.bottom > window.innerHeight) {
-                menu.style.top = (window.innerHeight - rect.height - 4) + "px";
-            }
+        _matchesFilter: function (item) {
+            var key = NP.tree.tagFilter;
+            return !key || containsMatch(item, key);
+        },
 
-            /* Close on click outside */
-            setTimeout(function () {
-                document.addEventListener("click", removeContextMenu, { once: true });
-            }, 0);
+        /* Click a tag: show only its notes; click it again: show all. */
+        setTagFilter: function (tag) {
+            var key = tag ? String(tag).toLowerCase() : null;
+            NP.tree.tagFilter = key === NP.tree.tagFilter ? null : key;
+            NP.tree.render();
+        },
+
+        renderTags: function () {
+            var list = document.getElementById("tag-list");
+            if (!list) return;
+            var tags = collectTags((NP.state.data && NP.state.data.tree) || [], {});
+            var keys = Object.keys(tags).sort();
+            if (NP.tree.tagFilter && !tags[NP.tree.tagFilter]) NP.tree.tagFilter = null;
+            list.replaceChildren();
+            var head = document.getElementById("side-tags-head");
+            if (head) head.hidden = !keys.length;
+            keys.forEach(function (key) {
+                var on = NP.tree.tagFilter === key;
+                var b = document.createElement("button");
+                b.type = "button";
+                b.className = "tag-row" + (on ? " active" : "");
+                b.setAttribute("aria-pressed", on ? "true" : "false");
+                b.title = NP.t(on ? "tree.tagFilterOff" : "tree.tagFilterOn", { tag: tags[key].name });
+                var name = document.createElement("span");
+                name.className = "tag-row-name";
+                name.textContent = "#" + tags[key].name;
+                var n = document.createElement("span");
+                n.className = "tag-row-count";
+                n.textContent = String(tags[key].count);
+                b.appendChild(name);
+                b.appendChild(n);
+                b.addEventListener("click", function () { NP.tree.setTagFilter(key); });
+                list.appendChild(b);
+            });
         },
 
         /* Unified delete for #btn-delete, context menu, and Delete key.

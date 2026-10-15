@@ -70,18 +70,29 @@
 
         <!-- ---- Left Sidebar ---- -->
         <div id="sidebar">
-            <!-- Button bar -->
-            <div id="button-bar">
-                <button id="btn-new-folder" title="New Folder" data-i18n-title="ui.sidebar.newFolderTitle" data-i18n="ui.sidebar.newFolder">+Folder</button>
-                <button id="btn-new-note" title="New Note" data-i18n-title="ui.sidebar.newNoteTitle" data-i18n="ui.sidebar.newNote">+Note</button>
-                <button id="btn-delete" title="Delete" data-i18n-title="common.delete" data-i18n="common.delete">Delete</button>
-                <button id="btn-rename" title="Rename" data-i18n-title="common.rename" data-i18n="common.rename">Rename</button>
-                <button id="btn-backup" title="Download backup .zip" data-i18n-title="ui.sidebar.backupTitle" data-i18n="ui.sidebar.backup">Backup</button>
-            </div>
+            <!-- Search across all notes (find-all.js); the shortcut is
+                 filled in by tree.js from the shortcut registry. -->
+            <button id="sidebar-search" type="button" aria-label="Search all notes" data-i18n-aria-label="ui.sidebar.searchTitle">
+                <svg class="np-icon" aria-hidden="true"><use href="/static/vendor/lucide/sprite.svg#i-search"></use></svg>
+                <span class="side-search-label" data-i18n="ui.sidebar.search">search</span>
+                <kbd id="sidebar-search-keys" translate="no"></kbd>
+            </button>
 
-            <!-- Tree (the functional Trash section is rendered into this
-                 container by tree.js — see NP.tree.render) -->
-            <div id="tree-container"></div>
+            <div id="sidebar-scroll">
+                <div class="side-head">
+                    <span class="side-label" data-i18n="ui.sidebar.notes">Notes</span>
+                    <button class="side-icon" id="btn-new-note" type="button" title="New note" data-i18n-title="ui.sidebar.newNoteTitle" aria-label="New note" data-i18n-aria-label="ui.sidebar.newNoteTitle"><svg class="np-icon" aria-hidden="true"><use href="/static/vendor/lucide/sprite.svg#i-plus"></use></svg></button>
+                    <button class="side-icon" id="btn-new-folder" type="button" title="New folder" data-i18n-title="ui.sidebar.newFolderTitle" aria-label="New folder" data-i18n-aria-label="ui.sidebar.newFolderTitle"><svg class="np-icon" aria-hidden="true"><use href="/static/vendor/lucide/sprite.svg#i-folder-plus"></use></svg></button>
+                </div>
+                <!-- Tree (tree.js; the Trash section is rendered into it too).
+                     Rename / delete / move: right-click an item. -->
+                <div id="tree-container"></div>
+
+                <div class="side-head" id="side-tags-head">
+                    <span class="side-label" data-i18n="ui.sidebar.tags">Tags</span>
+                </div>
+                <div id="tag-list"></div>
+            </div>
         </div>
 
         <!-- ---- Right Panel (Editor) ---- -->
