@@ -126,7 +126,7 @@ window.NP = window.NP || {};
         if (NP.state && NP.state.data && NP.state.data.ui_font) {
             return NP.state.data.ui_font;
         }
-        return "orbitron";
+        return "jetbrains-mono";
     }
 
     function fontFamilyFor(value) {
@@ -191,6 +191,47 @@ window.NP = window.NP || {};
         });
     }
 
+
+    /* Noir effects as stored (missing = off: data from before the
+       redesign got explicit values in noirpad/storage.py). */
+    function effects() {
+        return {
+            glow: sget("glow_enabled", false) === true,
+            matrix: sget("matrix_rain_enabled", false) === true,
+            crt: sget("crt_enabled", false) === true
+        };
+    }
+
+    function anyEffect() {
+        var e = effects();
+        return e.glow || e.matrix || e.crt;
+    }
+
+    /* Show the effects on screen and the switches in Settings. */
+    function applyEffects() {
+        var e = effects();
+        applyGlow(sget("glow_intensity", 100));
+        if (NP.matrixRain && NP.matrixRain.setEnabled) NP.matrixRain.setEnabled(e.matrix);
+        if (NP.effects && NP.effects.crtShow) NP.effects.crtShow(e.crt);
+        document.body.classList.toggle("np-glow", e.glow);
+        setToggle("setting-noir-effects", e.glow || e.matrix || e.crt);
+        setToggle("setting-glow", e.glow);
+        setToggle("setting-matrix-rain", e.matrix);
+        setToggle("setting-crt", e.crt);
+        var row = document.getElementById("setting-glow-intensity-row");
+        if (row) row.hidden = !e.glow;
+    }
+
+    /* CRT used to live only in this browser (localStorage). Data that has
+       no crt_enabled yet takes that old value over, once. */
+    function migrateCrt() {
+        var d = NP.state && NP.state.data;
+        if (!d || d.crt_enabled !== undefined) return;
+        var old = false;
+        try { old = localStorage.getItem("noirpad_crt") === "1"; } catch (e) { /* none */ }
+        saveSetting({ crt_enabled: old });
+        try { localStorage.removeItem("noirpad_crt"); } catch (e) { /* none */ }
+    }
 
     /* No existing layout module applies orientation; keep it to a safe,
        non-breaking data attribute so the value round-trips + persists. */
@@ -259,7 +300,9 @@ window.NP = window.NP || {};
     function applyGlow(pct) {
         pct = parseInt(pct, 10);
         if (isNaN(pct)) pct = 100;
-        var m = pct / 100;
+        /* Glow is a Noir effect: off = no glow at all (the slider keeps its
+           value for when it comes back). */
+        var m = sget("glow_enabled", false) === true ? pct / 100 : 0;
         var root = document.documentElement;
         root.style.setProperty("--glow-multiplier", String(m));
         root.style.setProperty("--glow-core", (4 * m) + "px");
@@ -324,28 +367,17 @@ window.NP = window.NP || {};
             });
         }
 
-        /* CRT lives in localStorage (effects.js), not the backend. */
-        bindToggle(
-            "setting-crt",
-            function () {
-                return !!(NP.effects && NP.effects.crtIsOn &&
-                    NP.effects.crtIsOn());
-            },
-            function (v) {
-                if (NP.effects && NP.effects.crtApply) NP.effects.crtApply(v);
-            }
-        );
-
-        bindToggle(
-            "setting-matrix-rain",
-            function () { return sget("matrix_rain_enabled", true) !== false; },
-            function (v) {
-                saveSetting({ matrix_rain_enabled: v });
-                if (NP.matrixRain && NP.matrixRain.setEnabled) {
-                    NP.matrixRain.setEnabled(v);
-                }
-            }
-        );
+        /* ---- Noir effects: glow, matrix rain, CRT (all off for a new
+           install). The master switch turns all three on or off. ---- */
+        bindToggle("setting-noir-effects", anyEffect, function (v) {
+            NP.settings.setEffects({ glow: v, matrix: v, crt: v });
+        });
+        bindToggle("setting-glow", function () { return effects().glow; },
+            function (v) { NP.settings.setEffects({ glow: v }); });
+        bindToggle("setting-matrix-rain", function () { return effects().matrix; },
+            function (v) { NP.settings.setEffects({ matrix: v }); });
+        bindToggle("setting-crt", function () { return effects().crt; },
+            function (v) { NP.settings.setEffects({ crt: v }); });
 
         bindToggle(
             "setting-show-splash",
@@ -696,21 +728,27 @@ window.NP = window.NP || {};
         /* Apply persisted runtime state to the live app. Called from app.js
            once NP.state.data is loaded. */
         applyRuntimeState: function () {
-            if (NP.matrixRain && NP.matrixRain.setEnabled) {
-                NP.matrixRain.setEnabled(
-                    sget("matrix_rain_enabled", true) !== false
-                );
-            }
+            migrateCrt();
+            applyEffects();
             applySpellcheck(sget("spellcheck", true) !== false);
             /* Startup ALWAYS forces Landscape (user choice) — overrides any
                persisted Portrait. setOrientation keeps the body class, the
                Settings radio and the stored value in sync. Ctrl+L / Settings
                still switch during the session; a reload resets to Landscape. */
             NP.settings.setOrientation("landscape");
-            /* Apply persisted glow strength at startup (not the 100%
-               default) so the saved slider value takes effect on load. */
-            applyGlow(sget("glow_intensity", 100));
         },
+
+        /* Change Noir effects: {glow, matrix, crt} (any subset). */
+        setEffects: function (patch) {
+            var p = {};
+            if (patch.glow !== undefined) p.glow_enabled = !!patch.glow;
+            if (patch.matrix !== undefined) p.matrix_rain_enabled = !!patch.matrix;
+            if (patch.crt !== undefined) p.crt_enabled = !!patch.crt;
+            saveSetting(p);
+            applyEffects();
+        },
+
+        effects: effects,
 
         /* Public orientation API — shared by the Settings radio, the
            Ctrl+L shortcut and the :orientation command so the body class,
@@ -738,10 +776,7 @@ window.NP = window.NP || {};
             if (fontDd) selectOption(fontDd, currentUiFont(), false);
 
             /* ---- Settings v2 controls ---- */
-            setToggle("setting-crt",
-                !!(NP.effects && NP.effects.crtIsOn && NP.effects.crtIsOn()));
-            setToggle("setting-matrix-rain",
-                sget("matrix_rain_enabled", true) !== false);
+            applyEffects();        /* the Noir effects switches */
             setToggle("setting-show-splash",
                 sget("show_splash", true) !== false);
             setToggle("setting-autosave", !!sget("autosave", false));

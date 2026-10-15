@@ -771,7 +771,8 @@
         "appLock": "Zámek aplikace",
         "data": "Data",
         "session": "Přihlášení",
-        "about": "O aplikaci"
+        "about": "O aplikaci",
+        "effects": "Noir efekty"
       },
       "theme": "Motiv",
       "uiFont": "Písmo rozhraní",
@@ -780,7 +781,7 @@
       "openFontPicker": "Vybrat písmo →",
       "glowIntensity": "Intenzita záře",
       "crt": "CRT řádkování",
-      "matrixRain": "Efekt Matrix rain na pozadí",
+      "matrixRain": "Matrix déšť na pozadí",
       "showSplash": "Zobrazit úvodní obrazovku při spuštění",
       "autosave": "Automatické ukládání",
       "autosaveHint": "Vypnuto: pojistné uložení každých 30 s",
@@ -798,7 +799,6 @@
       "portrait": "Na výšku",
       "spellcheck": "Kontrola pravopisu",
       "glitchEffect": "Efekt „glitch“ při psaní",
-      "newBadge": "NOVÉ",
       "confirmDelete": "Potvrzovat mazání",
       "idleLock": "Automaticky zamknout při nečinnosti",
       "idleLockHint": "Zamkne šifrované poznámky — a při zapnutém zámku aplikace i celou aplikaci",
@@ -821,7 +821,10 @@
       "logout": "Odhlásit se",
       "version": "Verze",
       "source": "Zdrojový kód",
-      "storageUsed": "Zabrané místo"
+      "storageUsed": "Zabrané místo",
+      "noirEffects": "Všechny Noir efekty",
+      "noirEffectsHint": "Záře, matrix déšť a CRT najednou. Výchozí stav: vypnuto.",
+      "glow": "Záře"
     },
     "shortcuts": {
       "title": "Klávesové zkratky",

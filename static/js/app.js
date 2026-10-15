@@ -6,9 +6,6 @@ window.NP = window.NP || {};
 
     NP.app = {
         init: function () {
-            /* Restore CRT state immediately (before any rendering) */
-            if (NP.effects && NP.effects.crtRestore) NP.effects.crtRestore();
-
             /* Version + project URL for About / welcome (one source:
                noirpad/__version__.py). Not critical: start without it. */
             var info = NP.api.version().catch(function () { return {}; });

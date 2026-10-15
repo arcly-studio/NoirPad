@@ -368,7 +368,11 @@ def build_demo_data(lang: str = "en") -> dict:
         "theme": "matrix",
         "language": lang,
         "font_size": 13,
+        "ui_font": "jetbrains-mono",
+        # a new install: Noir effects off (G6)
+        "glow_enabled": False,
         "matrix_rain_enabled": False,
+        "crt_enabled": False,
         "show_splash": False,
         "glitch_effect": False,
         "spellcheck": False,

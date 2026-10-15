@@ -4,7 +4,6 @@ window.NP = window.NP || {};
 (function (NP) {
     "use strict";
 
-    var CRT_KEY = "noirpad_crt";
     var GLITCH_WINDOW_MS = 1000;
     var GLITCH_THRESHOLD = 5;       /* keys/sec required to trigger */
     var GLITCH_COOLDOWN_MS = 200;
@@ -17,26 +16,21 @@ window.NP = window.NP || {};
 
         /* ---- CRT scanlines ---- */
 
-        crtApply: function (on) {
+        /* Only the look; the setting is crt_enabled (Settings → Noir
+           effects, NP.settings.setEffects). */
+        crtShow: function (on) {
             document.body.classList.toggle("crt-on", !!on);
-            try { localStorage.setItem(CRT_KEY, on ? "1" : "0"); } catch (e) { /* ignore */ }
         },
 
+        /* :crt */
         crtToggle: function () {
-            var on = !document.body.classList.contains("crt-on");
-            NP.effects.crtApply(on);
+            var on = !NP.effects.crtIsOn();
+            if (NP.settings && NP.settings.setEffects) NP.settings.setEffects({ crt: on });
+            else NP.effects.crtShow(on);
         },
 
         crtIsOn: function () {
             return document.body.classList.contains("crt-on");
-        },
-
-        crtRestore: function () {
-            try {
-                if (localStorage.getItem(CRT_KEY) === "1") {
-                    document.body.classList.add("crt-on");
-                }
-            } catch (e) { /* ignore */ }
         },
 
         /* ---- Glitch typing ---- */

@@ -43,12 +43,15 @@ DEFAULT_DATA: dict[str, Any] = {
     # Only non-default values are stored, keeping the data file small.
     "note_modes": {},
     "theme": "matrix",
-    "ui_font": "orbitron",
+    "ui_font": "jetbrains-mono",
     "font_family": "Cascadia Code",
     "font_size": 12,
     "autosave": False,
     "page_orientation": "landscape",
-    "matrix_rain_enabled": True,
+    # Noir effects (Settings → Noir effects): off for a new install.
+    "glow_enabled": False,
+    "matrix_rain_enabled": False,
+    "crt_enabled": False,
     "show_splash": True,
     "autosave_interval": 5,
     "spellcheck": True,
@@ -77,6 +80,7 @@ def set_data_dir(path: Path) -> None:
     RUNTIME.data_notice = None
     _migrate_legacy_data_if_needed(DATA_DIR)
     _migrate_to_single_profile()
+    _migrate_noir_effects()
     RUNTIME.app_lock = read_data().get("app_lock") or None
     RUNTIME.app_lock_tokens.clear()
 
@@ -293,6 +297,33 @@ def read_data_with_etag() -> tuple[dict[str, Any], str]:
 # NoirPad has one profile per data directory. Data written by the old
 # multi-user build (top-level `users`/`sessions`, `user_id` on every tree
 # item) is flattened once at startup.
+
+
+def _migrate_noir_effects() -> None:
+    """Data from before the "G" redesign keeps the look it had.
+
+    The new defaults switch the Noir effects off, but an existing install
+    must not lose them silently: glow stays on (it always was), matrix
+    rain keeps its stored value (on unless the user turned it off), and
+    CRT is left unset so the browser can carry over its old local
+    setting. The old default UI font Orbitron becomes JetBrains Mono, the
+    redesign's monospace face. Runs once: glow_enabled marks it as done.
+    """
+    with file_lock:
+        if not DATA_FILE.exists():
+            return
+        try:
+            data = read_data_unlocked()
+        except OSError:
+            return
+        if "glow_enabled" in data:
+            return
+        data["glow_enabled"] = True
+        data["matrix_rain_enabled"] = data.get("matrix_rain_enabled", True) is not False
+        if data.get("ui_font", "orbitron") == "orbitron":
+            data["ui_font"] = "jetbrains-mono"
+        write_data_unlocked(data)
+        log.info("Noir effects: kept the effects of the existing data")
 
 
 def _migrate_to_single_profile() -> None:

@@ -58,7 +58,9 @@ class SettingsBody(BaseModel):
     font_size: Optional[int] = None
     autosave: Optional[bool] = None
     page_orientation: Optional[str] = None
+    glow_enabled: Optional[bool] = None
     matrix_rain_enabled: Optional[bool] = None
+    crt_enabled: Optional[bool] = None
     show_splash: Optional[bool] = None
     autosave_interval: Optional[int] = None
     spellcheck: Optional[bool] = None

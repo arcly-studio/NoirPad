@@ -741,7 +741,8 @@
         "appLock": "App lock",
         "data": "Data",
         "session": "Session",
-        "about": "About"
+        "about": "About",
+        "effects": "Noir effects"
       },
       "theme": "Theme",
       "uiFont": "UI font",
@@ -768,7 +769,6 @@
       "portrait": "Portrait",
       "spellcheck": "Spellcheck",
       "glitchEffect": "Glitch typing effect",
-      "newBadge": "NEW",
       "confirmDelete": "Confirm before delete",
       "idleLock": "Auto-lock when idle",
       "idleLockHint": "Locks encrypted notes — and the whole app if App lock is on",
@@ -791,7 +791,10 @@
       "logout": "Logout",
       "version": "Version",
       "source": "Source",
-      "storageUsed": "Storage used"
+      "storageUsed": "Storage used",
+      "noirEffects": "All Noir effects",
+      "noirEffectsHint": "Glow, matrix rain and CRT at once. Off by default.",
+      "glow": "Glow"
     },
     "shortcuts": {
       "title": "Shortcuts",

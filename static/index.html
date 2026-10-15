@@ -305,23 +305,44 @@
             </div>
 
             <div class="settings-row">
-                <span class="settings-label"><span data-i18n="ui.settings.glowIntensity">Glow intensity</span> <span id="setting-glow-intensity-val" style="color:var(--accent);font-weight:700;">100%</span></span>
-                <input type="range" id="setting-glow-intensity" class="settings-slider" min="0" max="150" value="100" step="10">
+                <span class="settings-label" data-i18n="ui.settings.showSplash">Show splash on startup</span>
+                <button class="settings-toggle" id="setting-show-splash" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <hr class="settings-divider">
+            <div class="settings-section-title" id="settings-noir-effects" data-i18n="ui.settings.section.effects">Noir effects</div>
+
+            <div class="settings-row">
+                <div class="settings-label-col">
+                    <span class="settings-label" data-i18n="ui.settings.noirEffects">All Noir effects</span>
+                    <span class="settings-sublabel" data-i18n="ui.settings.noirEffectsHint">Glow, matrix rain and CRT at once. Off by default.</span>
+                </div>
+                <button class="settings-toggle" id="setting-noir-effects" role="switch" aria-checked="false" aria-label="All Noir effects" data-i18n-aria-label="ui.settings.noirEffects"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label" data-i18n="ui.settings.crt">CRT scanlines</span>
-                <button class="settings-toggle" id="setting-crt" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+                <span class="settings-label" data-i18n="ui.settings.glow">Glow</span>
+                <button class="settings-toggle" id="setting-glow" role="switch" aria-checked="false" aria-label="Glow" data-i18n-aria-label="ui.settings.glow"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <div class="settings-row settings-row--sub" id="setting-glow-intensity-row" hidden>
+                <span class="settings-label"><span data-i18n="ui.settings.glowIntensity">Glow intensity</span> <span id="setting-glow-intensity-val" class="settings-value">100%</span></span>
+                <input type="range" id="setting-glow-intensity" class="settings-slider" min="0" max="150" value="100" step="10" aria-label="Glow intensity" data-i18n-aria-label="ui.settings.glowIntensity">
             </div>
 
             <div class="settings-row">
                 <span class="settings-label" data-i18n="ui.settings.matrixRain">Matrix rain background</span>
-                <button class="settings-toggle" id="setting-matrix-rain" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+                <button class="settings-toggle" id="setting-matrix-rain" role="switch" aria-checked="false" aria-label="Matrix rain background" data-i18n-aria-label="ui.settings.matrixRain"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">
-                <span class="settings-label" data-i18n="ui.settings.showSplash">Show splash on startup</span>
-                <button class="settings-toggle" id="setting-show-splash" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+                <span class="settings-label" data-i18n="ui.settings.crt">CRT scanlines</span>
+                <button class="settings-toggle" id="setting-crt" role="switch" aria-checked="false" aria-label="CRT scanlines" data-i18n-aria-label="ui.settings.crt"><span class="settings-toggle-knob"></span></button>
+            </div>
+
+            <div class="settings-row">
+                <span class="settings-label" data-i18n="ui.settings.glitchEffect">Glitch typing effect</span>
+                <button class="settings-toggle" id="setting-glitch-effect" role="switch" aria-checked="false" aria-label="Glitch typing effect" data-i18n-aria-label="ui.settings.glitchEffect"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <hr class="settings-divider">
@@ -362,11 +383,6 @@
             <div class="settings-row">
                 <span class="settings-label" data-i18n="ui.settings.spellcheck">Spellcheck</span>
                 <button class="settings-toggle" id="setting-spellcheck" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
-            </div>
-
-            <div class="settings-row">
-                <span class="settings-label"><span data-i18n="ui.settings.glitchEffect">Glitch typing effect</span><span class="settings-new-badge" data-i18n="ui.settings.newBadge">NEW</span></span>
-                <button class="settings-toggle" id="setting-glitch-effect" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <hr class="settings-divider">

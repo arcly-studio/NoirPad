@@ -4,15 +4,23 @@
    All colors via CSS custom properties from themes.css.
    ============================================================ */
 
-/* Glow strength control (Settings → Appearance slider). Every glow
-   blur radius is var(--glow-blur*) — JS sets these to a concrete px
-   value from the slider (no calc/multiplication in CSS = bulletproof). */
+/* Glow is a Noir effect (Settings → Noir effects), off by default. Every
+   glow blur radius is var(--glow-blur*) — JS sets these to a concrete px
+   value from the slider, or 0 while glow is off (settings.js applyGlow).
+   A zero-blur text-shadow would still thicken the text, so without
+   body.np-glow there is no text-shadow at all. */
+body:not(.np-glow) *,
+body:not(.np-glow) *::before,
+body:not(.np-glow) *::after {
+    text-shadow: none !important;
+}
+
 :root {
     --glow-multiplier: 1;
-    --glow-core:    4px;
-    --glow-blur-sm: 12px;
-    --glow-blur:    22px;
-    --glow-blur-lg: 40px;
+    --glow-core:    0px;    /* glow off until settings.js turns it on */
+    --glow-blur-sm: 0px;
+    --glow-blur:    0px;
+    --glow-blur-lg: 0px;
 }
 
 /* ---- Reset & Base ---- */
@@ -1468,6 +1476,19 @@ body.focus-mode #sidebar {
     padding: 8px 0;
 }
 
+.settings-row[hidden] {
+    display: none;
+}
+
+/* A setting that belongs to the switch above it (glow intensity). */
+.settings-row--sub {
+    padding-left: 16px;
+}
+
+.settings-value {
+    color: var(--accent);
+}
+
 .settings-label {
     font-size: 13px;
     color: var(--fg);
@@ -1787,18 +1808,6 @@ body.focus-mode #sidebar {
     border-color: var(--accent);
 }
 
-.settings-new-badge {
-    display: inline-block;
-    margin-left: 6px;
-    padding: 1px 6px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 9px;
-    letter-spacing: 1px;
-    color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
-    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-    border-radius: 3px;
-}
 
 /* ---- Settings → Shortcuts list (read-only) ---- */
 .shortcuts-subcategory {

@@ -55,6 +55,10 @@ window.NP = window.NP || {};
            (start() refuses while matrix_rain_enabled is false) (C7). */
         toggle: function () {
             var on = !this.running;
+            if (NP.settings && NP.settings.setEffects) {
+                NP.settings.setEffects({ matrix: on });    /* also the Settings switches */
+                return on;
+            }
             if (NP.state && NP.state.data) NP.state.data.matrix_rain_enabled = on;
             if (NP.api && NP.api.saveSettings) {
                 NP.api.saveSettings({ matrix_rain_enabled: on }).catch(function () {});
@@ -65,10 +69,10 @@ window.NP = window.NP || {};
 
         start: function () {
             if (this.running) return;
-            /* Settings v2: respect the matrix_rain_enabled setting (default
-               true — undefined/missing key still starts the rain). */
+            /* Noir effect: only when matrix_rain_enabled is on (a new
+               install has it off). */
             if (NP.state && NP.state.data &&
-                NP.state.data.matrix_rain_enabled === false) {
+                NP.state.data.matrix_rain_enabled !== true) {
                 return;
             }
             this.running = true;

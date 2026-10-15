@@ -1,8 +1,10 @@
 """Redesign "G – Noir čistý": stylesheet rules that keep the calm look."""
 
+import json
 import re
 
 from conftest import ROOT
+from noirpad import storage
 
 CSS = re.sub(r"/\*.*?\*/", "", (ROOT / "static" / "css" / "noirpad.css").read_text(encoding="utf-8"),
              flags=re.S)
@@ -32,3 +34,53 @@ def test_g4_code_blocks_soft_background_no_frame():
         body = rule(sel)
         assert "var(--code-bg)" in body, sel
         assert re.search(r"border:\s*none", body), sel
+
+
+# ---- G6: Noir effects are off for new installs, kept for existing data ----
+
+def _data_dir_with(tmp_path, data):
+    d = tmp_path / "old"
+    d.mkdir()
+    (d / "notes_data.json").write_text(json.dumps(data), encoding="utf-8")
+    storage.set_data_dir(d)
+    return json.loads((d / "notes_data.json").read_text(encoding="utf-8"))
+
+
+def test_g6_new_install_has_the_effects_off(client):
+    data = client.get("/api/data").json()
+    assert data["glow_enabled"] is False
+    assert data["matrix_rain_enabled"] is False
+    assert data["crt_enabled"] is False
+    assert data["ui_font"] == "jetbrains-mono"
+
+
+def test_g6_existing_data_keeps_its_effects(np_backend, tmp_path):
+    # written by 1.0.0: matrix rain on (its default), glow always on, no CRT key
+    data = _data_dir_with(tmp_path, {"tree": [], "notes": {}, "matrix_rain_enabled": True,
+                                     "glow_intensity": 80, "ui_font": "orbitron"})
+    assert data["glow_enabled"] is True
+    assert data["matrix_rain_enabled"] is True
+    assert data["glow_intensity"] == 80
+    assert "crt_enabled" not in data          # the browser carries over its old local value
+    assert data["ui_font"] == "jetbrains-mono"
+
+
+def test_g6_existing_choices_are_respected(np_backend, tmp_path):
+    data = _data_dir_with(tmp_path, {"tree": [], "notes": {}, "matrix_rain_enabled": False,
+                                     "ui_font": "inter"})
+    assert data["matrix_rain_enabled"] is False
+    assert data["glow_enabled"] is True
+    assert data["ui_font"] == "inter"
+
+
+def test_g6_migration_runs_once(np_backend, tmp_path):
+    _data_dir_with(tmp_path, {"tree": [], "notes": {}, "matrix_rain_enabled": True})
+    f = tmp_path / "old" / "notes_data.json"
+    d = json.loads(f.read_text(encoding="utf-8"))
+    d["glow_enabled"] = False                  # the user turns it off later
+    d["matrix_rain_enabled"] = False
+    f.write_text(json.dumps(d), encoding="utf-8")
+    storage.set_data_dir(tmp_path / "old")     # next start
+    again = json.loads(f.read_text(encoding="utf-8"))
+    assert again["glow_enabled"] is False
+    assert again["matrix_rain_enabled"] is False
