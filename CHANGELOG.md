@@ -117,3 +117,18 @@ First public release.
   suggestions.
 - Settings → Editor → Spellcheck (on by default) now covers the Markdown source too, not only the
   formatted editor.
+
+### New look ("G – Noir čistý")
+- The top bar is a single row: title, note tabs and icon buttons. Export is a menu (including
+  Markdown of just the current note) and a ⋯ menu holds the rest.
+- Sidebar: a search box at the top (also `Ctrl+Shift+K`) that searches all notes, and separate
+  NOTES and TAGS sections. Click a tag to filter the tree.
+- Right-click a note or folder to rename, move (Move to…) or delete it.
+- The note tree and the tabs can be used from the keyboard (arrow keys, Enter).
+- The note title is big and is renamed in place; the tags sit right under it.
+- Editor and preview have no frames around them. The status bar shows "saved" / "not saved", the
+  mode and the counts.
+- New Settings section "Noir effects" (glow, Matrix rain, CRT). They are off for new installs;
+  existing installs keep the effects they had.
+- The interface uses the JetBrains Mono font. Dialogs and menus share one style.
+- Contrast of text and icons was checked in all 17 themes.
