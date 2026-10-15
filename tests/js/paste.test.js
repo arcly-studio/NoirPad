@@ -275,3 +275,23 @@ describe("clear formatting", () => {
         expect(win.NP.shortcuts.validate(ks).ok).toBe(true);
     });
 });
+
+describe("G7: the editor context menu is the shared NP.menu", () => {
+    it("right-click on a selection opens NP.menu with clear formatting and a hint", () => {
+        const w = loadApp(["vendor/dompurify/purify.min.js", "js/utils.js", "js/topbar.js",
+            "js/editor.js", "js/paste.js", "js/shortcuts.js"]);
+        const ed = w.document.getElementById("editor");
+        w.NP.editor.el = ed;
+        w.NP.paste.init();
+        w.NP.editor.renderContent(ed, "abc", []);
+        const r = w.document.createRange();
+        r.selectNodeContents(ed);
+        w.getSelection().removeAllRanges();
+        w.getSelection().addRange(r);
+        ed.dispatchEvent(new w.MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 5, clientY: 5 }));
+        const menu = w.document.querySelector(".np-menu");
+        expect([...menu.querySelectorAll(".np-menu-item")].map((b) => b.getAttribute("data-id")))
+            .toEqual(["cut", "copy", "paste", "paste-plain", "clear"]);
+        expect(menu.querySelector(".np-menu-footer").textContent).toContain("Shift");
+    });
+});

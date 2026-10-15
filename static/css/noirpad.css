@@ -34,7 +34,7 @@ html, body {
     height: 100%;
     overflow: hidden;
     font-family: var(--font-display);
-    font-weight: 700;
+    font-weight: 400;
     font-size: 14px;
     background: var(--bg);
     color: var(--fg);
@@ -1661,7 +1661,7 @@ body.focus-mode #sidebar {
     width: 11px;
     height: 11px;
     border-radius: 50%;
-    background: var(--fg-dim);
+    background: var(--fg-muted);   /* off: grey, on: accent (below) */
     transition: left 0.15s ease, background 0.15s ease;
 }
 
@@ -4540,4 +4540,248 @@ body.auth-active #matrix-canvas {
     vertical-align: middle;
     accent-color: var(--accent, #00ff41);
     cursor: default;
+}
+
+/* ============================================================
+   G7 — one visual language for every window: dialogs, menus, the
+   command bar, Settings, help, font picker, shortcuts, find-all,
+   the image-paste choice, app lock / login and toasts.
+   1px lines, 6px radius, no glow, muted secondary text, one accent.
+   ============================================================ */
+.dialog-box,
+#settings-window,
+#help-window,
+#font-picker,
+#shortcuts-panel,
+.np-findall-modal,
+.paste-image-modal,
+.np-command-bar,
+.auth-window,
+.np-toast,
+.np-menu {
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: var(--shadow-3);
+}
+
+.np-dialog--danger .dialog-box {
+    border-color: var(--danger);
+}
+
+.dialog-overlay,
+#settings-overlay,
+#help-overlay,
+#font-overlay,
+#shortcuts-overlay,
+.np-findall-overlay,
+.paste-image-overlay,
+.np-command-overlay {
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: none;
+}
+
+/* Window titles: plain, bright, no glow */
+.dialog-title,
+#settings-header h2,
+#help-header h2,
+#font-picker-header h2,
+#shortcuts-header h2,
+.paste-image-modal h3 {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--fg-bright);
+}
+
+.settings-section-title {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+}
+
+.settings-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+}
+
+/* Secondary text */
+.dialog-message,
+.settings-sublabel,
+.np-findall-result-snippet,
+.np-toast-close {
+    color: var(--fg-dim);
+}
+
+/* Buttons and fields */
+.dialog-btn,
+.settings-btn,
+.settings-link-btn,
+.settings-logout-btn,
+.shortcuts-toolbar-btn,
+.np-toast-action,
+.np-toast-close,
+.auth-submit,
+.paste-image-buttons button,
+.np-dropdown-trigger,
+.np-dropdown-menu {
+    border-radius: 6px;
+}
+
+.dialog-btn,
+.settings-btn,
+.settings-link-btn,
+.shortcuts-toolbar-btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--fg);
+    font-family: var(--font-mono);
+    font-weight: 400;
+}
+
+.dialog-btn:hover,
+.settings-btn:hover,
+.settings-link-btn:hover,
+.shortcuts-toolbar-btn:hover {
+    background: var(--hover-bg);
+    border-color: var(--border-strong);
+    color: var(--fg-bright);
+}
+
+.dialog-btn.primary {
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.dialog-btn.danger,
+.settings-btn-danger,
+.shortcuts-btn-danger {
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
+}
+
+.dialog-btn.danger:hover,
+.settings-btn-danger:hover,
+.shortcuts-btn-danger:hover {
+    color: var(--bg);
+    background: var(--danger);
+    border-color: var(--danger);
+}
+
+.dialog-input,
+#command-input,
+#font-search,
+#shortcuts-search,
+.np-findall-header input,
+.auth-row input[type="text"],
+.auth-row input[type="password"] {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    font-family: var(--font-mono);
+    font-weight: 400;
+}
+
+.dialog-input:focus,
+#command-input:focus,
+#font-search:focus,
+#shortcuts-search:focus,
+.np-findall-header input:focus,
+.auth-row input:focus {
+    border-color: var(--accent);
+    box-shadow: none;
+    outline: none;
+}
+
+.np-toast {
+    padding: 6px 6px 6px 14px;
+    color: var(--fg);
+}
+
+.np-toast-action {
+    color: var(--bg);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+}
+
+/* The command palette (command-bar.js) floats under the top bar. */
+.np-command-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+}
+
+.np-command-bar {
+    position: absolute;
+    top: 48px;
+    left: 50%;
+    width: 520px;
+    max-width: 90vw;
+    padding: 6px;
+    transform: translate(-50%, -6px);
+    opacity: 0;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.np-command-bar.open {
+    transform: translate(-50%, 0);
+    opacity: 1;
+}
+
+.np-command-input {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 13px;
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    font-family: var(--font-mono);
+}
+
+.np-command-input:focus {
+    border-color: var(--accent);
+    outline: none;
+}
+
+.np-command-dropdown {
+    max-height: 280px;
+    overflow-y: auto;
+    margin-top: 4px;
+}
+
+.np-command-item {
+    border-radius: 4px !important;
+    color: var(--fg) !important;
+    font-size: 12.5px !important;
+}
+
+/* Welcome screen: the logo keeps its display face; no glow. */
+.welcome-logo {
+    font-family: var(--font-brand) !important;
+    text-shadow: none !important;
+}
+
+.np-menu-footer {
+    padding: 6px 10px 4px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--fg-muted);
+    white-space: nowrap;
+}
+
+/* Nothing open (welcome screen, folder overview): no "> name" header. */
+body.np-no-note #note-header {
+    display: none;
+}
+
+.welcome-logo {
+    font-size: clamp(36px, 9vw, 96px) !important;
 }

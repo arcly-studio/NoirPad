@@ -345,7 +345,6 @@ window.NP = window.NP || {};
     }
 
     var plainNext = false;
-    var menu = null;
     var lastRange = null;     /* last non-empty editor selection */
 
     /* Put a saved selection back (the command bar or a menu took focus). */
@@ -393,11 +392,6 @@ window.NP = window.NP || {};
             if (!editorRange()) restoreRange(saved);
             insertFragment(frag);
         }).catch(fail);
-    }
-
-    function closeMenu() {
-        if (menu && menu.parentNode) menu.parentNode.removeChild(menu);
-        menu = null;
     }
 
     NP.paste = {
@@ -467,80 +461,25 @@ window.NP = window.NP || {};
         },
 
         _onContextMenu: function (e) {
-            closeMenu();
             var r = editorRange();
             /* No selection, or Shift+right-click: the system menu (spelling
                suggestions, Select all). */
-            if (!r || r.collapsed || e.shiftKey || !richEditorActive()) return;
+            if (!r || r.collapsed || e.shiftKey || !richEditorActive() || !NP.menu) return;
             e.preventDefault();
-
-            menu = document.createElement("div");
-            menu.className = "np-editor-menu";
-            menu.setAttribute("role", "menu");
-            menu.style.cssText =
-                "position:fixed;z-index:9999;min-width:180px;padding:4px 0;" +
-                "background:var(--bg-light);border:1px solid var(--border);" +
-                "border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,0.5);";
-            menu.style.left = e.clientX + "px";
-            menu.style.top = e.clientY + "px";
-
-            [
-                { label: "editor.menu.cut", keys: "Ctrl+X", run: function () { document.execCommand("cut"); } },
-                { label: "editor.menu.copy", keys: "Ctrl+C", run: function () { document.execCommand("copy"); } },
-                { label: "editor.menu.paste", keys: "Ctrl+V", run: function () { pasteFromClipboard(false); } },
-                { label: "editor.menu.pastePlain", keys: "Ctrl+Shift+V", run: function () { pasteFromClipboard(true); } },
-                { label: "editor.clearFormatting.label",
+            NP.menu.open({ x: e.clientX, y: e.clientY }, [
+                { id: "cut", label: NP.t("editor.menu.cut"), keys: "Ctrl+X",
+                    run: function () { document.execCommand("cut"); } },
+                { id: "copy", label: NP.t("editor.menu.copy"), keys: "Ctrl+C",
+                    run: function () { document.execCommand("copy"); } },
+                { id: "paste", label: NP.t("editor.menu.paste"), keys: "Ctrl+V",
+                    run: function () { pasteFromClipboard(false); } },
+                { id: "paste-plain", label: NP.t("editor.menu.pastePlain"), keys: "Ctrl+Shift+V",
+                    run: function () { pasteFromClipboard(true); } },
+                "-",
+                { id: "clear", label: NP.t("editor.clearFormatting.label"),
                     keys: (NP.shortcuts && NP.shortcuts.getCurrent("clear-formatting")) || "",
                     run: NP.paste.clearFormatting }
-            ].forEach(function (item) {
-                var opt = document.createElement("div");
-                opt.setAttribute("role", "menuitem");
-                opt.style.cssText =
-                    "padding:6px 16px;cursor:pointer;color:var(--fg);font-size:13px;" +
-                    "white-space:nowrap;display:flex;justify-content:space-between;gap:24px;";
-                var label = document.createElement("span");
-                label.textContent = NP.t(item.label);
-                opt.appendChild(label);
-                if (item.keys) {
-                    var k = document.createElement("span");
-                    k.style.cssText = "color:var(--fg-dim);font-size:11px;";
-                    k.textContent = item.keys;
-                    opt.appendChild(k);
-                }
-                opt.addEventListener("mouseenter", function () { opt.style.background = "var(--hover-bg)"; });
-                opt.addEventListener("mouseleave", function () { opt.style.background = "none"; });
-                /* Keep the editor selection: no focus change on press. */
-                opt.addEventListener("mousedown", function (ev) { ev.preventDefault(); });
-                opt.addEventListener("click", function (ev) {
-                    ev.stopPropagation();
-                    closeMenu();
-                    item.run();
-                });
-                menu.appendChild(opt);
-            });
-            var hint = document.createElement("div");
-            hint.style.cssText = "padding:4px 16px 2px;margin-top:4px;border-top:1px solid var(--border);" +
-                "color:var(--fg-dim);font-size:11px;white-space:nowrap;";
-            hint.textContent = NP.t("editor.menu.systemHint");
-            menu.appendChild(hint);
-            document.body.appendChild(menu);
-
-            var rect = menu.getBoundingClientRect();
-            if (rect.right > window.innerWidth) menu.style.left = (window.innerWidth - rect.width - 4) + "px";
-            if (rect.bottom > window.innerHeight) menu.style.top = (window.innerHeight - rect.height - 4) + "px";
-
-            setTimeout(function () {
-                document.addEventListener("mousedown", function away(ev) {
-                    if (menu && menu.contains(ev.target)) {
-                        document.addEventListener("mousedown", away, { once: true });
-                        return;
-                    }
-                    closeMenu();
-                }, { once: true });
-                document.addEventListener("keydown", closeMenu, { once: true });
-                window.addEventListener("blur", closeMenu, { once: true });
-                document.addEventListener("scroll", closeMenu, { once: true, capture: true });
-            }, 0);
+            ], { keepFocus: true, footer: NP.t("editor.menu.systemHint") });
         }
     };
 

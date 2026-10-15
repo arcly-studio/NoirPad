@@ -210,6 +210,7 @@ window.NP = window.NP || {};
             NP.editor._forgetUnlock();
 
             NP.editor._currentNoteId = id;
+            document.body.classList.remove("np-no-note");
             NP.state.currentNoteId = id;
             /* Until this note's content is in the editor, the editor still
                shows the previous note: nothing may be saved (K1). */
@@ -399,6 +400,7 @@ window.NP = window.NP || {};
 
         showWelcome: function () {
             if (!NP.editor.el) return;
+            document.body.classList.add("np-no-note");    /* no "> name" header */
 
             NP.editor.stopAutosave();
             NP.editor._currentNoteId = null;
@@ -455,6 +457,7 @@ window.NP = window.NP || {};
 
         showOverview: function (item) {
             if (!NP.editor.el) return;
+            document.body.classList.add("np-no-note");
 
             NP.editor.stopAutosave();
             NP.editor._currentNoteId = null;

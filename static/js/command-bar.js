@@ -46,33 +46,24 @@ window.NP = window.NP || {};
     function ensureDOM() {
         if (overlay) return;
 
+        /* Looks: .np-command-* in noirpad.css. */
         overlay = document.createElement("div");
         overlay.className = "np-command-overlay";
-        overlay.style.cssText =
-            "position:fixed;top:0;left:0;right:0;bottom:0;z-index:9000;" +
-            "background:rgba(0,0,0,0.5);display:none;";
+        overlay.style.display = "none";
 
         var bar = document.createElement("div");
         bar.className = "np-command-bar";
-        bar.style.cssText =
-            "position:absolute;top:0;left:50%;transform:translateX(-50%) translateY(-100%);" +
-            "width:500px;max-width:90vw;background:var(--bg-dark,#0a0a0a);" +
-            "border:1px solid var(--accent,#00ff41);border-top:none;border-radius:0 0 8px 8px;" +
-            "padding:8px;transition:transform 0.2s ease;";
 
         input = document.createElement("input");
         input.type = "text";
+        input.className = "np-command-input";
         input.placeholder = NP.t("commands.placeholder");
-        input.style.cssText =
-            "width:100%;box-sizing:border-box;padding:8px 12px;" +
-            "background:var(--bg,#000);color:var(--fg,#00ff41);" +
-            "border:1px solid var(--fg-dim,#006b1d);border-radius:4px;" +
-            "font-family:var(--font-mono,'Consolas',monospace);font-size:14px;outline:none;";
+        input.setAttribute("aria-label", NP.t("commands.placeholder"));
+        input.spellcheck = false;
 
         dropdown = document.createElement("div");
         dropdown.className = "np-command-dropdown";
-        dropdown.style.cssText =
-            "max-height:260px;overflow-y:auto;margin-top:4px;display:none;";
+        dropdown.style.display = "none";
 
         bar.appendChild(input);
         bar.appendChild(dropdown);
@@ -122,7 +113,7 @@ window.NP = window.NP || {};
         matches.forEach(function (m, i) {
             var item = document.createElement("div");
             item.className = "np-command-item";
-            item.style.cssText =
+            item.style.cssText = /* layout only; colours from CSS */
                 "padding:6px 10px;cursor:pointer;font-family:var(--font-mono,'Consolas',monospace);" +
                 "font-size:13px;color:var(--fg,#00ff41);border-radius:3px;";
             item.textContent = m.cmd + (m.hint ? " " + NP.t(m.hint) : "") +
@@ -144,7 +135,7 @@ window.NP = window.NP || {};
     function highlightItem(idx) {
         var items = dropdown.children;
         for (var i = 0; i < items.length; i++) {
-            items[i].style.background = i === idx ? "var(--select-bg,#003300)" : "transparent";
+            items[i].style.background = i === idx ? "var(--hover-bg)" : "transparent";
         }
         selectedIdx = idx;
     }
@@ -210,7 +201,7 @@ window.NP = window.NP || {};
             selectedIdx = -1;
             /* Trigger slide-in */
             requestAnimationFrame(function () {
-                overlay._bar.style.transform = "translateX(-50%) translateY(0)";
+                overlay._bar.classList.add("open");
             });
             setTimeout(function () { input.focus(); }, 50);
         },
@@ -218,7 +209,7 @@ window.NP = window.NP || {};
         close: function () {
             if (!overlay) return;
             NP.commandBar.visible = false;
-            overlay._bar.style.transform = "translateX(-50%) translateY(-100%)";
+            overlay._bar.classList.remove("open");
             setTimeout(function () {
                 overlay.style.display = "none";
             }, 200);

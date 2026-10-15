@@ -70,7 +70,7 @@ window.NP = window.NP || {};
         /* anchor: an element (the menu opens under it, right-aligned when
            it would leave the window) or {x, y} (context menus).
            items: [{label, keys, icon, run, danger, disabled, checked}] or
-           "-" for a separator. opts: {keepFocus, onClose, label}. */
+           "-" for a separator. opts: {keepFocus, onClose, label, footer}. */
         open: function (anchor, items, opts) {
             opts = opts || {};
             closeMenu(false);
@@ -120,6 +120,13 @@ window.NP = window.NP || {};
                 });
                 el.appendChild(b);
             });
+
+            if (opts.footer) {
+                var foot = document.createElement("div");
+                foot.className = "np-menu-footer";
+                foot.textContent = opts.footer;
+                el.appendChild(foot);
+            }
 
             el.addEventListener("keydown", function (e) {
                 var list = menuItems(el);

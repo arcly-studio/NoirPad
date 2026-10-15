@@ -84,3 +84,28 @@ def test_g6_migration_runs_once(np_backend, tmp_path):
     again = json.loads(f.read_text(encoding="utf-8"))
     assert again["glow_enabled"] is False
     assert again["matrix_rain_enabled"] is False
+
+
+# ---- G7: one visual language for every window ----
+
+def test_g7_windows_share_line_radius_and_no_glow():
+    m = re.search(r"\.dialog-box,\s*#settings-window,[^{]*\{([^}]*)\}", CSS)
+    assert m, "the shared window rule is missing"
+    selectors = m.group(0).split("{")[0]
+    for sel in ("#help-window", "#font-picker", "#shortcuts-panel", ".np-findall-modal",
+                ".paste-image-modal", ".np-command-bar", ".auth-window", ".np-toast", ".np-menu"):
+        assert sel in selectors, sel
+    body = m.group(1)
+    assert re.search(r"border:\s*1px solid var\(--border\)", body)
+    assert re.search(r"border-radius:\s*6px", body)
+    assert "glow" not in body
+
+
+def test_g7_no_text_glow_without_noir_effects():
+    assert re.search(r"body:not\(\.np-glow\) \*,[^{]*\{\s*text-shadow:\s*none !important", CSS)
+
+
+def test_g7_command_bar_has_no_inline_look():
+    js = (ROOT / "static" / "js" / "command-bar.js").read_text(encoding="utf-8")
+    assert "var(--accent,#00ff41);border-top:none" not in js
+    assert "np-command-input" in js
