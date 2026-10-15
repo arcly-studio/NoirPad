@@ -71,6 +71,6 @@ def test_d11_header_strip_hides_the_matrix_rain():
     need an opaque background or the glyphs run right under the text."""
     css = re.sub(r"/\*.*?\*/", "", (ROOT / "static" / "css" / "noirpad.css").read_text(encoding="utf-8"),
                  flags=re.S)
-    for sel in ("#note-header", "#tab-bar", "#tag-bar"):
+    for sel in ("#top-bar", "#note-header", "#tag-bar"):   # tabs live in #top-bar (G1)
         body = re.search(rf"(?m)^{re.escape(sel)}\s*\{{([^}}]*)\}}", css).group(1)
         assert re.search(r"background\s*:\s*var\(--bg\)", body), sel

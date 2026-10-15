@@ -21,6 +21,17 @@ window.NP = window.NP || {};
                 return;
             }
             NP.api.exportHtml(noteId);
+        },
+
+        /* The note as Markdown: a .md file, or a .zip with assets/ when
+           it shows pictures. */
+        md: function () {
+            var noteId = NP.state && NP.state.currentNoteId;
+            if (!noteId) {
+                NP.dialog.alert(NP.t("export.noNoteSelected"));
+                return;
+            }
+            NP.api.exportMd(noteId);
         }
     };
 

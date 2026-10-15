@@ -70,6 +70,7 @@ class SettingsBody(BaseModel):
     glow_intensity: Optional[int] = None
     custom_shortcuts: Optional[dict] = None
     language: Optional[Literal["auto", "en", "cs"]] = None
+    md_split: Optional[bool] = None            # Markdown: preview next to the source
 
 
 class PasswordReq(BaseModel):

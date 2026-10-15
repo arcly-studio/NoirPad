@@ -22,6 +22,8 @@
     --font-ui:      'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono:    'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
     --font-display: 'Orbitron', 'Inter', sans-serif;
+    /* The NOIRPAD wordmark keeps its display face whatever the UI font. */
+    --font-brand:   'Orbitron', 'JetBrains Mono', monospace;
 
     /* ---- Warm-dark surface ramp (shared by every theme) ----------- */
     --bg:        #0e0e10;   /* app background                        */
@@ -48,6 +50,10 @@
     --select-bg: color-mix(in srgb, var(--accent) 20%, var(--bg));
 
     --cursor-color: var(--accent);
+
+    /* Active tab / pressed icon: a soft accent wash. */
+    --accent-soft: color-mix(in srgb, var(--accent) 13%, var(--bg));
+    --danger:      #ff5c5c;
 
     /* Glow KEPT but softened — half-strength, neon-tinted.           */
     --glow: color-mix(in srgb, var(--accent) 55%, transparent);

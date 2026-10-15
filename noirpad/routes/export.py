@@ -10,7 +10,7 @@ from .. import config
 from ..errors import ApiError
 from ..export import (attachment, build_html_zip, build_note_html, image_data_uri,
                       safe_filename)
-from ..markdown_io import build_markdown_zip, import_files
+from ..markdown_io import build_markdown_zip, build_note_markdown, import_files
 from ..storage import read_data
 from ..tree import find_item_by_id, note_exists
 from ..uploads import read_upload_limited
@@ -46,6 +46,13 @@ async def export_html(note_id: str):
                           data.get("font_size", 12), image_data_uri)   # one file: images inline
     return _download(doc.encode("utf-8"), "text/html; charset=utf-8",
                      safe_filename(name) + ".html")
+
+
+@router.get("/api/export/{note_id}/md")
+async def export_md(note_id: str):
+    _, name, content = _note_for_export(note_id)
+    body, media_type, filename = build_note_markdown(name, content)
+    return _download(body, media_type, filename)
 
 
 @router.get("/api/notes/export")

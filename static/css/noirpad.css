@@ -81,13 +81,13 @@ input, textarea {
     z-index: 1;
 }
 
-/* ---- Top Bar ---- */
+/* ---- Top Bar (one row: NOIRPAD · open notes · tool icons) ---- */
 #top-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    height: 36px;
-    padding: 0 12px;
+    gap: 4px;
+    height: 40px;
+    padding: 0 10px 0 14px;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
@@ -95,44 +95,220 @@ input, textarea {
     -webkit-app-region: drag;
 }
 
+/* The wordmark: the only text that may glow (only with Noir effects on,
+   see the glow variables above). */
 #top-bar-title {
-    font-family: var(--font-display);
-    font-size: 13px;
-    font-weight: 900;
-    letter-spacing: 2px;
+    font-family: var(--font-brand);
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
     text-transform: uppercase;
-    color: var(--fg);
-    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur, 22px) var(--glow), 0 0 var(--glow-blur-lg, 40px) var(--glow);
+    color: var(--accent);
+    margin-right: 14px;
+    flex-shrink: 0;
+    text-shadow: 0 0 var(--glow-blur-sm, 12px) var(--glow);
 }
 
-#btn-focus,
-#btn-settings {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--fg-dim);
+/* Open notes. Scrolls sideways (wheel too, topbar.js) when they don't fit. */
+#tab-bar {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 22px;
-    padding: 0;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-left: 10px;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
     -webkit-app-region: no-drag;
 }
 
-#btn-focus:hover,
-#btn-settings:hover {
-    color: var(--fg-bright);
-    background: var(--hover-bg);
-    border-color: var(--fg-dim);
+#tab-bar::-webkit-scrollbar {
+    display: none;
 }
 
-#status-label {
-    font-size: 11px;
+.tab-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    max-width: 200px;
+    padding: 4px 4px 4px 10px;
+    border-radius: 5px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 400;
     color: var(--fg-dim);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.tab-pill .tab-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tab-pill:hover {
+    color: var(--fg);
+    background: var(--hover-bg);
+}
+
+.tab-pill.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.tab-pill:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: -1px;
+}
+
+.tab-close {
+    width: 16px;
+    height: 16px;
+    display: grid;
+    place-items: center;
+    border-radius: 3px;
+    font-size: 13px;
+    line-height: 1;
+    color: inherit;
+    visibility: hidden;
+}
+
+.tab-pill:hover .tab-close,
+.tab-pill.active .tab-close {
+    visibility: visible;
+}
+
+.tab-close:hover {
+    background: var(--hover-bg);
+    color: var(--fg-bright);
+}
+
+/* Tool icons */
+#top-tools {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+    flex-shrink: 0;
     -webkit-app-region: no-drag;
+}
+
+.np-icon {
+    width: 16px;
+    height: 16px;
+    display: block;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.tb-btn {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
+    color: var(--fg-muted);
+}
+
+.tb-btn:hover:not(:disabled) {
+    color: var(--fg);
+    background: var(--hover-bg);
+}
+
+.tb-btn.active,
+.tb-btn[aria-expanded="true"] {
+    color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.tb-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.tb-btn:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.tb-sep {
+    width: 1px;
+    height: 16px;
+    margin: 0 4px;
+    background: var(--border);
+}
+
+/* Popup menu (topbar.js NP.menu): Export, ⋯, context menus */
+.np-menu {
+    position: fixed;
+    z-index: 9500;
+    min-width: 200px;
+    max-width: 320px;
+    padding: 4px;
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: var(--shadow-2);
+    font-family: var(--font-mono);
+}
+
+.np-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--fg);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.np-menu-item .np-icon {
+    color: var(--fg-muted);
+}
+
+.np-menu-item:hover:not(:disabled),
+.np-menu-item:focus {
+    background: var(--hover-bg);
+    color: var(--fg-bright);
+    outline: none;
+}
+
+.np-menu-item:disabled {
+    color: var(--fg-muted);
+    cursor: default;
+}
+
+.np-menu-item--danger:hover:not(:disabled),
+.np-menu-item--danger:focus {
+    color: var(--danger);
+}
+
+.np-menu-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.np-menu-keys {
+    margin-left: 16px;
+    font-size: 11px;
+    color: var(--fg-muted);
+}
+
+.np-menu-sep {
+    height: 1px;
+    margin: 4px 6px;
+    background: var(--border);
 }
 
 /* ---- Main Area ---- */
@@ -400,91 +576,6 @@ input, textarea {
 #note-title-input::placeholder {
     color: var(--fg-dim);
     opacity: 0.5;
-}
-
-.header-btn {
-    padding: 3px 8px;
-    font-size: 12px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    color: var(--fg-dim);
-    background: var(--bg-light);
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-    white-space: nowrap;
-}
-
-.header-btn:hover {
-    color: var(--fg);
-    border-color: var(--fg-dim);
-    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur-sm, 12px) var(--glow);
-}
-
-.header-btn.active {
-    color: var(--fg-bright);
-    border-color: var(--accent);
-    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur, 22px) var(--glow), 0 0 var(--glow-blur-lg, 40px) var(--glow);
-}
-
-/* Tab bar */
-#tab-bar {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 12px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    background: var(--bg);
-}
-
-#tab-bar::-webkit-scrollbar {
-    display: none;
-}
-
-.tab {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 12px;
-    font-size: 11px;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    color: var(--fg-dim);
-    background: var(--bg);
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition: all 0.15s ease;
-}
-
-.tab:hover {
-    color: var(--fg);
-    background: var(--hover-bg);
-    border-color: var(--fg-dim);
-}
-
-.tab.active {
-    color: var(--fg-bright);
-    background: var(--select-bg);
-    border-color: var(--accent);
-    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur-sm, 12px) var(--glow);
-}
-
-.tab .tab-close {
-    font-size: 10px;
-    padding: 0 2px;
-    border-radius: 50%;
-    line-height: 1;
-    opacity: 0.8;   /* 0.5 fell under 3:1 in the darker themes (D12) */
-    transition: opacity 0.15s;
-}
-
-.tab .tab-close:hover {
-    opacity: 1;
-    color: var(--fg-bright);
 }
 
 /* Tag bar */
@@ -2304,6 +2395,8 @@ body.crt-on #crt-overlay {
 body.orientation-portrait #md-stack { max-width: min(900px, 90%); }
 body.editor-md-active #md-stack { display: flex; align-items: stretch; }
 body.editor-md-active #editor { display: none; }
+/* Top bar "preview next to the source" off: the source alone. */
+body.md-no-preview #md-preview { display: none; }
 
 #md-source,
 #md-preview {

@@ -129,69 +129,43 @@ window.NP = window.NP || {};
             bar.innerHTML = "";
 
             var tabs = NP.state.openTabs;
+            var activeEl = null;
             for (var i = 0; i < tabs.length; i++) {
                 (function (tab) {
-                    var pill = document.createElement("div");
-                    pill.className = "tab-pill";
                     var isActive = NP.state.activeTabId === tab.id;
+                    var pill = document.createElement("div");
+                    pill.className = "tab-pill" + (isActive ? " active" : "");
+                    pill.setAttribute("role", "tab");
+                    pill.setAttribute("aria-selected", isActive ? "true" : "false");
+                    pill.tabIndex = isActive ? 0 : -1;
+                    pill.title = tab.name;
 
-                    pill.style.cssText =
-                        "display:inline-flex;align-items:center;gap:6px;" +
-                        "padding:4px 10px;margin:0 2px;border-radius:12px;" +
-                        "cursor:pointer;font-size:12px;white-space:nowrap;" +
-                        "user-select:none;transition:background 0.15s;";
-
-                    if (isActive) {
-                        pill.style.background = "var(--select-bg)";
-                        pill.style.color = "var(--fg-bright)";
-                        pill.style.outline = "1px solid var(--border)";
-                    } else {
-                        pill.style.background = "var(--bg-light)";
-                        pill.style.color = "var(--fg-dim)";
-                        pill.style.outline = "none";
-                    }
-
-                    /* Tab name */
                     var nameSpan = document.createElement("span");
+                    nameSpan.className = "tab-name";
                     nameSpan.textContent = truncate(tab.name);
                     pill.appendChild(nameSpan);
 
-                    /* Close button */
-                    var closeBtn = document.createElement("span");
+                    /* Close: shown on hover / for the active tab (CSS). */
+                    var closeBtn = document.createElement("button");
+                    closeBtn.type = "button";
                     closeBtn.className = "tab-close";
-                    closeBtn.textContent = "\u00d7";
-                    closeBtn.style.cssText =
-                        "font-size:14px;line-height:1;opacity:0.5;padding:0 2px;" +
-                        "cursor:pointer;border-radius:2px;";
-                    closeBtn.addEventListener("mouseenter", function () {
-                        closeBtn.style.opacity = "1";
-                    });
-                    closeBtn.addEventListener("mouseleave", function () {
-                        closeBtn.style.opacity = "0.5";
-                    });
+                    closeBtn.tabIndex = -1;
+                    closeBtn.textContent = "×";
+                    closeBtn.setAttribute("aria-label", NP.t("ui.topBar.closeTab") + " " + tab.name);
                     closeBtn.addEventListener("click", function (e) {
                         e.stopPropagation();
                         NP.tabs.close(tab.id);
                     });
                     pill.appendChild(closeBtn);
 
-                    /* Hover effect */
-                    pill.addEventListener("mouseenter", function () {
-                        if (NP.state.activeTabId !== tab.id) {
-                            pill.style.background = "var(--hover-bg)";
-                        }
-                    });
-                    pill.addEventListener("mouseleave", function () {
-                        if (NP.state.activeTabId === tab.id) {
-                            pill.style.background = "var(--select-bg)";
-                        } else {
-                            pill.style.background = "var(--bg-light)";
-                        }
-                    });
-
-                    /* Click to activate */
                     pill.addEventListener("click", function () {
                         NP.tabs.activate(tab.id);
+                    });
+                    pill.addEventListener("keydown", function (e) {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            NP.tabs.activate(tab.id);
+                        }
                     });
 
                     /* Middle-click to close */
@@ -203,8 +177,14 @@ window.NP = window.NP || {};
                     });
 
                     bar.appendChild(pill);
+                    if (isActive) activeEl = pill;
                 })(tabs[i]);
             }
+            /* Keep the active tab in view when the strip scrolls. */
+            if (activeEl && activeEl.scrollIntoView) {
+                activeEl.scrollIntoView({ block: "nearest", inline: "nearest" });
+            }
+            if (NP.topbar && NP.topbar.refresh) NP.topbar.refresh();
         },
 
         next: function () {

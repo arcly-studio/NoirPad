@@ -151,6 +151,7 @@ window.NP = window.NP || {};
         var els = getEls();
         if (!els.btn) return;
         els.btn.classList.toggle("active", isMdMode());
+        if (NP.topbar && NP.topbar.refresh) NP.topbar.refresh();
     }
 
     /* ---- Public API ---- */

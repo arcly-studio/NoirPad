@@ -29,6 +29,7 @@ window.NP = window.NP || {};
                 if (NP.images && NP.images.init) NP.images.init();
                 /* After images.js: an image paste is taken there first. */
                 if (NP.paste && NP.paste.init) NP.paste.init();
+                if (NP.topbar && NP.topbar.init) NP.topbar.init();
                 /* cursor.js disabled while debugging "dot" report */
                 /* if (NP.cursor && NP.cursor.init) NP.cursor.init(); */
 
@@ -379,15 +380,6 @@ window.NP = window.NP || {};
                 });
             }
 
-            /* Focus mode button (back in the top bar — same #btn-focus id,
-               so this handler attaches to the top-bar element). */
-            var btnFocus = NP.$("#btn-focus");
-            if (btnFocus) {
-                btnFocus.addEventListener("click", function () {
-                    if (NP.focusMode && NP.focusMode.toggle) NP.focusMode.toggle();
-                });
-            }
-
             /* Sidebar Backup button — download the .zip backup. Reuses the
                app's established download path (anchor download, no SPA
                navigation); same as Settings "Download backup" / :backup. */
@@ -404,29 +396,8 @@ window.NP = window.NP || {};
                 });
             }
 
-            /* Settings button — opens the Settings panel */
-            var btnSettings = NP.$("#btn-settings");
-            if (btnSettings) {
-                btnSettings.addEventListener("click", function () {
-                    if (NP.settings && NP.settings.open) NP.settings.open();
-                });
-            }
-
-            /* Header buttons */
-            var btnHelp = NP.$("#btn-help");
-            if (btnHelp) {
-                btnHelp.addEventListener("click", function () {
-                    if (NP.help && NP.help.show) NP.help.show();
-                });
-            }
-
-            var btnFont = NP.$("#btn-font");
-            if (btnFont) {
-                btnFont.addEventListener("click", function () {
-                    if (NP.fontPicker && NP.fontPicker.show) NP.fontPicker.show();
-                });
-            }
-
+            /* Top-bar tools (help, font, settings, focus mode and export
+               live in the Export / ⋯ menus, topbar.js). */
             var btnFavorite = NP.$("#btn-favorite");
             if (btnFavorite) {
                 btnFavorite.addEventListener("click", function () {

@@ -140,3 +140,34 @@ def test_d7_missing_image_and_markup_in_text_stay_harmless(client):
     body = client.get(f"/api/export/{nid}/html").text
     assert "<script>alert" not in body
     assert "<img" not in body.split("<body>", 1)[1]
+
+
+# ---- G1: Export menu → Markdown of one note ----
+
+def test_export_md_plain_note(client):
+    nid = new_note(client, CZECH, content="# Nadpis\n\n- [x] hotovo")
+    r = client.get(f"/api/export/{nid}/md")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/markdown")
+    assert r.content.decode("utf-8") == "# Nadpis\n\n- [x] hotovo"
+    assert utf8_name(r) == CZECH + ".md"
+
+
+def test_export_md_with_picture_is_a_zip_with_assets(client):
+    from conftest import make_png
+    up = client.post("/api/images/upload", files={"file": ("a.png", make_png(), "image/png")}).json()
+    nid = new_note(client, "Foto", content=f"před <<IMG:{up['filename']}|w=200>> po")
+    r = client.get(f"/api/export/{nid}/md")
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "application/zip"
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert sorted(zf.namelist()) == sorted(["Foto.md", f"assets/{up['filename']}"])
+    assert zf.read("Foto.md").decode("utf-8") == f"před ![](assets/{up['filename']}) po"
+
+
+def test_export_md_refuses_a_locked_note(client):
+    nid = new_note(client, "Tajné", content="sss")
+    client.post("/api/encrypt", json={"id": nid, "password": "heslo123"})
+    r = client.get(f"/api/export/{nid}/md")
+    assert r.status_code == 409
+    assert r.json()["detail"]["code"] == "export_locked_note"

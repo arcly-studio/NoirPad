@@ -82,7 +82,8 @@
     "backup_write_failed": "Obrázky ze zálohy se nepodařilo uložit ({error}). Nic se nezměnilo.",
     "not_desktop": "Funguje jen v desktopové aplikaci.",
     "image_incomplete": "Soubor obrázku je neúplný (useknutý). Zkuste ho uložit znovu.",
-    "image_write_failed": "Obrázek se nepodařilo uložit ({error})."
+    "image_write_failed": "Obrázek se nepodařilo uložit ({error}).",
+    "export_locked_note": "Zamčenou poznámku nelze exportovat. Nejdřív odstraňte zámek."
   },
   "notice": {
     "data_restored": "Soubor s poznámkami byl poškozený. Zůstal uložený jako {file} a obnovila se poslední dobrá záloha ({when}). Změny provedené po této záloze mohou chybět.",
@@ -139,10 +140,6 @@
     "lockWarning": "Zapomenuté heslo = tuto poznámku už nikdy neotevřete. Obnovit ji nelze.\nŠifruje se pouze text poznámky. Její název, štítky a obrázky zůstávají na disku nešifrované.",
     "lock": "Zamknout",
     "unlock": "Odemknout",
-    "removeLock": "Zrušit zámek",
-    "lockButtonTitle": "Zašifrovat tuto poznámku heslem",
-    "removeLockButtonTitle": "Zrušit šifrování této poznámky",
-    "unlockButtonTitle": "Zadejte heslo pro zobrazení této poznámky",
     "encryptFailed": "Šifrování se nezdařilo: {error}",
     "removeTitle": "Zrušit šifrování",
     "removeMessage": "Zadejte heslo k poznámce. Poznámka se pak uloží jako prostý text.",
@@ -689,9 +686,32 @@
     },
     "topBar": {
       "toggleSidebar": "Zobrazit/skrýt postranní panel",
-      "focusMode": "Režim soustředění (Ctrl+B)",
-      "settings": "Nastavení (:settings)",
-      "ready": "Připraveno"
+      "focusMode": "Režim soustředění",
+      "settings": "Nastavení",
+      "ready": "Připraveno",
+      "openNotes": "Otevřené poznámky",
+      "tools": "Nástroje poznámky",
+      "markdown": "Markdown",
+      "split": "Náhled vedle zdroje",
+      "splitMdOnly": "Náhled vedle zdroje (poznámky v Markdownu)",
+      "favorite": "Oblíbená",
+      "lock": "Zamknout poznámku",
+      "unlock": "Odemknout poznámku",
+      "removeLock": "Odstranit zámek",
+      "image": "Vložit obrázek",
+      "export": "Export",
+      "exportTxt": "Text (.txt)",
+      "exportHtml": "Webová stránka (.html)",
+      "exportPdf": "PDF (dialog tisku)",
+      "exportMd": "Markdown (.md)",
+      "more": "Další",
+      "commands": "Příkazová lišta",
+      "fullscreen": "Celá obrazovka",
+      "font": "Písmo",
+      "backup": "Stáhnout zálohu (.zip)",
+      "shortcuts": "Klávesové zkratky",
+      "help": "Nápověda",
+      "closeTab": "Zavřít"
     },
     "sidebar": {
       "newFolder": "+Složka",
@@ -700,18 +720,6 @@
       "newNoteTitle": "Nová poznámka",
       "backup": "Záloha",
       "backupTitle": "Stáhnout zálohu (.zip)"
-    },
-    "header": {
-      "help": "Nápověda",
-      "font": "Písmo",
-      "fontTitle": "Nastavení písma",
-      "markdownTitle": "Přepnout režim Markdown (Ctrl+M)",
-      "favoriteTitle": "Oblíbená poznámka (Ctrl+D)",
-      "lock": "Zamknout",
-      "lockTitle": "Zamknout / odemknout poznámku",
-      "image": "+Obr",
-      "imageTitle": "Vložit obrázek",
-      "pdfTitle": "Exportovat do PDF (Ctrl+P)"
     },
     "tags": {
       "addPlaceholder": "Přidat štítek…"

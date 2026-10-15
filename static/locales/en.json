@@ -74,7 +74,8 @@
     "backup_write_failed": "The backup's images could not be saved ({error}). Nothing was changed.",
     "not_desktop": "This works only in the desktop app.",
     "image_incomplete": "The image file is incomplete (cut off). Try saving it again.",
-    "image_write_failed": "The image could not be saved ({error})."
+    "image_write_failed": "The image could not be saved ({error}).",
+    "export_locked_note": "A locked note cannot be exported. Remove the lock first."
   },
   "notice": {
     "data_restored": "Your notes file was damaged. It was kept as {file} and the latest good backup ({when}) was restored. Changes made after that backup may be missing.",
@@ -127,10 +128,6 @@
     "lockWarning": "Forgotten password = this note can never be opened again. There is no recovery.\nOnly the note text is encrypted. Its title, tags and images stay unencrypted on disk.",
     "lock": "Lock",
     "unlock": "Unlock",
-    "removeLock": "Remove lock",
-    "lockButtonTitle": "Encrypt this note with a password",
-    "removeLockButtonTitle": "Remove encryption from this note",
-    "unlockButtonTitle": "Enter password to view this note",
     "encryptFailed": "Encryption failed: {error}",
     "removeTitle": "Remove encryption",
     "removeMessage": "Enter the note's password. The note will be stored as plain text.",
@@ -657,9 +654,32 @@
     },
     "topBar": {
       "toggleSidebar": "Toggle sidebar",
-      "focusMode": "Focus mode (Ctrl+B)",
-      "settings": "Settings (:settings)",
-      "ready": "Ready"
+      "focusMode": "Focus mode",
+      "settings": "Settings",
+      "ready": "Ready",
+      "openNotes": "Open notes",
+      "tools": "Note tools",
+      "markdown": "Markdown",
+      "split": "Preview next to the source",
+      "splitMdOnly": "Preview next to the source (Markdown notes)",
+      "favorite": "Favorite",
+      "lock": "Lock note",
+      "unlock": "Unlock note",
+      "removeLock": "Remove the lock",
+      "image": "Insert image",
+      "export": "Export",
+      "exportTxt": "Text (.txt)",
+      "exportHtml": "Web page (.html)",
+      "exportPdf": "PDF (print dialog)",
+      "exportMd": "Markdown (.md)",
+      "more": "More",
+      "commands": "Command bar",
+      "fullscreen": "Full screen",
+      "font": "Font",
+      "backup": "Download backup (.zip)",
+      "shortcuts": "Keyboard shortcuts",
+      "help": "Help",
+      "closeTab": "Close"
     },
     "sidebar": {
       "newFolder": "+Folder",
@@ -668,18 +688,6 @@
       "newNoteTitle": "New Note",
       "backup": "Backup",
       "backupTitle": "Download backup .zip"
-    },
-    "header": {
-      "help": "Help",
-      "font": "Font",
-      "fontTitle": "Font settings",
-      "markdownTitle": "Toggle markdown mode (Ctrl+M)",
-      "favoriteTitle": "Favorite (Ctrl+D)",
-      "lock": "Lock",
-      "lockTitle": "Lock / Unlock note",
-      "image": "+Img",
-      "imageTitle": "Insert image",
-      "pdfTitle": "Export to PDF (Ctrl+P)"
     },
     "tags": {
       "addPlaceholder": "Add tag..."

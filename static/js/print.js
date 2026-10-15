@@ -430,14 +430,4 @@ window.NP = window.NP || {};
         }
     };
 
-    document.addEventListener("DOMContentLoaded", function () {
-        var btn = document.getElementById("btn-print");
-        if (btn) {
-            btn.addEventListener("click", function (e) {
-                e.preventDefault();
-                NP.print.exportCurrentNote();
-            });
-        }
-    });
-
 })(window.NP);

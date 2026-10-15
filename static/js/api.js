@@ -316,6 +316,10 @@ window.NP = window.NP || {};
             download("/api/export/" + encodeURIComponent(id) + "/html");
         },
 
+        exportMd: function (id) {
+            download("/api/export/" + encodeURIComponent(id) + "/md");
+        },
+
         downloadBackup: function () {
             download("/api/backup");
         },

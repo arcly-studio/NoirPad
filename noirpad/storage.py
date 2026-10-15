@@ -60,6 +60,7 @@ DEFAULT_DATA: dict[str, Any] = {
     "glow_intensity": 100,  # 0-150 percent
     "custom_shortcuts": {},  # id -> "Ctrl+Shift+X" (only non-default)
     "language": "auto",      # "auto" (browser language) | "en" | "cs"
+    "md_split": True,        # Markdown: preview next to the source
 }
 
 

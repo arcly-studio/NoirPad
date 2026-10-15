@@ -21,6 +21,7 @@ window.NP = window.NP || {};
                     }
                 }
                 if (NP.tree && NP.tree.render) NP.tree.render();
+                if (NP.topbar && NP.topbar.refresh) NP.topbar.refresh();
             }).catch(function (err) {
                 console.error("Failed to toggle favorite:", err);
             });

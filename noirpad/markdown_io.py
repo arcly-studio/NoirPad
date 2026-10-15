@@ -91,6 +91,29 @@ def build_markdown_zip(data: dict) -> tuple[bytes, int]:
     return buf.getvalue(), skipped
 
 
+def build_note_markdown(name: str, content: str) -> tuple[bytes, str, str]:
+    """One note as Markdown → (body, media type, file name).
+
+    A plain `<name>.md`; a note that shows pictures becomes a zip with the
+    .md and its images in `assets/` (the same layout as the full export).
+    """
+    if is_encrypted_content(content):
+        raise ApiError(409, "export_locked_note")
+    used_images: set[str] = set()
+    text = _to_markdown(content, 0, used_images)
+    filename = safe_filename(name) + ".md"
+    files = [(n, p) for n in sorted(used_images)
+             if (p := safe_image_path(n)) is not None and p.is_file()]
+    if not files:
+        return text.encode("utf-8"), "text/markdown; charset=utf-8", filename
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(filename, text.encode("utf-8"))
+        for image, path in files:
+            zf.write(path, f"assets/{image}")
+    return buf.getvalue(), "application/zip", safe_filename(name) + ".zip"
+
+
 # ---------------------------------------------------------------------------
 # Import
 # ---------------------------------------------------------------------------

@@ -211,24 +211,10 @@ window.NP = window.NP || {};
             });
         },
 
-        /* Sync the #btn-lock label/title with the open note's state. */
+        /* Sync the #btn-lock icon/label with the open note's state
+           (topbar.js: lock / unlock / remove the lock). */
         updateLockButtonState: function () {
-            var btn = document.getElementById("btn-lock");
-            if (!btn) return;
-
-            var ed = editor();
-            var id = ed && ed._currentNoteId;
-
-            if (!id || !ed._currentNoteEncrypted) {
-                btn.textContent = NP.t("encryption.lock");
-                btn.title = NP.t("encryption.lockButtonTitle");
-            } else if (ed._unlockToken) {
-                btn.textContent = NP.t("encryption.removeLock");
-                btn.title = NP.t("encryption.removeLockButtonTitle");
-            } else {
-                btn.textContent = NP.t("encryption.unlock");
-                btn.title = NP.t("encryption.unlockButtonTitle");
-            }
+            if (NP.topbar && NP.topbar.refresh) NP.topbar.refresh();
         },
 
         /* Auto-lock: hide the unlocked note and make the server forget
