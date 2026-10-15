@@ -199,14 +199,17 @@
       "words": {
         "one": "{n} word",
         "other": "{n} words"
-      },
-      "lines": {
-        "one": "{n} line",
-        "other": "{n} lines"
       }
     },
-    "notSaved": "Not saved",
-    "trashedNote": "This note is in the trash: read-only."
+    "trashedNote": "This note is in the trash: read-only.",
+    "status": {
+      "saved": "saved",
+      "unsaved": "not saved"
+    },
+    "mode": {
+      "markdown": "markdown",
+      "text": "text"
+    }
   },
   "markdown": {
     "linkTextPlaceholder": "text",
@@ -665,7 +668,6 @@
       "toggleSidebar": "Toggle sidebar",
       "focusMode": "Focus mode",
       "settings": "Settings",
-      "ready": "Ready",
       "openNotes": "Open notes",
       "tools": "Note tools",
       "markdown": "Markdown",
@@ -719,15 +721,8 @@
       "replaceAllTitle": "Replace All"
     },
     "bottomBar": {
-      "autosave": "Autosave",
-      "autosaveTitle": "Toggle autosave",
-      "save": "Save",
-      "commands": "Commands",
-      "find": "Find",
-      "sidebar": "Sidebar",
       "chars": "0 chars",
-      "words": "0 words",
-      "lines": "0 lines"
+      "words": "0 words"
     },
     "help": {
       "title": "Keyboard Shortcuts"
@@ -778,7 +773,6 @@
       "idleLock": "Auto-lock when idle",
       "idleLockHint": "Locks encrypted notes — and the whole app if App lock is on",
       "defaultEncrypted": "Default new note as encrypted",
-      "shortcutHints": "Show shortcut hints in bottom bar",
       "shortcuts": "Keyboard shortcuts",
       "manageShortcuts": "Manage →",
       "appLock": "Ask for a password to open NoirPad",

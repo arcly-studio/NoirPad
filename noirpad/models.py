@@ -64,7 +64,6 @@ class SettingsBody(BaseModel):
     spellcheck: Optional[bool] = None
     glitch_effect: Optional[bool] = None
     confirm_delete: Optional[bool] = None
-    show_shortcut_hints: Optional[bool] = None
     idle_lock_minutes: Optional[str] = None
     default_encrypted: Optional[bool] = None
     glow_intensity: Optional[int] = None

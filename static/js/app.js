@@ -422,31 +422,7 @@ window.NP = window.NP || {};
                 });
             }
 
-            /* Autosave toggle */
-            var btnAutosave = NP.$("#autosave-toggle");
-            var autosaveIndicator = NP.$("#autosave-indicator");
-            function refreshAutosaveIndicator() {
-                if (!autosaveIndicator) return;
-                var on = !!(NP.state.data && NP.state.data.autosave);
-                /* Off is told apart by colour and a strike-through, not by
-                   fading it to unreadable (C1). */
-                autosaveIndicator.style.color = on ? "var(--accent)" : "var(--fg-dim)";
-                autosaveIndicator.style.opacity = "1";
-                autosaveIndicator.style.textDecoration = on ? "none" : "line-through";
-                if (btnAutosave) btnAutosave.setAttribute("aria-pressed", on ? "true" : "false");
-            }
-            refreshAutosaveIndicator();
-            if (btnAutosave) {
-                btnAutosave.style.cursor = "pointer";
-                btnAutosave.addEventListener("click", function () {
-                    if (!NP.state.data) return;
-                    var enabled = !NP.state.data.autosave;
-                    NP.state.data.autosave = enabled;
-                    NP.api.saveSettings({ autosave: enabled });
-                    refreshAutosaveIndicator();
-                    if (NP.editor && NP.editor._currentNoteId) NP.editor.startAutosave();
-                });
-            }
+            /* Autosave: Settings → Editor (and :autosave). */
         }
     };
 

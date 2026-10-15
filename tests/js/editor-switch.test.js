@@ -98,12 +98,12 @@ describe("a failed save is never silent (D3)", () => {
         await win.NP.editor.save(false);
         expect(win.NP.dialog.failed).toHaveBeenCalledTimes(1);
         const status = win.document.getElementById("status-label");
-        expect(status.textContent).toBe("Not saved");
+        expect(status.textContent).toBe("not saved");
         expect(status.classList.contains("status-error")).toBe(true);
         // the next successful save clears it
         win.NP.api.saveNote = vi.fn(() => Promise.resolve({}));
         await win.NP.editor.save(false);
-        expect(status.textContent).toBe("Ready");
+        expect(status.textContent).toBe("saved");
         expect(status.classList.contains("status-error")).toBe(false);
     });
 
@@ -114,7 +114,7 @@ describe("a failed save is never silent (D3)", () => {
         win.NP.editor.el.textContent = "changed";
         await win.NP.editor.save(true);
         expect(win.NP.dialog.failed).not.toHaveBeenCalled();
-        expect(win.document.getElementById("status-label").textContent).toBe("Not saved");
+        expect(win.document.getElementById("status-label").textContent).toBe("not saved");
     });
 });
 
@@ -136,5 +136,55 @@ describe("a note in the trash (D8)", () => {
         await win.NP.editor.loadNote("B");
         expect(win.NP.editor._currentNoteId).toBeNull();
         expect(win.NP.state.currentNoteId).toBeNull();
+    });
+});
+
+describe("G5: status bar", () => {
+    const BAR = '<span id="status-label" hidden><span class="status-dot"></span><span class="status-text"></span></span>' +
+        '<span id="mode-label"></span>';
+    const status = () => win.document.getElementById("status-label");
+
+    it("hidden with no note; ● saved after opening; ○ not saved after typing; saved again after the save", async () => {
+        win.document.body.insertAdjacentHTML("beforeend", BAR);
+        win.NP.editor._renderStatus();
+        expect(status().hidden).toBe(true);
+        await open("A", "text");
+        expect(status().hidden).toBe(false);
+        expect(status().textContent).toBe("saved");
+        expect(status().classList.contains("status-dirty")).toBe(false);
+        expect(win.document.getElementById("mode-label").textContent).toBe("text");
+
+        win.NP.editor.el.textContent = "text + more";
+        win.NP.editor.el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        expect(status().textContent).toBe("not saved");
+        expect(status().classList.contains("status-dirty")).toBe(true);
+
+        await win.NP.editor.save(true);
+        expect(status().textContent).toBe("saved");
+        expect(status().classList.contains("status-dirty")).toBe(false);
+    });
+
+    it("typing and undoing it before the autosave counts as saved", async () => {
+        win.document.body.insertAdjacentHTML("beforeend", BAR);
+        await open("A", "text");
+        await win.NP.editor.save(true);                 // remembers what is stored
+        win.NP.editor.el.textContent = "texts";
+        win.NP.editor.el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        win.NP.editor.el.textContent = "text";
+        await win.NP.editor.save(true);                 // nothing to write
+        expect(status().textContent).toBe("saved");
+    });
+
+    it("a failed save stays visible (with the reason) until a save succeeds", async () => {
+        win.document.body.insertAdjacentHTML("beforeend", BAR);
+        await open("A", "text");
+        win.NP.api.saveNote = vi.fn(() => Promise.reject(new Error("disk full")));
+        win.NP.dialog = { failed: vi.fn() };
+        win.NP.editor.el.textContent = "changed";
+        await win.NP.editor.save(true);
+        expect(status().classList.contains("status-error")).toBe(true);
+        expect(status().title).toBe("disk full");
+        win.NP.editor.el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        expect(status().classList.contains("status-error")).toBe(true);   // typing does not hide it
     });
 });

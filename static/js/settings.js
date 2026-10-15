@@ -191,19 +191,6 @@ window.NP = window.NP || {};
         });
     }
 
-    /* Bottom-bar autosave indicator — mirror app.js's styling so the two
-       controls stay visually in sync. */
-    function syncAutosaveIndicator(on) {
-        var ind = document.getElementById("autosave-indicator");
-        if (!ind) return;
-        ind.style.color = on ? "var(--accent)" : "var(--fg-dim)";
-        ind.style.opacity = on ? "1" : "0.4";
-    }
-
-    function applyShortcutHints(show) {
-        var bar = document.getElementById("bottom-bar");
-        if (bar) bar.classList.toggle("hide-shortcuts", !show);
-    }
 
     /* No existing layout module applies orientation; keep it to a safe,
        non-breaking data attribute so the value round-trips + persists. */
@@ -373,7 +360,6 @@ window.NP = window.NP || {};
             function () { return !!sget("autosave", false); },
             function (v) {
                 saveSetting({ autosave: v });
-                syncAutosaveIndicator(v);
                 if (NP.editor && NP.editor._currentNoteId) NP.editor.startAutosave();
             }
         );
@@ -461,15 +447,6 @@ window.NP = window.NP || {};
             "setting-default-encrypted",
             function () { return !!sget("default_encrypted", false); },
             function (v) { saveSetting({ default_encrypted: v }); }
-        );
-
-        bindToggle(
-            "setting-shortcut-hints",
-            function () { return sget("show_shortcut_hints", true) !== false; },
-            function (v) {
-                saveSetting({ show_shortcut_hints: v });
-                applyShortcutHints(v);
-            }
         );
 
         /* ---- Data ---- */
@@ -724,7 +701,6 @@ window.NP = window.NP || {};
                     sget("matrix_rain_enabled", true) !== false
                 );
             }
-            applyShortcutHints(sget("show_shortcut_hints", true) !== false);
             applySpellcheck(sget("spellcheck", true) !== false);
             /* Startup ALWAYS forces Landscape (user choice) — overrides any
                persisted Portrait. setOrientation keeps the body class, the
@@ -777,8 +753,6 @@ window.NP = window.NP || {};
                 sget("confirm_delete", true) !== false);
             setToggle("setting-default-encrypted",
                 !!sget("default_encrypted", false));
-            setToggle("setting-shortcut-hints",
-                sget("show_shortcut_hints", true) !== false);
 
             var aiDd = document.getElementById("setting-autosave-interval");
             if (aiDd) {

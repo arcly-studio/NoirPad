@@ -74,6 +74,11 @@ window.NP = window.NP || {};
             NP.editor.el = NP.$("#editor");
             if (!NP.editor.el) return;
 
+            /* Typing = "not saved" until the next save. */
+            NP.editor.el.addEventListener("input", function () {
+                NP.editor._setSaveStatus("dirty");
+            });
+
             /* Input event for char count */
             NP.editor.el.addEventListener("input", NP.debounce(function () {
                 NP.editor.updateCharCount();
@@ -97,6 +102,11 @@ window.NP = window.NP || {};
                textarea contents never reached the backend. */
             var ta = document.getElementById("editor-md");
             if (ta) {
+                ta.addEventListener("input", function () {
+                    if (NP.markdown && NP.markdown.isActive && NP.markdown.isActive()) {
+                        NP.editor._setSaveStatus("dirty");
+                    }
+                });
                 ta.addEventListener("input", NP.debounce(function () {
                     if (NP.markdown && NP.markdown.isActive &&
                         NP.markdown.isActive()) {
@@ -281,6 +291,7 @@ window.NP = window.NP || {};
                             NP.markdown.applyForLoadedNote(id, decContent);
                         }
                         NP.editor._loadedNoteId = id;
+                        NP.editor._saveState = null;      /* just loaded = saved */
                         NP.editor.updateCharCount();   /* Markdown: count the source (D1) */
                     }).catch(function (err) {
                         NP.dialog.alert(NP.t("editor.unlockFailed", {
@@ -308,6 +319,7 @@ window.NP = window.NP || {};
                     NP.markdown.applyForLoadedNote(id, content);
                 }
                 NP.editor._loadedNoteId = id;
+                NP.editor._saveState = null;      /* just loaded = saved */
                 NP.editor.updateCharCount();   /* Markdown: count the source (D1) */
             }).catch(function (err) {
                 console.error("loadNote error:", err);
@@ -866,6 +878,8 @@ window.NP = window.NP || {};
 
             var key = id + "\u0000" + text + "\u0000" + JSON.stringify(formats);
             if (silent && key === NP.editor._lastSavedKey) {
+                /* Typed and undid it: nothing to write, but it is saved. */
+                if (NP.editor._saveState === "dirty") NP.editor._setSaveStatus(null);
                 return Promise.resolve();
             }
 
@@ -890,7 +904,9 @@ window.NP = window.NP || {};
 
             return savePromise.then(function () {
                 NP.editor._lastSavedKey = key;
-                NP.editor._setSaveStatus(null);
+                /* Typing during the request keeps it "not saved". */
+                if (NP.editor._currentNoteId === id) NP.editor._setSaveStatus(
+                    NP.editor._saveState === "dirty" && !NP.editor._sameAsSaved(key) ? "dirty" : null);
                 if (!silent) {
                     NP.editor._showSaveFlash();
                 }
@@ -903,19 +919,47 @@ window.NP = window.NP || {};
             });
         },
 
-        /* Top-bar status: "Ready", or "Not saved" (+ the reason as tooltip). */
-        _setSaveStatus: function (err) {
+        /* Status bar: "● saved" / "○ not saved" for the open note.
+           state: null = saved, "dirty" = typed since the last save, an
+           Error = the last save failed (stays until a save succeeds; the
+           reason is the tooltip). Hidden while no note is open. */
+        _saveState: null,
+
+        _setSaveStatus: function (state) {
+            var prev = NP.editor._saveState;
+            if (state === "dirty" && prev && prev !== "dirty") return;   /* an error stays */
+            NP.editor._saveState = state || null;
+            NP.editor._renderStatus();
+        },
+
+        _renderStatus: function () {
             var el = document.getElementById("status-label");
-            if (!el) return;
-            if (err) {
-                el.textContent = NP.t("editor.notSaved");
-                el.title = err && err.message ? err.message : String(err);
-                el.classList.add("status-error");
-            } else if (el.classList.contains("status-error")) {
-                el.textContent = NP.t("ui.topBar.ready");
-                el.removeAttribute("title");
-                el.classList.remove("status-error");
+            if (el) {
+                var st = NP.editor._saveState;
+                var failed = !!st && st !== "dirty";
+                var open = !!(NP.editor._currentNoteId && NP.editor._loadedNoteId === NP.editor._currentNoteId);
+                el.hidden = !open && !failed;
+                el.classList.toggle("status-error", failed);
+                el.classList.toggle("status-dirty", st === "dirty");
+                var text = el.querySelector(".status-text") || el;
+                text.textContent = NP.t(st ? "editor.status.unsaved" : "editor.status.saved");
+                if (failed) el.title = st.message || String(st);
+                else el.removeAttribute("title");
             }
+            var mode = document.getElementById("mode-label");
+            if (mode) {
+                var md = NP.markdown && NP.markdown.isActive && NP.markdown.isActive();
+                mode.textContent = NP.editor._loadedNoteId ? NP.t(md ? "editor.mode.markdown" : "editor.mode.text") : "";
+            }
+        },
+
+        /* Does the editor still hold exactly what *key* describes? */
+        _sameAsSaved: function (key) {
+            var id = NP.editor._currentNoteId;
+            var md = NP.markdown && NP.markdown.isActive && NP.markdown.isActive();
+            var text = md ? NP.markdown.getRawText() : NP.editor._htmlToTextWithImages().text;
+            var formats = md ? [] : NP.editor._extractFormats();
+            return key === id + "\u0000" + text + "\u0000" + JSON.stringify(formats);
         },
 
         _showSaveFlash: function () {
@@ -935,25 +979,22 @@ window.NP = window.NP || {};
         updateCharCount: function () {
             var charEl = NP.$("#char-count");
             var wordEl = NP.$("#word-count");
-            var lineEl = NP.$("#line-count");
+            NP.editor._renderStatus();
 
             /* Markdown mode: the source in the textarea is the note (D1). */
             var mdActive = NP.markdown && NP.markdown.isActive && NP.markdown.isActive();
             if (!mdActive && (!NP.editor.el || NP.editor.el.contentEditable !== "true")) {
                 if (charEl) charEl.textContent = NP.t("editor.count.chars", { n: 0 });
                 if (wordEl) wordEl.textContent = NP.t("editor.count.words", { n: 0 });
-                if (lineEl) lineEl.textContent = NP.t("editor.count.lines", { n: 0 });
                 return;
             }
 
             var text = mdActive ? NP.markdown.getRawText() : NP.editor._htmlToTextWithImages().text;
             var chars = text.length;
             var words = text.trim() ? text.trim().split(/\s+/).length : 0;
-            var lines = text.split("\n").length;
 
             if (charEl) charEl.textContent = NP.t("editor.count.chars", { n: chars });
             if (wordEl) wordEl.textContent = NP.t("editor.count.words", { n: words });
-            if (lineEl) lineEl.textContent = NP.t("editor.count.lines", { n: lines });
         },
 
         /* ---- Auto-save ---- */

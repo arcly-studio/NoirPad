@@ -151,22 +151,16 @@
 
     <!-- ---- Bottom Bar ---- -->
     <div id="bottom-bar">
+        <!-- "● saved" / "○ not saved" + mode on the left (editor.js),
+             characters · words on the right. Shortcuts: F1 help. -->
         <div id="bottom-left">
-            <span id="status-label" class="bottom-item" data-i18n="ui.topBar.ready">Ready</span>
-            <span id="autosave-toggle" class="bottom-item" title="Toggle autosave" data-i18n-title="ui.bottomBar.autosaveTitle">
-                <span id="autosave-indicator" data-i18n="ui.bottomBar.autosave">Autosave</span>
-            </span>
-        </div>
-        <div id="bottom-center">
-            <span class="shortcut-hint bottom-item"><kbd translate="no">Ctrl+S</kbd> <span data-i18n="ui.bottomBar.save">Save</span></span>
-            <span class="shortcut-hint bottom-item"><kbd translate="no">Ctrl+Shift+P</kbd> <span data-i18n="ui.bottomBar.commands">Commands</span></span>
-            <span class="shortcut-hint bottom-item"><kbd translate="no">Ctrl+F</kbd> <span data-i18n="ui.bottomBar.find">Find</span></span>
-            <span class="shortcut-hint bottom-item"><kbd translate="no">Ctrl+B</kbd> <span data-i18n="ui.bottomBar.sidebar">Sidebar</span></span>
+            <span id="status-label" class="bottom-item" role="status" hidden><span class="status-dot" aria-hidden="true"></span><span class="status-text"></span></span>
+            <span id="mode-label" class="bottom-item"></span>
         </div>
         <div id="bottom-right">
             <span id="char-count" class="bottom-item" data-i18n="ui.bottomBar.chars">0 chars</span>
+            <span class="bottom-sep" aria-hidden="true">&middot;</span>
             <span id="word-count" class="bottom-item" data-i18n="ui.bottomBar.words">0 words</span>
-            <span id="line-count" class="bottom-item" data-i18n="ui.bottomBar.lines">0 lines</span>
         </div>
     </div>
 
@@ -405,11 +399,6 @@
             <div class="settings-row">
                 <span class="settings-label" data-i18n="ui.settings.defaultEncrypted">Default new note as encrypted</span>
                 <button class="settings-toggle" id="setting-default-encrypted" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
-            </div>
-
-            <div class="settings-row">
-                <span class="settings-label" data-i18n="ui.settings.shortcutHints">Show shortcut hints in bottom bar</span>
-                <button class="settings-toggle" id="setting-shortcut-hints" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">

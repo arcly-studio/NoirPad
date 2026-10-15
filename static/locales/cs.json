@@ -221,16 +221,17 @@
         "few": "{n} slova",
         "many": "{n} slova",
         "other": "{n} slov"
-      },
-      "lines": {
-        "one": "{n} řádek",
-        "few": "{n} řádky",
-        "many": "{n} řádku",
-        "other": "{n} řádků"
       }
     },
-    "notSaved": "Neuloženo",
-    "trashedNote": "Tato poznámka je v koši – jen pro čtení."
+    "trashedNote": "Tato poznámka je v koši – jen pro čtení.",
+    "status": {
+      "saved": "uloženo",
+      "unsaved": "neuloženo"
+    },
+    "mode": {
+      "markdown": "markdown",
+      "text": "text"
+    }
   },
   "markdown": {
     "linkTextPlaceholder": "text",
@@ -697,7 +698,6 @@
       "toggleSidebar": "Zobrazit/skrýt postranní panel",
       "focusMode": "Režim soustředění",
       "settings": "Nastavení",
-      "ready": "Připraveno",
       "openNotes": "Otevřené poznámky",
       "tools": "Nástroje poznámky",
       "markdown": "Markdown",
@@ -751,15 +751,8 @@
       "replaceAllTitle": "Nahradit vše"
     },
     "bottomBar": {
-      "autosave": "Automatické ukládání",
-      "autosaveTitle": "Zapnout/vypnout automatické ukládání",
-      "save": "Uložit",
-      "commands": "Příkazy",
-      "find": "Hledat",
-      "sidebar": "Postranní panel",
       "chars": "0 znaků",
-      "words": "0 slov",
-      "lines": "0 řádků"
+      "words": "0 slov"
     },
     "help": {
       "title": "Klávesové zkratky"
@@ -810,7 +803,6 @@
       "idleLock": "Automaticky zamknout při nečinnosti",
       "idleLockHint": "Zamkne šifrované poznámky — a při zapnutém zámku aplikace i celou aplikaci",
       "defaultEncrypted": "Nové poznámky rovnou šifrovat",
-      "shortcutHints": "Zobrazovat zkratky ve spodní liště",
       "shortcuts": "Klávesové zkratky",
       "manageShortcuts": "Spravovat →",
       "appLock": "Vyžadovat heslo pro otevření NoirPadu",

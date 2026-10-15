@@ -54,7 +54,6 @@ DEFAULT_DATA: dict[str, Any] = {
     "spellcheck": True,
     "glitch_effect": True,
     "confirm_delete": True,
-    "show_shortcut_hints": True,
     "idle_lock_minutes": "off",
     "default_encrypted": False,
     "glow_intensity": 100,  # 0-150 percent
