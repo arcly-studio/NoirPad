@@ -99,14 +99,16 @@
         <div id="editor-panel">
 
             <!-- Note header -->
+            <!-- Note header: "> Name" (click to rename in place: Enter
+                 keeps it, Escape goes back) and the note's tags under it. -->
             <div id="note-header">
-                <span id="note-prefix">&gt;&nbsp;</span>
-                <input id="note-title-input" type="text" placeholder="Untitled" data-i18n-placeholder="common.untitled" spellcheck="false" autocomplete="off" maxlength="300">
-            </div>
-
-            <!-- Tag bar -->
-            <div id="tag-bar">
-                <input id="tag-input" type="text" placeholder="Add tag..." data-i18n-placeholder="ui.tags.addPlaceholder" spellcheck="false" autocomplete="off">
+                <div id="note-title-row">
+                    <span id="note-prefix" aria-hidden="true">&gt;</span>
+                    <input id="note-title-input" type="text" placeholder="Untitled" data-i18n-placeholder="common.untitled" title="Click to rename" data-i18n-title="ui.header.renameHint" aria-label="Note name" data-i18n-aria-label="ui.header.nameLabel" spellcheck="false" autocomplete="off" maxlength="300">
+                </div>
+                <div id="tag-bar">
+                    <input id="tag-input" type="text" placeholder="+ tag" data-i18n-placeholder="ui.tags.addPlaceholder" aria-label="Add a tag" data-i18n-aria-label="ui.tags.addLabel" spellcheck="false" autocomplete="off">
+                </div>
             </div>
 
             <!-- Editor wrapper -->

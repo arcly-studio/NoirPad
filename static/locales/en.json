@@ -648,7 +648,8 @@
   "tags": {
     "remove": "Remove tag",
     "allTags": "All tags:",
-    "none": "(none)"
+    "none": "(none)",
+    "removeNamed": "Remove the tag {tag}"
   },
   "trash": {
     "confirmEmpty": "Permanently delete all items in trash? This cannot be undone.",
@@ -698,7 +699,8 @@
       "tags": "Tags"
     },
     "tags": {
-      "addPlaceholder": "Add tag..."
+      "addPlaceholder": "+ tag",
+      "addLabel": "Add a tag (Enter)"
     },
     "commandBar": {
       "placeholder": "> Type a command..."
@@ -804,6 +806,10 @@
       "resetAll": "Reset all",
       "summaryEmpty": "— shortcuts · — customized",
       "escapeHint": "Press Escape to cancel recording"
+    },
+    "header": {
+      "renameHint": "Click to rename",
+      "nameLabel": "Note name"
     }
   },
   "settings": {

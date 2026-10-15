@@ -680,7 +680,8 @@
   "tags": {
     "remove": "Odebrat štítek",
     "allTags": "Všechny štítky:",
-    "none": "(žádné)"
+    "none": "(žádné)",
+    "removeNamed": "Odebrat štítek {tag}"
   },
   "trash": {
     "confirmEmpty": "Trvale smazat všechny položky v koši? Tuto akci nelze vrátit.",
@@ -730,7 +731,8 @@
       "tags": "Štítky"
     },
     "tags": {
-      "addPlaceholder": "Přidat štítek…"
+      "addPlaceholder": "+ štítek",
+      "addLabel": "Přidat štítek (Enter)"
     },
     "commandBar": {
       "placeholder": "> Zadejte příkaz…"
@@ -836,6 +838,10 @@
       "resetAll": "Obnovit vše",
       "summaryEmpty": "— zkratek · — upraveno",
       "escapeHint": "Nahrávání zrušíte klávesou Esc"
+    },
+    "header": {
+      "renameHint": "Klikněte pro přejmenování",
+      "nameLabel": "Název poznámky"
     }
   },
   "settings": {

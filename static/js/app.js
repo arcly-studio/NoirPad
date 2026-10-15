@@ -243,31 +243,52 @@ window.NP = window.NP || {};
             });
         },
 
+        /* Rename a note and update the tree and its tab. */
+        renameNote: function (noteId, name) {
+            return NP.api.rename(noteId, name).then(function () {
+                var item = NP.editor._findItemInTree(NP.state.data.tree, noteId);
+                if (item) item.name = name;
+                var tabs = NP.state.openTabs || [];
+                for (var i = 0; i < tabs.length; i++) {
+                    if (tabs[i].id === noteId) tabs[i].name = name;
+                }
+                if (NP.tree && NP.tree.render) NP.tree.render();
+                if (NP.tabs && NP.tabs.render) NP.tabs.render();
+            });
+        },
+
         bindButtons: function () {
-            /* Title input — readonly until a note is selected */
+            /* Title input — readonly until a note is selected. Click the
+               name to rename it in place: Enter or leaving the field keeps
+               it, Escape (or an empty name) goes back to the old one. */
             var titleInput = NP.$("#note-title-input");
             if (titleInput) {
                 titleInput.readOnly = true;
-                titleInput.addEventListener("change", function () {
-                    if (NP.state.currentNoteId && titleInput.value.trim()) {
-                        NP.api.rename(NP.state.currentNoteId, titleInput.value.trim()).then(function () {
-                            /* Update local tree data */
-                            var item = NP.editor._findItemInTree(NP.state.data.tree, NP.state.currentNoteId);
-                            if (item) item.name = titleInput.value.trim();
-                            if (NP.tree && NP.tree.render) NP.tree.render();
-                            if (NP.tabs && NP.tabs.render) {
-                                /* Update tab name */
-                                var tabs = NP.state.openTabs || (NP.tabs._tabs || []);
-                                for (var i = 0; i < tabs.length; i++) {
-                                    if (tabs[i].id === NP.state.currentNoteId) {
-                                        tabs[i].name = titleInput.value.trim();
-                                        break;
-                                    }
-                                }
-                                NP.tabs.render();
-                            }
-                        });
+                titleInput.addEventListener("focus", function () {
+                    titleInput._npBefore = titleInput.value;
+                });
+                titleInput.addEventListener("keydown", function (e) {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        titleInput.blur();
+                    } else if (e.key === "Escape") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        titleInput.value = titleInput._npBefore;
+                        titleInput.blur();
                     }
+                });
+                titleInput.addEventListener("blur", function () {
+                    var before = titleInput._npBefore;
+                    var name = titleInput.value.trim();
+                    var noteId = NP.state.currentNoteId;
+                    if (!name) titleInput.value = before || "";
+                    if (!name || name === before || !noteId || titleInput.readOnly) return;
+                    titleInput.value = name;
+                    NP.app.renameNote(noteId, name).catch(function (err) {
+                        if (NP.state.currentNoteId === noteId) titleInput.value = before;
+                        NP.dialog.failed(err);
+                    });
                 });
             }
 

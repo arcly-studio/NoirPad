@@ -48,28 +48,30 @@ window.NP = window.NP || {};
         }
     }
 
+    /* "#name" (click = show this tag's notes in the tree) and an ×
+       that appears on hover / keyboard focus. */
     function createPill(name) {
         var pill = document.createElement("span");
         pill.className = "np-tag-pill";
-        pill.style.cssText =
-            "display:inline-flex;align-items:center;gap:4px;padding:2px 8px;" +
-            "background:var(--select-bg,#003300);color:var(--fg,#00ff41);" +
-            "border-radius:12px;cursor:default;";
 
-        var label = document.createElement("span");
-        label.textContent = name;
+        var label = document.createElement("button");
+        label.type = "button";
+        label.className = "np-tag-name";
+        label.textContent = "#" + name;
+        label.title = NP.t("tree.tagFilterOn", { tag: name });
+        label.addEventListener("click", function () {
+            if (NP.tree && NP.tree.setTagFilter) NP.tree.setTagFilter(name);
+        });
 
-        var removeBtn = document.createElement("span");
+        var removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "np-tag-remove";
         removeBtn.textContent = "\u00D7";
         removeBtn.title = NP.t("tags.remove");
-        removeBtn.style.cssText =
-            "cursor:pointer;opacity:0;transition:opacity 0.15s;font-size:14px;line-height:1;";
+        removeBtn.setAttribute("aria-label", NP.t("tags.removeNamed", { tag: name }));
         removeBtn.addEventListener("click", function () {
             NP.tags.removeTag(name);
         });
-
-        pill.addEventListener("mouseenter", function () { removeBtn.style.opacity = "1"; });
-        pill.addEventListener("mouseleave", function () { removeBtn.style.opacity = "0"; });
 
         pill.appendChild(label);
         pill.appendChild(removeBtn);
@@ -93,6 +95,7 @@ window.NP = window.NP || {};
             }
 
             tagBar.style.display = "flex";
+            if (tagInput) tagInput.disabled = !(NP.state && NP.state.currentNoteId);
             tags.forEach(function (t) {
                 /* Insert pills before the input (or append if no input) */
                 if (tagInput && tagInput.parentNode === tagBar) {
@@ -119,6 +122,7 @@ window.NP = window.NP || {};
             NP.api.setTags(noteId, tags).then(function () {
                 NP.tags._setNoteTags(tags);
                 NP.tags.render();
+                if (NP.tree && NP.tree.renderTags) NP.tree.renderTags();
             }).catch(function (err) {
                 console.error("Failed to add tag:", err);
             });
@@ -136,6 +140,7 @@ window.NP = window.NP || {};
             NP.api.setTags(noteId, tags).then(function () {
                 NP.tags._setNoteTags(tags);
                 NP.tags.render();
+                if (NP.tree && NP.tree.renderTags) NP.tree.renderTags();
             }).catch(function (err) {
                 console.error("Failed to remove tag:", err);
             });
