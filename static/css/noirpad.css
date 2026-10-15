@@ -3078,31 +3078,36 @@ body.md-no-preview #md-preview { display: none; }
        stroke is readable on every theme independent of theme-specific
        `--bg-light` definitions. `align-self: center` keeps it on the
        same vertical baseline as the title regardless of font metrics. */
+    /* Same look as the tool icons (G8). */
     .hamburger-btn {
         display: flex !important;
         position: static !important;
         align-self: center !important;
         align-items: center !important;
         justify-content: center !important;
-        margin: 0 8px 0 0 !important;
-        padding: 6px 8px !important;
-        height: auto !important;
-        background: #1a1a1a !important;
-        border: 2px solid var(--accent) !important;
-        border-radius: 4px;
-        color: var(--accent) !important;
+        margin: 0 6px 0 0 !important;
+        padding: 0 !important;
+        width: 32px;
+        height: 32px !important;
+        background: transparent !important;
+        border: none !important;
+        border-radius: 6px;
+        color: var(--fg-dim) !important;
         flex-shrink: 0 !important;
         cursor: pointer;
     }
+    .hamburger-btn:hover {
+        background: var(--hover-bg) !important;
+        color: var(--fg) !important;
+    }
     .hamburger-btn svg {
         display: block;
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
     }
     .hamburger-btn.sidebar-open {
-        /* Inverted accent — "active" state, signals it now closes. */
-        background: var(--accent) !important;
-        color: #1a1a1a !important;
+        background: var(--accent-soft) !important;
+        color: var(--accent) !important;
     }
 
     /* Sidebar slides out BELOW the top-bar (top: 48px matches the

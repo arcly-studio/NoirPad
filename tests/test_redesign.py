@@ -109,3 +109,14 @@ def test_g7_command_bar_has_no_inline_look():
     js = (ROOT / "static" / "js" / "command-bar.js").read_text(encoding="utf-8")
     assert "var(--accent,#00ff41);border-top:none" not in js
     assert "np-command-input" in js
+
+
+# ---- G8: the top bar never pushes the tools out of a narrow window ----
+
+def test_g8_tabs_scroll_tools_stay():
+    strip = rule("#tab-bar")
+    assert re.search(r"overflow-x:\s*auto", strip)
+    assert re.search(r"min-width:\s*0", strip)          # may shrink below its content
+    assert re.search(r"flex-shrink:\s*0", rule("#top-tools"))
+    assert re.search(r"max-width:\s*200px", rule(".tab-pill"))
+    assert re.search(r"text-overflow:\s*ellipsis", rule(".tab-pill .tab-name"))

@@ -59,7 +59,7 @@
     --code-bg:      color-mix(in srgb, var(--fg) 5%, var(--bg));
 
     /* Active tab / pressed icon: a soft accent wash. */
-    --accent-soft: color-mix(in srgb, var(--accent) 13%, var(--bg));
+    --accent-soft: color-mix(in srgb, var(--accent) 11%, var(--bg));
     --danger:      #ff5c5c;
 
     /* Glow KEPT but softened — half-strength, neon-tinted.           */
@@ -164,7 +164,7 @@
     --fg:        #f8f8f2;
     --fg-bright: #ffffff;
     --fg-dim:    #b8bccb;
-    --fg-muted:  #6272a4;
+    --fg-muted:  #8190c0;   /* >= 3:1 on --bg-light (G8) */
     --border:        #44475a;
     --border-strong: #565a72;
     --hover-bg:  color-mix(in srgb, var(--accent) 14%, var(--bg-light));
@@ -204,7 +204,7 @@
     --fg:        #d8dee9;
     --fg-bright: #eceff4;
     --fg-dim:    #aeb6c6;   /* 4.9:1 on --bg-light (D12) */
-    --fg-muted:  #6b748a;
+    --fg-muted:  #8f99ae;   /* >= 3:1 on --bg-light (G8) */
     --border:        #434c5e;
     --border-strong: #4c566a;
     --hover-bg:  color-mix(in srgb, var(--accent) 14%, var(--bg-light));
@@ -244,7 +244,7 @@
     --fg:        #c0caf5;
     --fg-bright: #ffffff;
     --fg-dim:    #9aa5ce;
-    --fg-muted:  #565f89;
+    --fg-muted:  #7a83b0;   /* >= 3:1 on --bg-light (G8) */
     --border:        #292e42;
     --border-strong: #414868;
     --hover-bg:  color-mix(in srgb, var(--accent) 14%, var(--bg-light));

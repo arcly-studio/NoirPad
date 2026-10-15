@@ -74,3 +74,51 @@ def test_d11_header_strip_hides_the_matrix_rain():
     for sel in ("#top-bar", "#note-header"):   # tabs in #top-bar (G1), tags in #note-header (G3)
         body = re.search(rf"(?m)^{re.escape(sel)}\s*\{{([^}}]*)\}}", css).group(1)
         assert re.search(r"background\s*:\s*var\(--bg\)", body), sel
+
+
+# ---- G8: the redesign's colour pairs in every theme ----
+# Text >= 4.5:1; icons, muted text, folder marks and the danger colour >= 3:1.
+
+def _resolve_any(value, env, depth=0):
+    value = re.sub(r"/\*.*?\*/", "", value).strip()
+    assert depth < 10, value
+    if value.startswith("#"):
+        return _hex(value)
+    m = re.fullmatch(r"var\((--[\w-]+)\)", value)
+    if m:
+        return _resolve_any(env[m.group(1)], env, depth + 1)
+    m = re.fullmatch(r"color-mix\(in srgb,\s*(.+?)\s+(\d+)%,\s*(.+)\)", value)
+    if m:
+        return _mix(_resolve_any(m.group(1), env, depth + 1), _resolve_any(m.group(3), env, depth + 1),
+                    int(m.group(2)) / 100)
+    raise AssertionError(f"cannot resolve {value!r}")
+
+
+def _theme_env(theme):
+    env = _vars(r"^\s*:root\s*$")
+    for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", CSS):
+        if theme in re.findall(r'\[data-theme="([\w-]+)"\]', sel):
+            env.update(dict(re.findall(r"(--[\w-]+)\s*:\s*([^;]+);", body)))
+    return env
+
+
+PAIRS = [
+    # text
+    ("--fg", "--bg", 4.5), ("--fg", "--bg-panel", 4.5), ("--fg", "--bg-light", 4.5),
+    ("--fg", "--code-bg", 4.5),
+    ("--fg-dim", "--bg", 4.5), ("--fg-dim", "--bg-panel", 4.5), ("--fg-dim", "--bg-light", 4.5),
+    ("--fg-bright", "--accent-soft", 4.5),      # selected tree row
+    ("--accent", "--accent-soft", 4.5),         # active tab, tag filter
+    # icons, muted labels, marks
+    ("--fg-muted", "--bg", 3.0), ("--fg-muted", "--bg-panel", 3.0), ("--fg-muted", "--bg-light", 3.0),
+    ("--accent", "--bg", 3.0), ("--folder-color", "--bg-panel", 3.0), ("--danger", "--bg", 3.0),
+    ("--danger", "--bg-light", 3.0),
+]
+
+
+@pytest.mark.parametrize("theme", THEMES)
+@pytest.mark.parametrize("fg,bg,need", PAIRS)
+def test_g8_redesign_contrast(theme, fg, bg, need):
+    env = _theme_env(theme)
+    ratio = contrast(_resolve_any(env[fg], env), _resolve_any(env[bg], env))
+    assert ratio >= need, f"{theme}: {fg} on {bg} = {ratio:.2f}"
