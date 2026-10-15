@@ -107,3 +107,14 @@ describe("G1: top bar", () => {
         expect($("#btn-split").getAttribute("aria-pressed")).toBe("false");
     });
 });
+
+describe("review fixes (G1–G4)", () => {
+    it("Escape closes a menu even when no item can take focus", async () => {
+        win.NP.state.currentNoteId = null;                 // every export item disabled
+        $("#btn-export").click();
+        expect($(".np-menu")).not.toBeNull();
+        await new Promise((r) => setTimeout(r, 0));
+        win.document.body.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        expect($(".np-menu")).toBeNull();
+    });
+});

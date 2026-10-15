@@ -198,6 +198,10 @@ window.NP = window.NP || {};
         /* ---- Note loading ---- */
 
         loadNote: function (id) {
+            /* A rename typed into the title belongs to the note being left. */
+            var title = NP.$("#note-title-input");
+            if (title && document.activeElement === title) title.blur();
+
             /* Stop the previous note's autosave FIRST. Without this,
                a timer fire after _currentNoteId is reassigned but
                before the fetch resolves would save the previous

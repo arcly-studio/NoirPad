@@ -54,6 +54,7 @@ window.NP = window.NP || {};
         openMenu = null;
         if (m.el.parentNode) m.el.parentNode.removeChild(m.el);
         document.removeEventListener("mousedown", m.away, true);
+        document.removeEventListener("keydown", m.escape, true);
         window.removeEventListener("blur", m.blur);
         window.removeEventListener("resize", m.blur);
         if (m.anchor && m.anchor.setAttribute) m.anchor.setAttribute("aria-expanded", "false");
@@ -123,12 +124,16 @@ window.NP = window.NP || {};
             el.addEventListener("keydown", function (e) {
                 var list = menuItems(el);
                 var i = list.indexOf(document.activeElement);
-                if (e.key === "ArrowDown") { e.preventDefault(); list[(i + 1) % list.length].focus(); }
-                else if (e.key === "ArrowUp") { e.preventDefault(); list[(i - 1 + list.length) % list.length].focus(); }
-                else if (e.key === "Home") { e.preventDefault(); list[0].focus(); }
-                else if (e.key === "End") { e.preventDefault(); list[list.length - 1].focus(); }
-                else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeMenu(true); }
-                else if (e.key === "Tab") { closeMenu(false); }
+                var to = null;
+                if (e.key === "ArrowDown") to = list[(i + 1) % list.length];
+                else if (e.key === "ArrowUp") to = list[(i - 1 + list.length) % list.length];
+                else if (e.key === "Home") to = list[0];
+                else if (e.key === "End") to = list[list.length - 1];
+                else if (e.key === "Tab") { e.preventDefault(); closeMenu(true); return; }
+                else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeMenu(true); return; }
+                else return;
+                e.preventDefault();
+                if (to) to.focus();
             });
 
             document.body.appendChild(el);
@@ -164,15 +169,29 @@ window.NP = window.NP || {};
                     if (el.contains(e.target)) return;
                     /* A click on the anchor itself closes (and the anchor's
                        click handler must not reopen it). */
-                    if (state.anchor && state.anchor.contains(e.target)) state.anchor._npJustClosed = true;
+                    if (state.anchor && state.anchor.contains(e.target)) {
+                        var a = state.anchor;
+                        a._npJustClosed = true;
+                        /* Pressed and dragged away: no click follows. */
+                        setTimeout(function () { a._npJustClosed = false; }, 400);
+                    }
                     closeMenu(false);
                 },
-                blur: function () { closeMenu(false); }
+                blur: function () { closeMenu(false); },
+                /* Escape works even when no item has focus (all disabled,
+                   or a context menu that keeps the editor's focus). */
+                escape: function (e) {
+                    if (e.key !== "Escape") return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeMenu(!opts.keepFocus);
+                }
             };
             openMenu = state;
             setTimeout(function () {
                 if (openMenu !== state) return;
                 document.addEventListener("mousedown", state.away, true);
+                document.addEventListener("keydown", state.escape, true);
                 window.addEventListener("blur", state.blur);
                 window.addEventListener("resize", state.blur);
             }, 0);
@@ -304,7 +323,11 @@ window.NP = window.NP || {};
             if (!mdActive()) return;
             var on = !splitOn();
             if (NP.state && NP.state.data) NP.state.data.md_split = on;
-            if (NP.api && NP.api.saveSettings) NP.api.saveSettings({ md_split: on });
+            if (NP.api && NP.api.saveSettings) {
+                Promise.resolve(NP.api.saveSettings({ md_split: on })).catch(function (err) {
+                    if (NP.dialog && NP.dialog.failed) NP.dialog.failed(err);
+                });
+            }
             NP.topbar.applySplit();
             NP.topbar.refresh();
         },

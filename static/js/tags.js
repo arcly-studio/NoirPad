@@ -7,29 +7,11 @@ window.NP = window.NP || {};
     var tagBar = null;
     var tagInput = null;
 
+    /* #tag-bar lives in the note header (index.html). */
     function ensureDOM() {
-        if (tagBar) return;
-        /* Reuse the existing #tag-bar from index.html if present */
+        if (tagBar) return true;
         tagBar = document.getElementById("tag-bar");
-        if (!tagBar) {
-            tagBar = document.createElement("div");
-            tagBar.id = "tag-bar";
-            tagBar.style.cssText =
-                "display:none;padding:4px 10px;gap:6px;flex-wrap:wrap;align-items:center;" +
-                "font-family:var(--font-mono,'Consolas',monospace);font-size:12px;" +
-                "border-bottom:1px solid var(--fg-dim,#006b1d);min-height:28px;";
-            var tabBarEl = document.getElementById("tab-bar");
-            var editorWrap = document.getElementById("editor-wrapper")
-                || document.getElementById("editor-area")
-                || document.getElementById("editor-container");
-            if (tabBarEl && tabBarEl.parentNode) {
-                tabBarEl.parentNode.insertBefore(tagBar, tabBarEl.nextSibling);
-            } else if (editorWrap) {
-                editorWrap.insertBefore(tagBar, editorWrap.firstChild);
-            } else {
-                document.body.appendChild(tagBar);
-            }
-        }
+        if (!tagBar) return false;
 
         /* Wire the existing #tag-input (if any) so Enter adds a tag */
         tagInput = document.getElementById("tag-input");
@@ -46,6 +28,7 @@ window.NP = window.NP || {};
                 }
             });
         }
+        return true;
     }
 
     /* "#name" (click = show this tag's notes in the tree) and an ×
@@ -80,7 +63,7 @@ window.NP = window.NP || {};
 
     NP.tags = {
         render: function () {
-            ensureDOM();
+            if (!ensureDOM()) return;
             /* Remove any existing pills but keep #tag-input intact */
             var existingPills = tagBar.querySelectorAll(".np-tag-pill");
             for (var p = 0; p < existingPills.length; p++) {
@@ -122,7 +105,7 @@ window.NP = window.NP || {};
             NP.api.setTags(noteId, tags).then(function () {
                 NP.tags._setNoteTags(tags);
                 NP.tags.render();
-                if (NP.tree && NP.tree.renderTags) NP.tree.renderTags();
+                if (NP.tree && NP.tree.render) NP.tree.render();
             }).catch(function (err) {
                 console.error("Failed to add tag:", err);
             });
@@ -140,7 +123,7 @@ window.NP = window.NP || {};
             NP.api.setTags(noteId, tags).then(function () {
                 NP.tags._setNoteTags(tags);
                 NP.tags.render();
-                if (NP.tree && NP.tree.renderTags) NP.tree.renderTags();
+                if (NP.tree && NP.tree.render) NP.tree.render();
             }).catch(function (err) {
                 console.error("Failed to remove tag:", err);
             });

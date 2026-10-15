@@ -46,6 +46,7 @@ window.NP = window.NP || {};
                 /* Registrations done above; now load custom mappings
                    (state is loaded) and attach the single dispatcher. */
                 if (NP.shortcuts && NP.shortcuts.init) NP.shortcuts.init();
+                if (NP.tree && NP.tree.refreshSearchKeys) NP.tree.refreshSearchKeys();
                 /* Manager UI — after core shortcuts (needs the registry). */
                 if (NP.shortcutsManager && NP.shortcutsManager.init) {
                     NP.shortcutsManager.init();
@@ -124,13 +125,15 @@ window.NP = window.NP || {};
                     var isInput = a && (a.tagName === "INPUT" ||
                         a.tagName === "TEXTAREA" || a.isContentEditable);
                     if (isInput) return false;
+                    /* A focused tab closes itself with Delete (tabs.js). */
+                    if (a && a.closest && a.closest("#tab-bar")) return false;
                     if (NP.tree && NP.tree.deleteSelected) {
-                        NP.tree.deleteSelected();
+                        NP.tree.deleteSelected(NP.tree.focusedId());
                     }
                 });
                 S.register("rename", function () {
                     if (NP.tree && NP.tree.renameSelected) {
-                        NP.tree.renameSelected();
+                        NP.tree.renameSelected(NP.tree.focusedId());
                     }
                 });
                 S.register("toggle-favorite", function () {
@@ -248,6 +251,10 @@ window.NP = window.NP || {};
             return NP.api.rename(noteId, name).then(function () {
                 var item = NP.editor._findItemInTree(NP.state.data.tree, noteId);
                 if (item) item.name = name;
+                var title = NP.$("#note-title-input");
+                if (title && NP.state.currentNoteId === noteId && document.activeElement !== title) {
+                    title.value = name;
+                }
                 var tabs = NP.state.openTabs || [];
                 for (var i = 0; i < tabs.length; i++) {
                     if (tabs[i].id === noteId) tabs[i].name = name;
@@ -301,6 +308,7 @@ window.NP = window.NP || {};
                         okLabel: NP.t("dialog.create")
                     }).then(function (name) {
                         if (!name) return;
+                        if (NP.tree) NP.tree.tagFilter = null;    /* show the new folder */
                         return NP.api.newFolder(null, name).then(function () {
                             return NP.state.init();
                         }).then(function () {
@@ -321,6 +329,7 @@ window.NP = window.NP || {};
                         okLabel: NP.t("dialog.create")
                     }).then(function (name) {
                         if (!name) return;
+                        if (NP.tree) NP.tree.tagFilter = null;    /* show the new note */
                         return NP.api.newNote(parentId, name).then(function (res) {
                             /* Make the new note visible inside its folder */
                             if (parentId && NP.state.setFolderOpenState) {

@@ -269,3 +269,64 @@ describe("G2: tree rows, TAGS section and the tag filter", () => {
         expect(win.NP.api.move).toHaveBeenCalledWith("c", "f1", "inside");
     });
 });
+
+describe("review fixes (G1–G4)", () => {
+    const tree = () => [
+        { id: "f1", name: "Projects", type: "folder", children: [
+            { id: "a", name: "Ingest", type: "note", tags: ["work"] },
+        ] },
+        { id: "c", name: "Journal", type: "note" },
+    ];
+    const rowsEl = () => [...win.document.querySelectorAll("#tree-container [role='treeitem']")];
+    const key = (el, k, extra = {}) => el.dispatchEvent(new win.KeyboardEvent("keydown", { key: k, bubbles: true, ...extra }));
+
+    it("rename from the context menu goes through NP.app.renameNote (tab + header follow)", async () => {
+        setup({ tree: tree() });
+        win.NP.app = { renameNote: vi.fn(() => Promise.resolve()) };
+        win.NP.dialog.prompt = vi.fn(() => Promise.resolve("Nový"));
+        win.NP.dialog.failed = vi.fn();
+        win.NP.tree._handleContextAction("rename", "c", "note");
+        await flush();
+        expect(win.NP.app.renameNote).toHaveBeenCalledWith("c", "Nový");
+    });
+
+    it("a new note from the context menu clears the tag filter so it is visible", async () => {
+        setup({ tree: tree() });
+        win.NP.tree.setTagFilter("work");
+        win.NP.dialog.prompt = vi.fn(() => Promise.resolve("N"));
+        win.NP.dialog.failed = vi.fn();
+        win.NP.api.newNote = vi.fn(() => Promise.resolve({ id: "n" }));
+        win.NP.tree._handleContextAction("new-note", "f1", "folder");
+        await flush();
+        expect(win.NP.tree.tagFilter).toBeNull();
+    });
+
+    it("rows are an ARIA tree you can use with the keyboard", () => {
+        setup({ tree: tree() });
+        const c = win.document.getElementById("tree-container");
+        expect(c.getAttribute("role")).toBe("tree");
+        const r = rowsEl();
+        expect(r.map((x) => x.tabIndex)).toEqual([0, -1, -1]);          // one Tab stop
+        expect(r[0].getAttribute("aria-expanded")).toBe("true");
+        expect(r[1].getAttribute("aria-level")).toBe("2");
+        r[0].focus();
+        key(r[0], "ArrowDown");
+        expect(win.document.activeElement.getAttribute("data-id")).toBe("a");
+        expect(win.NP.tree.focusedId()).toBe("a");
+        key(win.document.activeElement, "ArrowLeft");                   // → parent
+        expect(win.document.activeElement.getAttribute("data-id")).toBe("f1");
+        win.NP.menu.open = vi.fn();
+        key(win.document.activeElement, "F10", { shiftKey: true });
+        expect(win.NP.menu.open).toHaveBeenCalled();
+    });
+
+    it("Enter on a note opens it", () => {
+        setup({ tree: tree() });
+        win.NP.tabs = { add: vi.fn() };
+        win.NP.state.currentNoteId = null;
+        const row = rowsEl().find((x) => x.getAttribute("data-id") === "c");
+        row.focus();
+        key(row, "Enter");
+        expect(win.NP.tabs.add).toHaveBeenCalledWith("c", "Journal");
+    });
+});

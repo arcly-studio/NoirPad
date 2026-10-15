@@ -3144,10 +3144,6 @@ body.md-no-preview #md-preview { display: none; }
     #status-label {
         display: none;          /* not enough room on mobile */
     }
-    #btn-focus,
-    #btn-settings {
-        margin-left: 4px;
-    }
 
     #note-header {
         padding: 14px 16px 10px;

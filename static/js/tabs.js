@@ -126,6 +126,40 @@ window.NP = window.NP || {};
             var bar = NP.$("#tab-bar");
             if (!bar) return;
 
+            /* Keyboard (ARIA tabs): ← → Home End move, Enter / Space open,
+               Delete closes the focused tab. */
+            if (!bar._npKeysBound) {
+                bar._npKeysBound = true;
+                bar.addEventListener("keydown", function (e) {
+                    var pill = e.target.closest ? e.target.closest(".tab-pill") : null;
+                    if (!pill) return;
+                    var pills = Array.prototype.slice.call(bar.querySelectorAll(".tab-pill"));
+                    var i = pills.indexOf(pill);
+                    var to = null;
+                    if (e.key === "ArrowRight") to = pills[(i + 1) % pills.length];
+                    else if (e.key === "ArrowLeft") to = pills[(i - 1 + pills.length) % pills.length];
+                    else if (e.key === "Home") to = pills[0];
+                    else if (e.key === "End") to = pills[pills.length - 1];
+                    else if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        NP.tabs.activate(pill.getAttribute("data-id"));
+                        return;
+                    } else if (e.key === "Delete") {
+                        e.preventDefault();
+                        e.stopPropagation();          /* not the tree's Delete */
+                        NP.tabs.close(pill.getAttribute("data-id"));
+                        var left = bar.querySelector(".tab-pill.active");
+                        if (left) left.focus();
+                        return;
+                    } else return;
+                    e.preventDefault();
+                    pills.forEach(function (p) { p.tabIndex = -1; });
+                    to.tabIndex = 0;
+                    to.focus();
+                });
+            }
+            var hadFocus = bar.contains(document.activeElement);
+
             bar.innerHTML = "";
 
             var tabs = NP.state.openTabs;
@@ -137,6 +171,8 @@ window.NP = window.NP || {};
                     pill.className = "tab-pill" + (isActive ? " active" : "");
                     pill.setAttribute("role", "tab");
                     pill.setAttribute("aria-selected", isActive ? "true" : "false");
+                    pill.setAttribute("aria-keyshortcuts", "Delete");
+                    pill.setAttribute("data-id", tab.id);
                     pill.tabIndex = isActive ? 0 : -1;
                     pill.title = tab.name;
 
@@ -145,13 +181,13 @@ window.NP = window.NP || {};
                     nameSpan.textContent = truncate(tab.name);
                     pill.appendChild(nameSpan);
 
-                    /* Close: shown on hover / for the active tab (CSS). */
-                    var closeBtn = document.createElement("button");
-                    closeBtn.type = "button";
+                    /* Close: shown on hover / for the active tab (CSS). For
+                       the mouse only — the keyboard closes with Delete. */
+                    var closeBtn = document.createElement("span");
                     closeBtn.className = "tab-close";
-                    closeBtn.tabIndex = -1;
+                    closeBtn.setAttribute("aria-hidden", "true");
+                    closeBtn.title = NP.t("ui.topBar.closeTab");
                     closeBtn.textContent = "×";
-                    closeBtn.setAttribute("aria-label", NP.t("ui.topBar.closeTab") + " " + tab.name);
                     closeBtn.addEventListener("click", function (e) {
                         e.stopPropagation();
                         NP.tabs.close(tab.id);
@@ -161,13 +197,6 @@ window.NP = window.NP || {};
                     pill.addEventListener("click", function () {
                         NP.tabs.activate(tab.id);
                     });
-                    pill.addEventListener("keydown", function (e) {
-                        if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            NP.tabs.activate(tab.id);
-                        }
-                    });
-
                     /* Middle-click to close */
                     pill.addEventListener("mousedown", function (e) {
                         if (e.button === 1) {
@@ -184,6 +213,7 @@ window.NP = window.NP || {};
             if (activeEl && activeEl.scrollIntoView) {
                 activeEl.scrollIntoView({ block: "nearest", inline: "nearest" });
             }
+            if (hadFocus && activeEl) activeEl.focus();
             if (NP.topbar && NP.topbar.refresh) NP.topbar.refresh();
         },
 

@@ -159,9 +159,7 @@ window.NP = window.NP || {};
             /* Scroll the now-highlighted row into view if it ended
                up off-screen (e.g. when activating a tab for a note
                buried in a long, scrollable tree). */
-            var el = document.querySelector(
-                "#tree-container .tree-item[data-id='" + noteId + "']"
-            );
+            var el = NP.tree._row(noteId);
             if (el && el.scrollIntoView) {
                 el.scrollIntoView({ block: "nearest" });
             }
@@ -184,6 +182,18 @@ window.NP = window.NP || {};
                 });
             }
 
+            if (!container._npKeysBound) {
+                container._npKeysBound = true;
+                container.setAttribute("role", "tree");
+                container.setAttribute("aria-label", NP.t("ui.sidebar.notes"));
+                container.addEventListener("keydown", NP.tree._onKey);
+                container.addEventListener("focusin", function (e) {
+                    var row = e.target.closest && e.target.closest(".tree-item[data-id]");
+                    if (row) NP.tree._focusId = row.getAttribute("data-id");
+                });
+            }
+            var hadFocus = container.contains(document.activeElement);
+
             container.innerHTML = "";
 
             var data = NP.state.data;
@@ -200,8 +210,16 @@ window.NP = window.NP || {};
                 container.appendChild(none);
             }
             NP.tree.renderTags();
-            var keys = document.getElementById("sidebar-search-keys");
-            if (keys && NP.shortcuts) keys.textContent = NP.shortcuts.getCurrent("find-all") || "";
+            NP.tree.refreshSearchKeys();
+
+            /* One row is reachable with Tab (roving tabindex); keyboard focus
+               survives the re-render. */
+            var rows = NP.tree._rows();
+            var focusRow = NP.tree._row(NP.tree._focusId) || NP.tree._row(NP.state.selectedId) || rows[0];
+            if (focusRow) {
+                focusRow.tabIndex = 0;
+                if (hadFocus) focusRow.focus();
+            }
 
             /* ---- Trash section ---- */
             var trash = data.trash;
@@ -245,6 +263,9 @@ window.NP = window.NP || {};
             div.className = "tree-item " + (isFolder ? "tree-item--folder" : "tree-item--note");
             div.setAttribute("data-id", item.id);
             div.setAttribute("draggable", "true");
+            div.setAttribute("role", "treeitem");
+            div.setAttribute("aria-level", String(depth + 1));
+            div.tabIndex = -1;
             div.style.paddingLeft = (8 + depth * 16) + "px";
 
             var favs = (NP.state.data && NP.state.data.favorites) || [];
@@ -252,6 +273,8 @@ window.NP = window.NP || {};
             var filtering = !!NP.tree.tagFilter;
             var isOpen = isFolder && (filtering || NP.state.getFolderOpenState(item.id));
             if (NP.state.selectedId === item.id) div.className += " selected";
+            div.setAttribute("aria-selected", NP.state.selectedId === item.id ? "true" : "false");
+            if (isFolder) div.setAttribute("aria-expanded", isOpen ? "true" : "false");
 
             if (isFolder) {
                 var arrow = NP.icon(isOpen ? "chevron-down" : "chevron-right", "tree-arrow");
@@ -473,6 +496,82 @@ window.NP = window.NP || {};
             }).catch(NP.dialog.failed);
         },
 
+        /* ---- Keyboard (ARIA tree): ↑↓ Home End move, → opens / goes in,
+           ← closes / goes to the parent, Enter / Space opens, the
+           context-menu key or Shift+F10 shows the item's menu, F2 renames
+           and Delete deletes (shortcut registry, on the selected item). */
+
+        _rows: function () {
+            var c = NP.$("#tree-container");
+            return c ? Array.prototype.slice.call(c.querySelectorAll(".tree-item[role='treeitem']")) : [];
+        },
+
+        _row: function (id) {
+            if (!id) return null;
+            var rows = NP.tree._rows();
+            for (var i = 0; i < rows.length; i++) {
+                if (rows[i].getAttribute("data-id") === id) return rows[i];
+            }
+            return null;
+        },
+
+        _onKey: function (e) {
+            var row = e.target.closest ? e.target.closest(".tree-item[role='treeitem']") : null;
+            if (!row) return;
+            var rows = NP.tree._rows();
+            var i = rows.indexOf(row);
+            var id = row.getAttribute("data-id");
+            var folder = row.classList.contains("tree-item--folder");
+            var open = row.getAttribute("aria-expanded") === "true";
+            function go(r) {
+                if (!r) return;
+                rows.forEach(function (x) { x.tabIndex = -1; });
+                r.tabIndex = 0;
+                r.focus();
+            }
+            var handled = true;
+            if (e.key === "ArrowDown") go(rows[i + 1]);
+            else if (e.key === "ArrowUp") go(rows[i - 1]);
+            else if (e.key === "Home") go(rows[0]);
+            else if (e.key === "End") go(rows[rows.length - 1]);
+            else if (e.key === "ArrowRight" && folder) {
+                if (open) go(rows[i + 1]);
+                else { NP.state.setFolderOpenState(id, true); NP.tree.render(); }
+            } else if (e.key === "ArrowLeft") {
+                if (folder && open) { NP.state.setFolderOpenState(id, false); NP.tree.render(); }
+                else go(NP.tree._row(findParentId((NP.state.data && NP.state.data.tree) || [], id, null)));
+            } else if (e.key === "Enter" || e.key === " ") {
+                NP.tree._onItemClick({ target: row }, id, folder ? "folder" : "note");
+            } else if (e.key === "ContextMenu" || (e.key === "F10" && e.shiftKey)) {
+                var r = row.getBoundingClientRect();
+                NP.tree._onRightClick({ clientX: r.left + 24, clientY: r.bottom }, id, folder ? "folder" : "note");
+            } else handled = false;
+            if (handled) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        },
+
+        /* The tree row that has keyboard focus (Delete / F2 act on it). */
+        focusedId: function () {
+            var a = document.activeElement;
+            var row = a && a.closest ? a.closest("#tree-container .tree-item[data-id]") : null;
+            return row ? row.getAttribute("data-id") : null;
+        },
+
+        /* F2: rename the focused / selected item, else the open note. */
+        renameSelected: function (explicitId) {
+            var id = explicitId || NP.state.selectedId || NP.state.currentNoteId;
+            var item = id && NP.state.data ? findItemById(NP.state.data.tree || [], id) : null;
+            if (item) NP.tree._handleContextAction("rename", id, item.type);
+        },
+
+        /* The search field shows the current find-all shortcut. */
+        refreshSearchKeys: function () {
+            var keys = document.getElementById("sidebar-search-keys");
+            if (keys && NP.shortcuts) keys.textContent = NP.shortcuts.getCurrent("find-all") || "";
+        },
+
         /* ---- Tags: the TAGS section and the tree filter ---- */
 
         tagFilter: null,          /* lower-case tag or null; not saved */
@@ -518,7 +617,7 @@ window.NP = window.NP || {};
             });
         },
 
-        /* Unified delete for #btn-delete, context menu, and Delete key.
+        /* Unified delete for the context menu and the Delete key.
            explicitId wins (context menu passes the right-clicked id);
            otherwise fall back to selectedId, then currentNoteId so a
            note open without an active tree selection still deletes. */
@@ -565,6 +664,7 @@ window.NP = window.NP || {};
                         okLabel: NP.t("dialog.create")
                     }).then(function (noteName) {
                         if (!noteName) return;
+                        NP.tree.tagFilter = null;     /* or the new note would be hidden */
                         return NP.api.newNote(id, noteName).then(function () {
                             NP.state.setFolderOpenState(id, true);
                             return NP.state.init();
@@ -580,6 +680,7 @@ window.NP = window.NP || {};
                         okLabel: NP.t("dialog.create")
                     }).then(function (folderName) {
                         if (!folderName) return;
+                        NP.tree.tagFilter = null;
                         return NP.api.newFolder(id, folderName).then(function () {
                             NP.state.setFolderOpenState(id, true);
                             return NP.state.init();
@@ -598,12 +699,7 @@ window.NP = window.NP || {};
                         value: oldName
                     }).then(function (newName) {
                         if (!newName || newName === oldName) return;
-                        return NP.api.rename(id, newName).then(function () {
-                            return NP.state.init();
-                        }).then(function () {
-                            NP.tree.render();
-                            if (NP.tabs) NP.tabs.render();
-                        });
+                        return NP.app.renameNote(id, newName);
                     }).catch(NP.dialog.failed);
                     break;
 
