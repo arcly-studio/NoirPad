@@ -7,7 +7,8 @@ let calls;
 
 function setup(data, open = {}) {
     win = loadApp(["js/utils.js", "js/topbar.js", "js/tree.js"], {
-        body: '<div id="tree-container"></div><div class="side-head" id="side-tags-head"></div><div id="tag-list"></div>' });
+        body: '<div id="tree-container"></div><div class="side-head" id="side-tags-head">' +
+              '<button id="side-tags-toggle" type="button" aria-expanded="true"></button></div><div id="tag-list"></div>' });
     calls = [];
     const ok = (name) => vi.fn((...args) => { calls.push([name, ...args]); return Promise.resolve({}); });
     win.NP.state = {
@@ -223,20 +224,20 @@ describe("G2: tree rows, TAGS section and the tag filter", () => {
         expect(win.document.querySelector(".tree-item[data-id='c'] .tree-star")).toBeNull();
     });
 
-    it("lists every tag once (case ignored) with its note count", () => {
+    it("lists every tag once (case ignored) with its note count, most used first", () => {
         setup({ tree: tree() });
-        expect(tagRows().map((b) => b.textContent)).toEqual(["#personal1", "#python1", "#Work2"]);
+        expect(tagRows().map((b) => b.textContent)).toEqual(["#Work2", "#personal1", "#python1"]);
         expect(win.document.getElementById("side-tags-head").hidden).toBe(false);
     });
 
     it("click on a tag = filter; click again = all notes", () => {
         setup({ tree: tree() });
-        tagRows()[2].click();                                   // #Work
+        tagRows()[0].click();                                   // #Work
         expect(names()).toEqual(["Projects", "Ingest", "Checklist"]);
-        expect(tagRows()[2].getAttribute("aria-pressed")).toBe("true");
-        tagRows()[0].click();                                   // #personal
+        expect(tagRows()[0].getAttribute("aria-pressed")).toBe("true");
+        tagRows()[1].click();                                   // #personal
         expect(names()).toEqual(["Journal"]);
-        tagRows()[0].click();                                   // off again
+        tagRows()[1].click();                                   // off again
         expect(names()).toEqual(["Projects", "Ingest", "Checklist", "Journal"]);
         expect(tagRows().every((b) => b.getAttribute("aria-pressed") === "false")).toBe(true);
     });
@@ -267,6 +268,65 @@ describe("G2: tree rows, TAGS section and the tag filter", () => {
         targets[1].run();
         await flush();
         expect(win.NP.api.move).toHaveBeenCalledWith("c", "f1", "inside");
+    });
+});
+
+describe("TAGS section: the 6 most used, '+ N more', collapsible", () => {
+    // 9 tags: t0 on 9 notes, t1 on 8, …, t8 on 1.
+    const many = () => Array.from({ length: 9 }, (_, n) => ({
+        id: `n${n}`, name: `N${n}`, type: "note", tags: Array.from({ length: n + 1 }, (_, t) => `t${t}`),
+    }));
+    const tagNames = () => [...win.document.querySelectorAll("#tag-list .tag-row:not(.tag-more)")]
+        .map((b) => b.querySelector(".tag-row-name").textContent);
+    const more = () => win.document.querySelector("#tag-list .tag-more");
+    const toggle = () => win.document.getElementById("side-tags-toggle");
+
+    beforeEach(() => { setup({ tree: many() }); win.localStorage.clear(); win.NP.tree.renderTags(); });
+
+    it("shows the 6 most used and a '+ 3 more' row", () => {
+        expect(tagNames()).toEqual(["#t0", "#t1", "#t2", "#t3", "#t4", "#t5"]);
+        expect(more().textContent).toBe("+ 3 more");
+        expect(more().getAttribute("aria-expanded")).toBe("false");
+    });
+
+    it("'+ N more' opens the rest, 'Show fewer' closes it again", () => {
+        more().click();
+        expect(tagNames()).toHaveLength(9);
+        expect(more().textContent).toBe("− Show fewer");
+        expect(win.document.activeElement).toBe(more());
+        more().click();
+        expect(tagNames()).toHaveLength(6);
+    });
+
+    it("a filtered tag outside the top 6 stays listed", () => {
+        win.NP.tree.setTagFilter("t8");
+        expect(tagNames()).toEqual(["#t0", "#t1", "#t2", "#t3", "#t4", "#t5", "#t8"]);
+        expect(more().textContent).toBe("+ 2 more");
+    });
+
+    it("the heading collapses the section and the state survives a reload", () => {
+        toggle().click();
+        expect(toggle().getAttribute("aria-expanded")).toBe("false");
+        expect(tagNames()).toEqual([]);
+        expect(more()).toBeNull();
+        expect(win.localStorage.getItem("noirpad_tags_collapsed")).toBe("1");
+        win.NP.tree.renderTags();                       // e.g. after a poll
+        expect(tagNames()).toEqual([]);
+        toggle().click();
+        expect(tagNames()).toHaveLength(6);
+        expect(win.localStorage.getItem("noirpad_tags_collapsed")).toBeNull();
+    });
+
+    it("collapsed: only the active filter tag is shown, so it can be turned off", () => {
+        win.NP.tree.setTagFilter("t3");
+        toggle().click();
+        expect(tagNames()).toEqual(["#t3"]);
+    });
+
+    it("6 tags or fewer: no '+ N more' row", () => {
+        setup({ tree: many().slice(0, 6) });
+        expect(tagNames()).toHaveLength(6);
+        expect(more()).toBeNull();
     });
 });
 

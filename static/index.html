@@ -88,8 +88,13 @@
                      Rename / delete / move: right-click an item. -->
                 <div id="tree-container"></div>
 
+                <!-- TAGS: the 6 most used + "+ N more"; the heading collapses
+                     the section (remembered, tree.js renderTags). -->
                 <div class="side-head" id="side-tags-head">
-                    <span class="side-label" data-i18n="ui.sidebar.tags">Tags</span>
+                    <button class="side-toggle" id="side-tags-toggle" type="button" aria-expanded="true" aria-controls="tag-list">
+                        <svg class="np-icon side-toggle-arrow" aria-hidden="true"><use href="/static/vendor/lucide/sprite.svg#i-chevron-down"></use></svg>
+                        <span class="side-label" data-i18n="ui.sidebar.tags">Tags</span>
+                    </button>
                 </div>
                 <div id="tag-list"></div>
             </div>
@@ -129,6 +134,8 @@
                      Hidden until body.editor-md-active. -->
                 <div id="md-stack">
                     <div id="md-source">
+                        <!-- The coloured copy of the source, under the textarea (md-source.js). -->
+                        <div id="md-highlight" aria-hidden="true"></div>
                         <textarea id="editor-md" spellcheck="true" autocomplete="off" wrap="soft" placeholder="Start typing markdown..." data-i18n-placeholder="ui.editor.markdownPlaceholder"></textarea>
                     </div>
                     <div id="md-preview" aria-hidden="true"></div>
@@ -261,9 +268,9 @@
 
             <div class="settings-row">
                 <span class="settings-label" data-i18n="ui.settings.uiFont">UI font</span>
-                <div class="np-dropdown" data-value="orbitron" id="setting-ui-font">
+                <div class="np-dropdown" data-value="jetbrains-mono" id="setting-ui-font">
                     <button class="np-dropdown-trigger" type="button">
-                        <span class="np-dropdown-label" translate="no" style="font-family: 'Orbitron', sans-serif;">Orbitron</span>
+                        <span class="np-dropdown-label" translate="no">JetBrains Mono</span>
                         <span class="np-dropdown-arrow">&#9660;</span>
                     </button>
                     <div class="np-dropdown-menu">
@@ -537,6 +544,7 @@
 <script src="/static/js/tree.js?v=2.1.31"></script>
 <script src="/static/js/editor.js?v=2.1.50"></script>
 <script src="/static/js/markdown.js?v=2.1.31"></script>
+<script src="/static/js/md-source.js?v=1"></script>
 <script src="/static/js/tabs.js?v=2.1.31"></script>
 <script src="/static/js/tags.js?v=2.1.31"></script>
 <script src="/static/js/search.js?v=2.1.31"></script>

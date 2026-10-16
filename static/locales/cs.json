@@ -640,7 +640,16 @@
     "favorite": "Oblíbená",
     "noTagMatches": "Žádná poznámka nemá tento štítek.",
     "tagFilterOn": "Zobrazit jen poznámky se štítkem #{tag}",
-    "tagFilterOff": "Zobrazit všechny poznámky (teď filtruje #{tag})"
+    "tagFilterOff": "Zobrazit všechny poznámky (teď filtruje #{tag})",
+    "tagsMore": {
+      "one": "+ {n} další",
+      "few": "+ {n} další",
+      "many": "+ {n} dalšího",
+      "other": "+ {n} dalších"
+    },
+    "tagsLess": "− Zobrazit méně",
+    "tagsCollapse": "Sbalit štítky",
+    "tagsExpand": "Rozbalit štítky"
   },
   "fontPicker": {
     "title": "VÝBĚR PÍSMA",

@@ -610,7 +610,14 @@
     "favorite": "Favorite",
     "noTagMatches": "No note has this tag.",
     "tagFilterOn": "Show only notes tagged #{tag}",
-    "tagFilterOff": "Show all notes (#{tag} is the filter now)"
+    "tagFilterOff": "Show all notes (#{tag} is the filter now)",
+    "tagsMore": {
+      "one": "+ {n} more",
+      "other": "+ {n} more"
+    },
+    "tagsLess": "− Show fewer",
+    "tagsCollapse": "Collapse tags",
+    "tagsExpand": "Expand tags"
   },
   "fontPicker": {
     "title": "FONT PICKER",

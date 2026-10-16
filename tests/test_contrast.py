@@ -116,9 +116,60 @@ PAIRS = [
 ]
 
 
+PAIRS += [
+    # Markdown source (md-source.js): ordinary text and the accent-coloured
+    # headings / markup / code, on the editor background.
+    ("--md-src-text", "--bg", 4.5), ("--md-src-text", "--bg-entry", 4.5),
+    ("--accent", "--bg-entry", 4.5), ("--accent", "--code-bg", 4.5),
+    # switch "off" knob on its track
+    ("--control-off", "--bg-entry", 3.0),
+]
+
+
 @pytest.mark.parametrize("theme", THEMES)
 @pytest.mark.parametrize("fg,bg,need", PAIRS)
 def test_g8_redesign_contrast(theme, fg, bg, need):
     env = _theme_env(theme)
     ratio = contrast(_resolve_any(env[fg], env), _resolve_any(env[bg], env))
     assert ratio >= need, f"{theme}: {fg} on {bg} = {ratio:.2f}"
+
+
+# ---- Review round after G: switches and the Markdown source ----
+
+def _saturation(rgb):
+    hi, lo = max(rgb), min(rgb)
+    return 0 if hi == 0 else (hi - lo) / hi
+
+
+@pytest.mark.parametrize("theme", THEMES)
+def test_switch_off_state_is_grey_not_accent(theme):
+    """An "off" switch must not look "on": grey knob and track, far from the accent."""
+    env = _theme_env(theme)
+    for var in ("--control-off", "--control-off-track"):
+        assert _saturation(_resolve_any(env[var], env)) < 0.12, (theme, var)
+    knob, accent = _resolve_any(env["--control-off"], env), _resolve_any(env["--accent"], env)
+    assert sum(abs(a - b) for a, b in zip(knob, accent)) > 120, theme
+
+
+NEON = [t for t in THEMES if t not in ("dracula", "synthwave", "nord", "gruvbox", "tokyo-night")]
+
+
+@pytest.mark.parametrize("theme", NEON)
+def test_markdown_source_text_is_calmer_than_the_accent(theme):
+    """Neon themes: --fg is the accent itself, so the source's ordinary text
+    is one step calmer and the accent is left for the structure: darker, or
+    (dark accents, where darker would fail 4.5:1) clearly greyer."""
+    env = _theme_env(theme)
+    text, accent = _resolve_any(env["--md-src-text"], env), _resolve_any(env["--accent"], env)
+    assert text != accent, theme
+    assert _lum(text) < _lum(accent) or _saturation(accent) - _saturation(text) >= 0.15, theme
+
+
+def test_markdown_source_css_uses_the_tokens():
+    css = re.sub(r"/\*.*?\*/", "", (ROOT / "static" / "css" / "noirpad.css").read_text(encoding="utf-8"),
+                 flags=re.S)
+    hl = re.search(r"(?m)^#md-highlight\s*\{([^}]*)\}", css).group(1)
+    assert "var(--md-src-text)" in hl
+    assert re.search(r"\.mds-head,\s*#md-highlight \.mds-mark,\s*#md-highlight \.mds-code\s*\{\s*color:\s*var\(--accent\)", css)
+    knob = re.search(r"(?m)^\.settings-toggle-knob\s*\{([^}]*)\}", css).group(1)
+    assert "var(--control-off)" in knob

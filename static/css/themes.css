@@ -62,6 +62,16 @@
     --accent-soft: color-mix(in srgb, var(--accent) 11%, var(--bg));
     --danger:      #ff5c5c;
 
+    /* Switch in the "off" state: neutral grey, never accent-tinted, so it
+       cannot be mistaken for "on" (knob >= 3:1 on --bg-entry, test_contrast). */
+    --control-off:       #80808a;
+    --control-off-track: #3c3c44;
+
+    /* Markdown source: ordinary text one step calmer than the accent;
+       headings, markup and code stay --accent (md-source.js). The dev
+       themes below have a light --fg of their own and use that. */
+    --md-src-text: var(--fg-dim);
+
     /* Glow KEPT but softened — half-strength, neon-tinted.           */
     --glow: color-mix(in srgb, var(--accent) 55%, transparent);
 
@@ -251,6 +261,16 @@
     --select-bg: color-mix(in srgb, var(--accent) 22%, var(--bg));
     --cursor-color: var(--accent);
     --glow: rgba(122, 162, 247, 0.4);
+}
+
+/* Their text is not the accent: the Markdown source's ordinary text is
+   simply --fg, the accent marks the structure. */
+[data-theme="dracula"],
+[data-theme="synthwave"],
+[data-theme="nord"],
+[data-theme="gruvbox"],
+[data-theme="tokyo-night"] {
+    --md-src-text: var(--fg);
 }
 
 /* Smooth theme cross-fade (kept — part of the identity feel). */

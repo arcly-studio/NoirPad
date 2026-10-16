@@ -104,3 +104,12 @@ def test_d8_corrupt_at_startup_sets_notice(np_backend, tmp_path):
     np_backend.set_data_dir(d)
     assert np_backend.RUNTIME.data_notice
     assert np_backend._read_data()["tree"][0]["name"] == "A"
+
+
+def test_spellcheck_is_on_for_a_new_install(client, np_backend):
+    """A fresh data dir (no notes_data.json yet) starts with spellcheck on,
+    and it stays on once the first save has written the file."""
+    assert not np_backend.DATA_FILE.exists()
+    assert client.get("/api/data").json()["spellcheck"] is True
+    new_note(client, content="x")
+    assert json.loads(np_backend.DATA_FILE.read_text(encoding="utf-8"))["spellcheck"] is True

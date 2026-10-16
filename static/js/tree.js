@@ -4,6 +4,9 @@ window.NP = window.NP || {};
 (function (NP) {
     "use strict";
 
+    var TAGS_SHOWN = 6;                               /* TAGS section, before "+ N more" */
+    var TAGS_COLLAPSED_KEY = "noirpad_tags_collapsed";
+
     /* Every tag in the tree once (first spelling wins, case ignored),
        with how many notes carry it. */
     function collectTags(items, out) {
@@ -588,16 +591,54 @@ window.NP = window.NP || {};
             NP.tree.render();
         },
 
+        tagsExpanded: false,      /* "+ N more" opened; not saved */
+
+        /* The whole TAGS section folded away (saved in localStorage). */
+        tagsCollapsed: function () {
+            try { return localStorage.getItem(TAGS_COLLAPSED_KEY) === "1"; } catch (e) { return false; }
+        },
+
+        setTagsCollapsed: function (on) {
+            try {
+                if (on) localStorage.setItem(TAGS_COLLAPSED_KEY, "1");
+                else localStorage.removeItem(TAGS_COLLAPSED_KEY);
+            } catch (e) { /* private window: just this session */ }
+            NP.tree.renderTags();
+        },
+
+        /* Most used first (ties: by name). Only TAGS_SHOWN of them unless
+           "+ N more" is open; the active filter tag is always listed, even
+           in a collapsed section, so the filter can be turned off. */
         renderTags: function () {
             var list = document.getElementById("tag-list");
             if (!list) return;
             var tags = collectTags((NP.state.data && NP.state.data.tree) || [], {});
-            var keys = Object.keys(tags).sort();
+            var keys = Object.keys(tags).sort(function (a, b) {
+                return tags[b].count - tags[a].count || (a < b ? -1 : a > b ? 1 : 0);
+            });
             if (NP.tree.tagFilter && !tags[NP.tree.tagFilter]) NP.tree.tagFilter = null;
             list.replaceChildren();
             var head = document.getElementById("side-tags-head");
             if (head) head.hidden = !keys.length;
-            keys.forEach(function (key) {
+
+            if (keys.length <= TAGS_SHOWN) NP.tree.tagsExpanded = false;
+            var collapsed = NP.tree.tagsCollapsed();
+            var toggle = document.getElementById("side-tags-toggle");
+            if (toggle) {
+                toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+                toggle.title = NP.t(collapsed ? "tree.tagsExpand" : "tree.tagsCollapse");
+                if (!toggle._npBound) {
+                    toggle._npBound = true;
+                    toggle.addEventListener("click", function () {
+                        NP.tree.setTagsCollapsed(!NP.tree.tagsCollapsed());
+                    });
+                }
+            }
+
+            var shown = collapsed ? [] : NP.tree.tagsExpanded ? keys : keys.slice(0, TAGS_SHOWN);
+            var active = NP.tree.tagFilter;
+            if (active && shown.indexOf(active) < 0) shown = shown.concat([active]);
+            shown.forEach(function (key) {
                 var on = NP.tree.tagFilter === key;
                 var b = document.createElement("button");
                 b.type = "button";
@@ -615,6 +656,22 @@ window.NP = window.NP || {};
                 b.addEventListener("click", function () { NP.tree.setTagFilter(key); });
                 list.appendChild(b);
             });
+
+            var rest = keys.length - shown.length;
+            if (collapsed || (!NP.tree.tagsExpanded && rest <= 0) || keys.length <= TAGS_SHOWN) return;
+            var more = document.createElement("button");
+            more.type = "button";
+            more.className = "tag-row tag-more";
+            more.setAttribute("aria-expanded", NP.tree.tagsExpanded ? "true" : "false");
+            more.textContent = NP.tree.tagsExpanded ? NP.t("tree.tagsLess") : NP.t("tree.tagsMore", { n: rest });
+            more.addEventListener("click", function () {
+                NP.tree.tagsExpanded = !NP.tree.tagsExpanded;
+                NP.tree.renderTags();
+                /* keyboard focus stays put (or on the heading if the row is gone) */
+                var again = list.querySelector(".tag-more") || document.getElementById("side-tags-toggle");
+                if (again) again.focus();
+            });
+            list.appendChild(more);
         },
 
         /* Unified delete for the context menu and the Delete key.

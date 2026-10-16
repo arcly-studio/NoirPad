@@ -444,6 +444,39 @@ input, textarea {
     outline: 1px solid var(--accent);
 }
 
+/* TAGS heading = collapse button (tree.js renderTags). */
+.side-toggle {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: -4px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-align: left;
+    color: var(--fg-muted);
+}
+
+.side-toggle-arrow {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    transition: transform var(--dur-1) var(--ease-out);
+}
+
+.side-toggle[aria-expanded="false"] .side-toggle-arrow {
+    transform: rotate(-90deg);
+}
+
+.side-toggle:hover,
+.side-toggle:hover .side-label {
+    color: var(--fg);
+}
+
+.side-toggle:focus-visible {
+    outline: 1px solid var(--accent);
+}
+
 /* Tags: click = show only that tag's notes (tree.js) */
 .tag-row {
     display: flex;
@@ -484,6 +517,16 @@ input, textarea {
 .tag-row:focus-visible {
     outline: 1px solid var(--accent);
     outline-offset: -1px;
+}
+
+/* "+ N more" / "− Show fewer" under the tag list */
+.tag-row.tag-more {
+    font-size: 11.5px;
+    color: var(--fg-muted);
+}
+
+.tag-row.tag-more:hover {
+    color: var(--fg);
 }
 
 .tree-empty {
@@ -1513,8 +1556,8 @@ body.focus-mode #sidebar {
     border: 1px solid var(--border);
     border-radius: 4px;
     color: var(--fg);
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
+    font-family: inherit;   /* the UI font, like every other control */
+    font-weight: 500;
     font-size: 13px;
     cursor: pointer;
     transition: border-color 0.15s ease, color 0.15s ease;
@@ -1642,7 +1685,7 @@ body.focus-mode #sidebar {
     width: 34px;
     height: 17px;
     padding: 0;
-    border: 1px solid var(--border);
+    border: 1px solid var(--control-off-track);   /* off: grey track + grey knob */
     border-radius: 10px;
     background: var(--bg-entry);
     cursor: pointer;
@@ -1661,7 +1704,7 @@ body.focus-mode #sidebar {
     width: 11px;
     height: 11px;
     border-radius: 50%;
-    background: var(--fg-muted);   /* off: grey, on: accent (below) */
+    background: var(--control-off);   /* off: neutral grey, on: accent (below) */
     transition: left 0.15s ease, background 0.15s ease;
 }
 
@@ -1765,8 +1808,8 @@ body.focus-mode #sidebar {
 
 .settings-btn {
     padding: 6px 12px;
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
+    font-family: inherit;
+    font-weight: 500;
     font-size: 11px;
     letter-spacing: 1px;
     color: var(--fg);
@@ -1792,8 +1835,8 @@ body.focus-mode #sidebar {
 
 .settings-link-btn {
     padding: 6px 12px;
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
+    font-family: inherit;
+    font-weight: 500;
     font-size: 11px;
     letter-spacing: 1px;
     color: var(--accent);
@@ -2567,6 +2610,56 @@ body.md-no-preview #md-preview { display: none; }
     opacity: 0.4;
 }
 
+/* Coloured source (md-source.js): #md-highlight sits exactly under the
+   textarea's text box and scrolls with it; the textarea draws its own text
+   transparent while the copy is in sync. Wrapping must match the textarea:
+   colours only, never a different weight, size or font. */
+#md-source {
+    position: relative;
+}
+
+#md-highlight {
+    display: none;
+    position: absolute;
+    overflow: hidden;
+    pointer-events: none;
+    margin: 0;
+    padding: 0;
+    color: var(--md-src-text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    tab-size: 4;
+}
+
+#md-source.md-hl-on #md-highlight {
+    display: block;
+}
+
+#md-source.md-hl-on #editor-md {
+    position: relative;           /* above the copy */
+    color: transparent;
+    text-shadow: none;
+}
+
+#md-source.md-hl-on #editor-md::selection {
+    color: transparent;
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+#md-highlight .mds-head,
+#md-highlight .mds-mark,
+#md-highlight .mds-code {
+    color: var(--accent);
+}
+
+@media print {
+    #md-highlight { display: none !important; }
+}
+
 #md-preview {
     font-family: var(--font-mono);
     font-size: 14px;
@@ -2763,7 +2856,7 @@ body.md-no-preview #md-preview { display: none; }
     padding: 24px 32px;
     max-width: 400px;
     text-align: center;
-    font-family: var(--font-display, 'Orbitron', sans-serif);
+    font-family: var(--font-display);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
@@ -2881,7 +2974,7 @@ body.md-no-preview #md-preview { display: none; }
 }
 
 .md-help-cat-title {
-    font-family: var(--font-display, 'Orbitron', sans-serif);
+    font-family: var(--font-display);
     font-size: 11px;
     letter-spacing: 2px;
     color: var(--fg);
