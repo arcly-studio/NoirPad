@@ -27,9 +27,21 @@
   network requests of its own.
 - **Per-note encryption** — lock any note with its own password.
 - **Real Markdown** — live side-by-side preview, tables, task lists and syntax-highlighted code.
-- **17 themes** — from Matrix green to Tokyo Night, plus glow, CRT scanlines and Matrix rain.
+- **17 themes** — from Matrix green to Tokyo Night, plus optional glow, CRT scanlines and Matrix rain.
 
 ## Features
+
+### Interface
+
+- **Top bar** in one row: the NOIRPAD wordmark, tabs of open notes and icon buttons - Markdown
+  mode, preview next to the source, favorite, lock, insert image, export and the ⋯ menu.
+- **Left panel**: search at the top, **NOTES** (folder tree; context menu *Rename* / *Move to…* /
+  *Delete*) and **TAGS** (the 6 most used plus "+ N more"; click a tag to filter; click the heading
+  to collapse the section - NoirPad remembers it).
+- **Note header**: rename in place, tags below the title.
+- Editor and preview have no frames. The Markdown source is colored: headings, markers and code
+  in the accent color, plain text more muted.
+- **Status bar**: ● saved / ○ not saved, mode, counts.
 
 ### Writing
 
@@ -38,6 +50,7 @@
 - Each note is **rich text** or **Markdown** (`Ctrl+M`), with tabs for open notes and a focus mode.
 - **Images**: paste, drag & drop or insert them; `Ctrl`+wheel resizes an image in the note.
 - Save with `Ctrl+S`, or turn on autosave in Settings.
+- Spellcheck is on by default (Settings → Editor).
 
 ### Markdown & code
 
@@ -61,7 +74,10 @@
 ![The same note in four themes: Matrix, Tokyo Night, Amber and Dracula](docs/screenshots/themes.png)
 
 - **17 themes**; UI and editor fonts are configurable too.
-- Glow intensity, CRT scanlines and Matrix rain — each can be switched off.
+- **Noir effects** - glow, Matrix rain in the background, CRT scanlines and a glitch effect while
+  typing - are **off by default**. Turn them on in Settings → Noir effects, one by one or with
+  the single *All Noir effects* switch. Existing installations keep their previous look after the
+  upgrade (glow on, rain unless you had switched it off).
 - English and Czech UI; NoirPad starts in the language you chose in the installer.
 
 ### Organize
@@ -70,7 +86,7 @@
 
 - **Folders** with drag & drop, **tags**, **favorites** (pinned to the top of their folder) and a
   **trash** with restore.
-- **Find** in the note (`Ctrl+F`) or across all notes; the **command bar** (`Ctrl+Shift+P`)
+- **Find** in the note (`Ctrl+F`) or across all notes (`Ctrl+Shift+K`, the *search* field at the top of the left panel); the **command bar** (`Ctrl+Shift+P`)
   runs commands like `:theme`, `:tag`, `:export`.
 - Every shortcut can be remapped in Settings.
 
@@ -89,6 +105,7 @@
 | `Ctrl+S` | Save |
 | `Ctrl+M` | Switch the note between rich text and Markdown |
 | `Ctrl+F`, `F3` / `Shift+F3` | Find in the note, next / previous match |
+| `Ctrl+Shift+K` | Search all notes |
 | `Ctrl+Shift+L` | Lock or unlock the note |
 | `Ctrl+Shift+P` | Command bar |
 | `Ctrl+D` | Add to / remove from favorites |

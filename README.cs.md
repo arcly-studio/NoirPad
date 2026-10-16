@@ -27,9 +27,21 @@
   a NoirPad sám nic po síti neposílá.
 - **Šifrování jednotlivých poznámek** — každou poznámku můžete zamknout vlastním heslem.
 - **Skutečný Markdown** — živý náhled vedle zdroje, tabulky, úkoly a zvýrazněný kód.
-- **17 motivů** — od zelené Matrix po Tokyo Night, k tomu záře, CRT řádky a padající znaky.
+- **17 motivů** — od zelené Matrix po Tokyo Night, k tomu volitelná záře, CRT řádky a padající znaky.
 
 ## Funkce
+
+### Rozhraní
+
+- **Horní lišta** v jednom řádku: nápis NOIRPAD, karty otevřených poznámek a ikonová tlačítka -
+  režim Markdown, náhled vedle zdroje, oblíbené, zámek, vložení obrázku, export a menu ⋯.
+- **Levý panel**: nahoře hledání, sekce **POZNÁMKY** (strom složek; kontextové menu
+  *Přejmenovat* / *Přesunout do…* / *Smazat*) a **ŠTÍTKY** (6 nejpoužívanějších a „+ N dalších";
+  kliknutím na štítek filtrujete; kliknutím na nadpis sekci sbalíte - NoirPad si to pamatuje).
+- **Hlavička poznámky**: přejmenování na místě, pod názvem štítky.
+- Editor i náhled jsou bez rámečků. Zdroj Markdownu je obarvený: nadpisy, značky a kód v barvě
+  akcentu, běžný text tlumeněji.
+- **Stavový řádek**: ● uloženo / ○ neuloženo, režim, počty.
 
 ### Psaní
 
@@ -40,6 +52,7 @@
 - **Obrázky**: vložte, přetáhněte nebo přidejte tlačítkem; `Ctrl`+kolečko mění velikost obrázku
   v poznámce.
 - Ukládání `Ctrl+S`, nebo zapněte automatické ukládání v Nastavení.
+- Kontrola pravopisu je ve výchozím stavu zapnutá (Nastavení → Editor).
 
 ### Markdown a kód
 
@@ -63,7 +76,10 @@
 ![Stejná poznámka ve čtyřech motivech: Matrix, Tokyo Night, Amber a Dracula](docs/screenshots/themes.png)
 
 - **17 motivů**; nastavit jde i písmo rozhraní a editoru.
-- Síla záře, CRT řádky a padající znaky — každé jde vypnout.
+- **Noir efekty** - záře, Matrix déšť na pozadí, CRT řádkování a efekt „glitch" při psaní - jsou
+  ve výchozím stavu **vypnuté**. Zapnete je v Nastavení → Noir efekty, jednotlivě nebo jedním
+  přepínačem *Všechny Noir efekty*. Starší instalace si po upgradu ponechají dosavadní vzhled
+  (záře zapnutá, déšť pokud jste ho nevypnuli).
 - Rozhraní česky a anglicky; NoirPad začne v jazyce, který jste zvolili v instalátoru.
 
 ### Organizace
@@ -72,7 +88,7 @@
 
 - **Složky** s přetahováním, **štítky**, **oblíbené** (připnuté nahoru ve své složce) a **koš**
   s obnovením.
-- **Hledání** v poznámce (`Ctrl+F`) i ve všech poznámkách; **příkazová lišta** (`Ctrl+Shift+P`)
+- **Hledání** v poznámce (`Ctrl+F`) i ve všech poznámkách (`Ctrl+Shift+K`, pole *hledat* nahoře v levém panelu); **příkazová lišta** (`Ctrl+Shift+P`)
   spouští příkazy jako `:theme`, `:tag`, `:export`.
 - Každou zkratku si můžete přenastavit.
 
@@ -91,6 +107,7 @@
 | `Ctrl+S` | Uložit |
 | `Ctrl+M` | Přepnout poznámku mezi formátovaným textem a Markdownem |
 | `Ctrl+F`, `F3` / `Shift+F3` | Hledat v poznámce, další / předchozí výskyt |
+| `Ctrl+Shift+K` | Hledat ve všech poznámkách |
 | `Ctrl+Shift+L` | Zamknout nebo odemknout poznámku |
 | `Ctrl+Shift+P` | Příkazová lišta |
 | `Ctrl+D` | Přidat do oblíbených / odebrat |
