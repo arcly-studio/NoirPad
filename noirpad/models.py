@@ -51,6 +51,14 @@ class TagsBody(BaseModel):
                     Field(max_length=MAX_TAGS)]
 
 
+MAX_RECENT_NOTES = 10
+
+
+class RecentNote(BaseModel):
+    id: Annotated[str, StringConstraints(min_length=1, max_length=64)]
+    at: Annotated[int, Field(ge=0, le=10**13)]   # when it was last opened, ms since the epoch
+
+
 class SettingsBody(BaseModel):
     theme: Optional[str] = None
     ui_font: Optional[str] = None
@@ -72,6 +80,8 @@ class SettingsBody(BaseModel):
     custom_shortcuts: Optional[dict] = None
     language: Optional[Literal["auto", "en", "cs"]] = None
     md_split: Optional[bool] = None            # Markdown: preview next to the source
+    # Start page "Recent": newest first, at most MAX_RECENT_NOTES.
+    recent_notes: Optional[Annotated[list[RecentNote], Field(max_length=MAX_RECENT_NOTES)]] = None
 
 
 class PasswordReq(BaseModel):

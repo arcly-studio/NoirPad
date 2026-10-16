@@ -930,6 +930,159 @@ body #editor:has(.welcome-wrap) {
     box-shadow: none;
 }
 
+/* ---- Start page (welcome.js): one narrow column in the middle ---- */
+.welcome-wrap {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 24px 16px;
+    user-select: none;
+    cursor: default;
+}
+
+.welcome-col {
+    width: 100%;
+    max-width: 380px;
+    margin: auto 0;               /* centred, but scrolls from the top if too tall */
+}
+
+.welcome-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 0 26px 10px;
+}
+
+.welcome-icon {
+    flex: none;
+    width: 44px;
+    height: 44px;
+}
+
+.welcome-logo {
+    margin: 0;
+    font-family: var(--font-brand);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-shadow: none;
+}
+
+.welcome-tagline {
+    margin: 3px 0 0;
+    font-size: 12px;
+    color: var(--fg-dim);
+}
+
+.welcome-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.welcome-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 34px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.welcome-row:hover,
+.welcome-row:focus-visible {
+    background: var(--accent-soft);   /* like the active tab; --hover-bg is too light for --fg in purple */
+}
+
+.welcome-row:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: -1px;
+}
+
+.welcome-row-icon {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    color: var(--fg-muted);
+}
+
+.welcome-row:hover .welcome-row-icon,
+.welcome-row:focus-visible .welcome-row-icon {
+    color: var(--accent);
+}
+
+.welcome-row-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.welcome-keys {
+    flex: none;
+    color: var(--fg-dim);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.welcome-keys kbd {
+    display: inline-block;
+    min-width: 18px;
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-light);
+    color: var(--fg-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.welcome-section {
+    margin: 22px 0 6px 10px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+}
+
+.welcome-row-meta {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    color: var(--fg-dim);
+}
+
+.welcome-star {
+    color: var(--accent);
+}
+
+.welcome-foot {
+    margin: 24px 0 0 10px;
+    font-size: 11.5px;
+    color: var(--fg-dim);
+}
+
 #editor:empty::before {
     content: attr(data-placeholder);
     color: var(--fg-dim);
@@ -4017,44 +4170,6 @@ body.md-no-preview #md-preview { display: none; }
     display: none;
 }
 
-/* ============================================================
-   Welcome screen — fluid responsive sizing.
-
-   The welcome HTML (`.welcome-wrap` + children) is built and
-   injected at runtime by editor.js `showWelcome()`, which also
-   emits an inline <style> block with fixed pixel sizes
-   (.welcome-logo: 96px, .welcome-sub: 13px, etc.). That inline
-   <style> is appended AFTER this stylesheet, so we need
-   `!important` to win the cascade.
-
-   clamp(min, preferred, max) scales fluidly with viewport
-   width without per-breakpoint media queries: on a 375px
-   phone the logo is ~67px (18vw), on a 1920px desktop it caps
-   at 140px. The container locks to viewport width so the
-   text-shadow glow can spill out (overflow: visible) but the
-   text itself never pushes past the screen edge.
-   ============================================================ */
-.welcome-wrap {
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important;
-    padding: clamp(12px, 4vw, 24px) !important;
-    text-align: center !important;
-}
-
-.welcome-logo {
-    font-size: clamp(40px, 18vw, 140px) !important;
-    max-width: 100% !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    padding: 0 clamp(8px, 3vw, 16px) !important;
-    line-height: 1.1 !important;
-    text-align: center !important;
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-}
-
 /* Logos and other UI pictures: not content, nothing to click, drag,
    select or highlight — in every theme. */
 img.np-decorative {
@@ -4068,50 +4183,6 @@ img.np-decorative {
     user-select: none;
     -webkit-user-drag: none;
     cursor: default;
-}
-
-/* The logo icon above the name (N4). */
-.welcome-icon {
-    display: block;
-    width: clamp(56px, 6vw, 88px);
-    height: auto;
-    margin: 0 auto 16px;
-    animation: welcome-fade-in 0.8s ease-out;
-}
-
-.welcome-sub {
-    font-size: clamp(11px, 3.5vw, 13px) !important;
-    letter-spacing: clamp(2px, 1.2vw, 6px) !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    padding: 0 clamp(8px, 3vw, 16px) !important;
-    text-align: center !important;
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-}
-
-.welcome-version {
-    font-size: clamp(10px, 2.5vw, 11px) !important;
-    letter-spacing: clamp(1px, 0.6vw, 2px) !important;
-    max-width: 100% !important;
-    text-align: center !important;
-}
-
-.welcome-hint {
-    font-size: clamp(10px, 3vw, 12px) !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    padding: 0 clamp(8px, 3vw, 16px) !important;
-    text-align: center !important;
-    line-height: 1.5 !important;
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-}
-
-.welcome-divider {
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    padding: 0 clamp(8px, 3vw, 16px) !important;
 }
 
 /* ============================================================
@@ -4857,12 +4928,6 @@ body.auth-active #matrix-canvas {
     font-size: 12.5px !important;
 }
 
-/* Welcome screen: the logo keeps its display face; no glow. */
-.welcome-logo {
-    font-family: var(--font-brand) !important;
-    text-shadow: none !important;
-}
-
 .np-menu-footer {
     padding: 6px 10px 4px;
     margin-top: 4px;
@@ -4877,6 +4942,3 @@ body.np-no-note #note-header {
     display: none;
 }
 
-.welcome-logo {
-    font-size: clamp(36px, 9vw, 96px) !important;
-}

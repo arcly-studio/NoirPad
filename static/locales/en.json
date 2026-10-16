@@ -178,11 +178,6 @@
       "title": "This note is encrypted",
       "hint": "Click on the note again to enter password"
     },
-    "welcome": {
-      "subtitle": "Your dark notebook",
-      "version": "v{version}",
-      "hint": "Select a note to begin or press {keys} for commands"
-    },
     "overview": {
       "summary": "{direct}, {total}",
       "directItems": {
@@ -860,5 +855,18 @@
     "moveToTrash": "Move to trash",
     "errorEmptyName": "Enter a name.",
     "errorTooLong": "The name is too long (at most {n} characters)."
+  },
+  "welcome": {
+    "tagline": "your dark notebook · v{version}",
+    "actions": "Start",
+    "newNote": "New note",
+    "newFolder": "New folder",
+    "search": "Search notes",
+    "commands": "Commands",
+    "recent": "Recent",
+    "today": "today",
+    "yesterday": "yesterday",
+    "help": "help",
+    "locked": "locked"
   }
 }

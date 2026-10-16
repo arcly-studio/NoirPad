@@ -171,6 +171,11 @@ window.NP = window.NP || {};
             return registry;
         },
 
+        /* Run an action as if its key had been pressed (start page rows). */
+        run: function (id) {
+            if (handlers[id]) return handlers[id]();
+        },
+
         /* Display texts. The registry is built at load time (before the
            dictionaries arrive), so it stores keys; resolve them here. */
         label: function (id) {

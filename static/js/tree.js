@@ -709,6 +709,10 @@ window.NP = window.NP || {};
                     return NP.state.init();
                 }).then(function () {
                     NP.tree.render();
+                    /* The start page is up: its RECENT list must lose the note too. */
+                    if (NP.editor && NP.editor.el && NP.editor.el.querySelector(".welcome-wrap")) {
+                        NP.editor.showWelcome();
+                    }
                 });
             }).catch(NP.dialog.failed);
         },

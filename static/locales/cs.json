@@ -194,11 +194,6 @@
       "title": "Tato poznámka je zašifrovaná",
       "hint": "Klikněte znovu na poznámku a zadejte heslo"
     },
-    "welcome": {
-      "subtitle": "Váš temný zápisník",
-      "version": "v{version}",
-      "hint": "Vyberte poznámku, nebo stiskněte {keys} a zadejte příkaz"
-    },
     "overview": {
       "summary": "{direct}, {total}",
       "directItems": {
@@ -900,5 +895,18 @@
     "moveToTrash": "Přesunout do koše",
     "errorEmptyName": "Zadejte název.",
     "errorTooLong": "Název je příliš dlouhý (nejvýš {n} znaků)."
+  },
+  "welcome": {
+    "tagline": "váš temný zápisník · v{version}",
+    "actions": "Začít",
+    "newNote": "Nová poznámka",
+    "newFolder": "Nová složka",
+    "search": "Hledat v poznámkách",
+    "commands": "Příkazy",
+    "recent": "Nedávné",
+    "today": "dnes",
+    "yesterday": "včera",
+    "help": "nápověda",
+    "locked": "zamčená"
   }
 }

@@ -279,6 +279,7 @@ window.NP = window.NP || {};
                             return;
                         }
                         NP.editor._unlockToken = decData.unlock_token;
+                        if (NP.welcome) NP.welcome.noteOpened(id);   /* RECENT, only once unlocked */
 
                         var decContent = decData.content || "";
                         var decFormats = decData.formats || [];
@@ -319,6 +320,7 @@ window.NP = window.NP || {};
                 if (NP.tags && NP.tags.render) NP.tags.render();
 
                 /* STATE A: plain note */
+                if (NP.welcome) NP.welcome.noteOpened(id);   /* the start page's RECENT */
                 NP.editor._refreshLockButton();
                 if (NP.markdown && NP.markdown.applyForLoadedNote) {
                     NP.markdown.applyForLoadedNote(id, content);
@@ -398,9 +400,17 @@ window.NP = window.NP || {};
             return null;
         },
 
-        showWelcome: function () {
+        /* opts.focus: put the keyboard on the first row (start-up, last tab
+           closed) - not after e.g. a delete from the tree. */
+        showWelcome: function (opts) {
             if (!NP.editor.el) return;
             document.body.classList.add("np-no-note");    /* no "> name" header */
+
+            /* A Markdown note was open: its source/preview would cover the
+               start page (the editor itself is hidden in Markdown mode). */
+            if (NP.markdown && NP.markdown.isActive && NP.markdown.isActive()) {
+                NP.markdown.leaveForLoad();
+            }
 
             NP.editor.stopAutosave();
             NP.editor._currentNoteId = null;
@@ -409,49 +419,9 @@ window.NP = window.NP || {};
             NP.editor.el.contentEditable = "false";
             NP.editor._refreshLockButton();
 
-            var html = "";
-            html += "<style>";
-            html += "@keyframes welcome-fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }";
-            html += "@keyframes welcome-line-grow { from { width: 0; } to { width: 60px; } }";
-            html += "@keyframes welcome-dot-pulse { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 1; transform: scale(1.5); } }";
-            html += "@keyframes welcome-hint-fade { from { opacity: 0; } to { opacity: 0.9; } }";
-            html += ".welcome-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; padding: clamp(12px, 4vw, 20px); user-select: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; }";
-            html += ".welcome-logo { font-family: var(--font-display); font-size: clamp(40px, 18vw, 140px); font-weight: 900; letter-spacing: 0px; color: var(--accent); text-shadow: none; filter: none; -webkit-text-stroke: 0; animation: welcome-fade-in 0.8s ease-out; margin: 0; max-width: 100%; box-sizing: border-box; padding: 0 clamp(8px, 3vw, 16px); line-height: 1.1; text-align: center; word-break: break-word; overflow-wrap: break-word; }";
-            html += ".welcome-divider { display: flex; align-items: center; gap: 12px; margin: 16px 0 20px 0; max-width: 100%; animation: welcome-fade-in 1s ease-out 0.3s both; }";
-            html += ".welcome-line { height: 1px; background: linear-gradient(90deg, transparent, var(--fg-dim), transparent); animation: welcome-line-grow 1s ease-out 0.5s both; }";
-            html += ".welcome-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: welcome-dot-pulse 3s ease-in-out infinite; box-shadow: 0 0 8px var(--glow); }";
-            html += ".welcome-sub { font-family: var(--font-display); font-weight: 500; font-size: clamp(11px, 3.5vw, 13px); letter-spacing: clamp(2px, 1.2vw, 6px); text-transform: uppercase; color: var(--fg-dim); margin: 0; max-width: 100%; box-sizing: border-box; padding: 0 clamp(8px, 3vw, 16px); text-align: center; word-break: break-word; overflow-wrap: break-word; animation: welcome-fade-in 1s ease-out 0.5s both; }";
-            html += ".welcome-version { font-family: var(--font-mono); font-size: clamp(10px, 2.5vw, 11px); color: var(--fg-dim); margin-top: 40px; letter-spacing: clamp(1px, 0.6vw, 2px); max-width: 100%; text-align: center; animation: welcome-fade-in 1s ease-out 0.8s both; }";
-            html += ".welcome-hint { font-size: clamp(10px, 3vw, 12px); color: var(--fg-dim); margin-top: 12px; opacity: 0; max-width: 100%; box-sizing: border-box; padding: 0 clamp(8px, 3vw, 16px); text-align: center; line-height: 1.5; word-break: break-word; overflow-wrap: break-word; animation: welcome-hint-fade 1s ease-out 1.5s forwards; }";
-            html += ".welcome-hint kbd { display: inline-block; padding: 2px 7px; border: 1px solid var(--border); border-radius: 3px; font-size: 10px; color: var(--fg); background: var(--bg-light); margin: 0 2px; }";
-            html += "</style>";
-
-            html += "<div class='welcome-wrap'>";
-
-            /* Logo: the icon above the name */
-            html += "<img class='welcome-icon np-decorative' src='/static/img/noirpad-icon.svg' " +
-                "width='72' height='72' draggable='false' alt='' aria-hidden='true'>";
-            html += "<h1 class='welcome-logo'>NoirPad</h1>";
-
-            /* Decorative divider */
-            html += "<div class='welcome-divider'>";
-            html += "<div class='welcome-line'></div>";
-            html += "<div class='welcome-line'></div>";
-            html += "</div>";
-
-            /* Subtitle */
-            html += "<p class='welcome-sub'>" + NP.escapeHtml(NP.t("editor.welcome.subtitle")) + "</p>";
-
-            /* Version */
-            html += "<p class='welcome-version'>" + NP.escapeHtml(NP.t("editor.welcome.version", { version: (NP.appInfo && NP.appInfo.version) || "?" })) + "</p>";
-
-            /* Hint */
-            html += "<p class='welcome-hint'>" + NP.escapeHtml(NP.t("editor.welcome.hint")).replace("{keys}",
-                "<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>") + "</p>";
-
-            html += "</div>";
-
-            NP.editor.el.innerHTML = html;
+            /* The start page (welcome.js): DOM APIs only, note names are user data. */
+            if (NP.welcome) NP.welcome.render(NP.editor.el, opts);
+            else NP.editor.el.replaceChildren();
             NP.editor.updateCharCount();
         },
 

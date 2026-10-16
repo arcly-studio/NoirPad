@@ -55,7 +55,7 @@ const ICONS = [
     "ellipsis", "search", "plus", "folder-plus", "file-plus", "tag", "settings",
     "circle-question-mark", "maximize-2", "type", "archive", "x", "file-text",
     "pencil", "trash-2", "chevron-right", "chevron-down", "folder", "panel-left",
-    "keyboard", "upload",
+    "keyboard", "upload", "terminal",
 ];
 {
     const pkg = "lucide-static";

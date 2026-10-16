@@ -53,7 +53,7 @@ window.NP = window.NP || {};
                 NP.state.startPolling();
 
                 if (NP.editor && NP.editor.showWelcome) {
-                    NP.editor.showWelcome();
+                    NP.editor.showWelcome({ focus: true });
                 }
             }).catch(function (err) {
                 console.error("NoirPad init failed:", err);

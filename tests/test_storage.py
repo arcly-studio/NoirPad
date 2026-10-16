@@ -113,3 +113,37 @@ def test_spellcheck_is_on_for_a_new_install(client, np_backend):
     assert client.get("/api/data").json()["spellcheck"] is True
     new_note(client, content="x")
     assert json.loads(np_backend.DATA_FILE.read_text(encoding="utf-8"))["spellcheck"] is True
+
+
+def test_recent_notes_are_a_setting(client, np_backend):
+    """Start page RECENT: [{id, at}] stored at the top level, at most 10."""
+    assert client.get("/api/data").json()["recent_notes"] == []
+    recent = [{"id": f"n{i}", "at": 1_700_000_000_000 + i} for i in range(10)]
+    assert client.put("/api/settings", json={"recent_notes": recent}).status_code == 200
+    assert client.get("/api/data").json()["recent_notes"] == recent
+    assert json.loads(np_backend.DATA_FILE.read_text(encoding="utf-8"))["recent_notes"] == recent
+    # another setting leaves the list alone
+    client.put("/api/settings", json={"theme": "amber"})
+    assert client.get("/api/data").json()["recent_notes"] == recent
+
+
+@pytest.mark.parametrize("bad", [
+    [{"id": f"n{i}", "at": 1} for i in range(11)],     # more than 10
+    [{"id": "", "at": 1}],
+    [{"id": "x" * 65, "at": 1}],
+    [{"id": "a", "at": -1}],
+    [{"id": "a", "at": 10**13 + 1}],
+    [{"id": "a"}],
+    ["a"],
+])
+def test_recent_notes_are_validated(client, bad):
+    assert client.put("/api/settings", json={"recent_notes": bad}).status_code == 422
+    assert client.get("/api/data").json()["recent_notes"] == []
+
+
+def test_reset_settings_keeps_the_recent_notes(client):
+    recent = [{"id": "n1", "at": 1}]
+    client.put("/api/settings", json={"recent_notes": recent, "theme": "amber"})
+    client.post("/api/settings/reset")
+    data = client.get("/api/data").json()
+    assert data["theme"] == "matrix" and data["recent_notes"] == recent

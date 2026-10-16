@@ -173,3 +173,23 @@ def test_markdown_source_css_uses_the_tokens():
     assert re.search(r"\.mds-head,\s*#md-highlight \.mds-mark,\s*#md-highlight \.mds-code\s*\{\s*color:\s*var\(--accent\)", css)
     knob = re.search(r"(?m)^\.settings-toggle-knob\s*\{([^}]*)\}", css).group(1)
     assert "var(--control-off)" in knob
+
+
+# ---- Start page (welcome.js) on the editor background (--bg-entry) ----
+WELCOME_PAIRS = [
+    ("--fg", "--bg-entry", 4.5),        # action / note names
+    ("--fg", "--accent-soft", 4.5),     # focused or hovered row
+    ("--fg-dim", "--bg-entry", 4.5),    # tagline, RECENT title, dates, F1 hint
+    ("--fg-dim", "--bg-light", 4.5),    # <kbd>
+    ("--accent", "--bg-entry", 4.5),    # NOIRPAD, ★
+    ("--accent", "--accent-soft", 3.0), # focus ring, icon on a focused row
+    ("--fg-muted", "--bg-entry", 3.0),  # row icons
+]
+
+
+@pytest.mark.parametrize("theme", THEMES)
+@pytest.mark.parametrize("fg,bg,need", WELCOME_PAIRS)
+def test_start_page_contrast(theme, fg, bg, need):
+    env = _theme_env(theme)
+    ratio = contrast(_resolve_any(env[fg], env), _resolve_any(env[bg], env))
+    assert ratio >= need, f"{theme}: {fg} on {bg} = {ratio:.2f}"

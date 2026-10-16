@@ -2,6 +2,43 @@
 
 All notable changes to NoirPad. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- New start page (shown when no note is open): a narrow column with the logo, NOIRPAD,
+  "your dark notebook · v<version>", the actions New note / New folder / Search notes / Commands
+  with their shortcuts (remapped keys are shown as remapped), a RECENT list and an "F1 help"
+  hint. Arrow keys move between the rows, Enter runs one.
+- RECENT shows the last 3 opened notes (★ for favorites, a lock for locked notes, "today" /
+  "yesterday" / date). It is stored in the new setting `recent_notes` (up to 10 entries) and
+  survives "Reset settings".
+- Search in all notes from the sidebar search box or `Ctrl+Shift+K`.
+- Settings → Noir effects: glow, Matrix rain and CRT, each switchable. They are off by default;
+  existing installs keep the look they had.
+- Markdown source is coloured: plain text, with headings, markup and code in the accent colour.
+
+### Changed
+- Single-row top bar (title, tabs, icon buttons) with Export and ⋯ menus (Export includes Markdown of just the current note).
+- Right-click a note or folder to rename, move (Move to…) or delete it; the note tree and the tabs
+  can be used from the keyboard (arrow keys, Enter).
+- Sidebar split into NOTES and TAGS; TAGS shows the 6 most used tags plus "+ N more", can be
+  collapsed by its heading (state is remembered) and always shows the active filter.
+- Note title is renamed in place, tags sit under it; editor and preview have no frames; status bar
+  shows saved / not saved.
+- One window style for dialogs, menus, command bar, Settings, Help and toasts; the interface font
+  (default JetBrains Mono) is also used for Settings selects and buttons.
+- Switched-off toggles are neutral grey, switched-on ones use the accent colour.
+- Text and icon contrast verified in all 17 themes (fixed muted text in Dracula, Nord and
+  Tokyo Night).
+
+### Fixed
+- After closing the last tab with a Markdown note the source stayed visible instead of the start
+  page.
+- Unsaved typing in the last tab is saved when that tab is closed.
+- Narrow window (up to 900 px): the saved / not saved dot stays visible, so a save error is not
+  hidden.
+- A backup restored after a damaged data file also gets the Noir effects migration.
+
 ## [1.0.0] – 2026-10-14
 
 First public release.
@@ -117,18 +154,3 @@ First public release.
   suggestions.
 - Settings → Editor → Spellcheck (on by default) now covers the Markdown source too, not only the
   formatted editor.
-
-### New look ("G – Noir čistý")
-- The top bar is a single row: title, note tabs and icon buttons. Export is a menu (including
-  Markdown of just the current note) and a ⋯ menu holds the rest.
-- Sidebar: a search box at the top (also `Ctrl+Shift+K`) that searches all notes, and separate
-  NOTES and TAGS sections. Click a tag to filter the tree.
-- Right-click a note or folder to rename, move (Move to…) or delete it.
-- The note tree and the tabs can be used from the keyboard (arrow keys, Enter).
-- The note title is big and is renamed in place; the tags sit right under it.
-- Editor and preview have no frames around them. The status bar shows "saved" / "not saved", the
-  mode and the counts.
-- New Settings section "Noir effects" (glow, Matrix rain, CRT). They are off for new installs;
-  existing installs keep the effects they had.
-- The interface uses the JetBrains Mono font. Dialogs and menus share one style.
-- Contrast of text and icons was checked in all 17 themes.

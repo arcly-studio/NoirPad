@@ -66,9 +66,15 @@ window.NP = window.NP || {};
                     var newIdx = idx >= NP.state.openTabs.length ? NP.state.openTabs.length - 1 : idx;
                     NP.tabs.activate(NP.state.openTabs[newIdx].id);
                 } else {
+                    /* Unsaved typing in the last tab: write it before the note
+                       is forgotten (the debounced save would find no note).
+                       Not for a note just moved to the trash (tree.js clears
+                       currentNoteId first): the server would refuse it. */
+                    if (NP.editor && NP.editor._saveState === "dirty" &&
+                        NP.state.currentNoteId === noteId) NP.editor.save(true);
                     NP.state.activeTabId = null;
                     NP.state.currentNoteId = null;
-                    if (NP.editor) NP.editor.showWelcome();
+                    if (NP.editor) NP.editor.showWelcome({ focus: true });
                     NP.tabs.render();
                 }
             } else {
