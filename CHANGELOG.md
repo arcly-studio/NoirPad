@@ -2,7 +2,7 @@
 
 All notable changes to NoirPad. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [1.0.0] – 2026-10-16
+## [1.0.0] – 2026-10-20
 
 First public release.
 
