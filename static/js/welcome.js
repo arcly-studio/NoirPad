@@ -1,5 +1,6 @@
 /* welcome.js - the start page (nothing open): logo + name, actions,
-   RECENT notes, F1 hint. One narrow column, rendered into #editor by
+   RECENT notes, F1 hint; "by <author>" links to the project page (both from
+   /api/version). One narrow column, rendered into #editor by
    NP.editor.showWelcome() with DOM APIs only (note names are user data).
 
    Recent notes: settings key "recent_notes" = [{id, at}], newest first,
@@ -179,8 +180,20 @@ window.NP = window.NP || {};
             head.appendChild(logo);
             var titles = el("div", "welcome-titles");
             titles.appendChild(el("h1", "welcome-logo", "NoirPad"));   // i18n-ignore (brand)
-            var version = (NP.appInfo && NP.appInfo.version) || "?";
-            titles.appendChild(el("p", "welcome-tagline", NP.t("welcome.tagline", { version: version })));
+            var info = NP.appInfo || {};
+            titles.appendChild(el("p", "welcome-tagline", NP.t("welcome.tagline", { version: info.version || "?" })));
+            /* "by Arcly Studio" → the project page. A plain <a href>: links.js
+               intercepts the click and opens it in the system browser
+               (desktop) or a new tab (web); the window never navigates. */
+            if (info.url && info.author) {
+                var by = el("p", "welcome-by");
+                var link = el("a", null, NP.t("welcome.by", { author: info.author }));
+                link.href = info.url;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";   // i18n-ignore (attribute)
+                by.appendChild(link);
+                titles.appendChild(by);
+            }
             head.appendChild(titles);
             col.appendChild(head);
 

@@ -8,14 +8,14 @@
 
 [English](README.md) · **Čeština**
 
-[![Poslední verze](https://img.shields.io/github/v/release/krystof2-ops/NoirPad)](https://github.com/krystof2-ops/NoirPad/releases/latest)
-[![Stažení](https://img.shields.io/github/downloads/krystof2-ops/NoirPad/total)](https://github.com/krystof2-ops/NoirPad/releases)
-[![Licence](https://img.shields.io/github/license/krystof2-ops/NoirPad)](LICENSE)
+[![Poslední verze](https://img.shields.io/github/v/release/arcly-studio/NoirPad)](https://github.com/arcly-studio/NoirPad/releases/latest)
+[![Stažení](https://img.shields.io/github/downloads/arcly-studio/NoirPad/total)](https://github.com/arcly-studio/NoirPad/releases)
+[![Licence](https://img.shields.io/github/license/arcly-studio/NoirPad)](LICENSE)
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows)
 
-<a href="https://github.com/krystof2-ops/NoirPad/releases/latest/download/NoirPad-Setup.exe"><img src="docs/buttons/download-cs.svg" alt="Stáhnout pro Windows" height="68"></a>
+<a href="https://github.com/arcly-studio/NoirPad/releases/latest/download/NoirPad-Setup.exe"><img src="docs/buttons/download-cs.svg" alt="Stáhnout pro Windows" height="68"></a>
 
-<sub>[Všechny verze](https://github.com/krystof2-ops/NoirPad/releases)</sub>
+<sub>[Všechny verze](https://github.com/arcly-studio/NoirPad/releases)</sub>
 
 <img src="docs/demo.gif" width="960" alt="Ukázka NoirPadu: nová poznámka, Markdown s blokem kódu v Pythonu a živým náhledem, přepnutí motivu z příkazové lišty, zamčení poznámky heslem">
 
@@ -122,8 +122,8 @@
 
 ## Instalace
 
-1. Stáhněte **[NoirPad-Setup.exe](https://github.com/krystof2-ops/NoirPad/releases/latest/download/NoirPad-Setup.exe)**
-   (nebo konkrétní verzi z [Releases](https://github.com/krystof2-ops/NoirPad/releases)).
+1. Stáhněte **[NoirPad-Setup.exe](https://github.com/arcly-studio/NoirPad/releases/latest/download/NoirPad-Setup.exe)**
+   (nebo konkrétní verzi z [Releases](https://github.com/arcly-studio/NoirPad/releases)).
 2. Spusťte ho. Nainstaluje se jen pro vašeho uživatele — bez administrátorských práv — do
    `%LOCALAPPDATA%\Programs\NoirPad`.
 
@@ -175,7 +175,7 @@ Bezpečnostní problémy hlaste prosím neveřejně, viz [SECURITY.md](SECURITY.
 NoirPad běží i jako malý webový server (Python 3.14), třeba na domácím serveru:
 
 ```bash
-git clone https://github.com/krystof2-ops/NoirPad.git
+git clone https://github.com/arcly-studio/NoirPad.git
 cd NoirPad
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt        # Windows: .venv\Scripts\pip
@@ -205,7 +205,7 @@ Požadavky a podrobnosti jsou v [BUILD.md](BUILD.md). Ze zdrojů: `python deskto
 
 ## Přispívání
 
-Chyby a nápady pište do [Issues](https://github.com/krystof2-ops/NoirPad/issues). Před pull
+Chyby a nápady pište do [Issues](https://github.com/arcly-studio/NoirPad/issues). Před pull
 requestem spusťte testy:
 
 ```bash

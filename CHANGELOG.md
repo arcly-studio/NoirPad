@@ -150,3 +150,9 @@ First public release.
 - Narrow window (up to 900 px): the saved / not saved dot stays visible, so a save error is not
   hidden.
 - A backup restored after a damaged data file also gets the Noir effects migration.
+
+### Project
+- NoirPad is published by Arcly Studio: the repository moved to
+  [github.com/arcly-studio/NoirPad](https://github.com/arcly-studio/NoirPad), the installer and
+  `NoirPad.exe` name Arcly Studio as publisher, and the start page and About link to the project
+  page ("by Arcly Studio").

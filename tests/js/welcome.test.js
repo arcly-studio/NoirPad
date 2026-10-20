@@ -52,6 +52,18 @@ describe("start page", () => {
         expect(ed().querySelector(".welcome-logo").textContent).toBe("NoirPad");
         expect(ed().querySelector(".welcome-tagline").textContent).toBe("your dark notebook · v9.8.7");
         expect(ed().querySelector(".welcome-foot").textContent).toBe("F1 help");
+        expect(ed().querySelector(".welcome-by")).toBeNull();      // no author / url from the API
+    });
+
+    it("\"by <author>\" links to the project page as a plain anchor (links.js opens it)", () => {
+        win.NP.appInfo = { version: "9.8.7", url: "https://github.com/arcly-studio/NoirPad", author: "Arcly Studio" };
+        render();
+        const a = ed().querySelector(".welcome-by a");
+        expect(a.textContent).toBe("by Arcly Studio");
+        expect(a.getAttribute("href")).toBe("https://github.com/arcly-studio/NoirPad");
+        expect(a.getAttribute("target")).toBe("_blank");
+        expect(a.getAttribute("rel")).toBe("noopener noreferrer");
+        expect(rows().includes(a)).toBe(false);                      // not part of the keyboard list
     });
 
     it("four actions with the shortcut from the registry (also after a remap)", () => {

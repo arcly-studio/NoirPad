@@ -8,7 +8,8 @@ PyInstaller spec for NoirPad desktop (onedir). Run through build.ps1:
   backend is found by static analysis.
 * static/ is bundled as data (minus work files); noirpad.config resolves
   it from sys._MEIPASS.
-* The exe gets a Windows version resource from noirpad/__version__.py.
+* The exe gets a Windows version resource (version, CompanyName) from
+  noirpad/__version__.py.
 * Files the app never uses are dropped after analysis (see JUNK).
 
 The target machine needs the WebView2 Runtime (Windows 11 has it; the
@@ -22,8 +23,9 @@ from pathlib import Path
 from PyInstaller.utils.hooks import collect_submodules
 
 ROOT = Path(SPECPATH)
-VERSION = re.search(r'__version__ = "([^"]+)"',
-                    (ROOT / "noirpad" / "__version__.py").read_text(encoding="utf-8")).group(1)
+_VERSION_PY = (ROOT / "noirpad" / "__version__.py").read_text(encoding="utf-8")
+VERSION = re.search(r'__version__ = "([^"]+)"', _VERSION_PY).group(1)
+AUTHOR = re.search(r'^AUTHOR = "([^"]+)"', _VERSION_PY, re.M).group(1)
 
 
 # ---- Data: the frontend, without work files ---------------------------------
@@ -63,7 +65,7 @@ def _version_file():
                     OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)),
   kids=[
     StringFileInfo([StringTable('040904B0', [
-      StringStruct('CompanyName', 'krystof2-ops'),
+      StringStruct('CompanyName', '{AUTHOR}'),
       StringStruct('FileDescription', 'NoirPad'),
       StringStruct('FileVersion', '{VERSION}'),
       StringStruct('InternalName', 'NoirPad'),

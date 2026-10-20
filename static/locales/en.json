@@ -793,6 +793,7 @@
       "logout": "Logout",
       "version": "Version",
       "source": "Source",
+      "by": "by {author}",
       "storageUsed": "Storage used",
       "noirEffects": "All Noir effects",
       "noirEffectsHint": "Glow, matrix rain and CRT at once. Off by default.",
@@ -858,6 +859,7 @@
   },
   "welcome": {
     "tagline": "your dark notebook · v{version}",
+    "by": "by {author}",
     "actions": "Start",
     "newNote": "New note",
     "newFolder": "New folder",

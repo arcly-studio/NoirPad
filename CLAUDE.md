@@ -20,6 +20,9 @@ Local notes app: FastAPI backend (`noirpad/`), vanilla-JS frontend (`static/`), 
   rename / "Move to…" (`_openMoveMenu`) / delete.
 - Note header `#note-header`: `#note-title-row` (rename in place -> `NP.app.renameNote`) and
   `#tag-bar` (rendered by `tags.js`).
+- "by Arcly Studio" link: About in Settings (`#about-by`, filled by `settings.js`, key
+  `ui.settings.by`) and the start page (`welcome.js`, `.welcome-by`, key `welcome.by`). Data comes
+  from `NP.appInfo` (`app.js`, from `/api/version`).
 - Editor / preview have no frames. Status bar: `#status-label` (● saved / ○ not saved, driven by
   `NP.editor._setSaveStatus` / `_renderStatus` in `editor.js`), `#mode-label`, counts.
 
@@ -54,6 +57,21 @@ Local notes app: FastAPI backend (`noirpad/`), vanilla-JS frontend (`static/`), 
   touching any theme colour.
 - The shared window style (dialogs, menus, popups) is the block "G7" at the end of `noirpad.css`.
   Reuse it for new windows.
+
+## Project / publisher
+- Repo: https://github.com/arcly-studio/NoirPad (formerly krystof2-ops/NoirPad). Publisher
+  "Arcly Studio". `krystof2-ops/NoirPad-legacy` (tkinter version) is unchanged.
+- `noirpad/__version__.py` is the single source for `VERSION`, `PROJECT_URL`, `AUTHOR`.
+  `/api/version` (`routes/session.py`) returns `{"version","url","author"}`.
+- `noirpad.spec` reads VERSION and AUTHOR from it by regex (-> exe `CompanyName`). `installer.iss`
+  has its own `#define AppPublisher "Arcly Studio"`; `AppURL` comes from `build.ps1`
+  (`/DAppURL` = `PROJECT_URL`).
+- `LICENSE` copyright holder stays `krystof2-ops` on purpose; `tests/test_version.py` fails if that
+  string appears anywhere else.
+- External links in the UI: plain `<a href>`; `static/js/links.js` intercepts the click
+  (`window.open`, noopener) and desktop pywebview hands it to the system browser
+  (`OPEN_EXTERNAL_LINKS_IN_BROWSER`). Never custom navigation.
+- Winget manifest (`ArclyStudio.NoirPad`) is maintained outside this repo.
 
 ## Conventions
 - i18n: every visible text via `NP.t(...)` or `data-i18n*` attributes; keys in

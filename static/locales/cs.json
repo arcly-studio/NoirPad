@@ -825,6 +825,7 @@
       "logout": "Odhlásit se",
       "version": "Verze",
       "source": "Zdrojový kód",
+      "by": "od {author}",
       "storageUsed": "Zabrané místo",
       "noirEffects": "Všechny Noir efekty",
       "noirEffectsHint": "Záře, matrix déšť a CRT najednou. Výchozí stav: vypnuto.",
@@ -898,6 +899,7 @@
   },
   "welcome": {
     "tagline": "váš temný zápisník · v{version}",
+    "by": "od {author}",
     "actions": "Začít",
     "newNote": "Nová poznámka",
     "newFolder": "Nová složka",

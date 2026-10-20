@@ -17,11 +17,11 @@
   #error Pass /DAppVersion=x.y.z (build.ps1 does this from noirpad\__version__.py)
 #endif
 #ifndef AppURL
-  #define AppURL "https://github.com/krystof2-ops/NoirPad"
+  #define AppURL "https://github.com/arcly-studio/NoirPad"
 #endif
 
 #define AppName       "NoirPad"
-#define AppPublisher  "krystof2-ops"
+#define AppPublisher  "Arcly Studio"
 #define AppExeName    "NoirPad.exe"
 #define SourceDir     "dist\NoirPad"
 ; Same name as APP_MUTEX in desktop.py: setup/uninstall see a running NoirPad.

@@ -615,6 +615,14 @@ window.NP = window.NP || {};
             aboutSource.href = info.url;
             aboutSource.textContent = info.url.replace(/^https:\/\//, "") + " \u2197";
         }
+        /* "by Arcly Studio" \u2192 the project page; links.js opens it in the
+           system browser (desktop) or a new tab (web). */
+        var aboutBy = document.getElementById("about-by");
+        if (aboutBy && info.url && info.author) {
+            aboutBy.href = info.url;
+            aboutBy.textContent = NP.t("ui.settings.by", { author: info.author });
+            aboutBy.hidden = false;
+        }
 
         /* ---- Session (only for a password-protected server) ---- */
         var sessionSection = document.getElementById("settings-session-section");

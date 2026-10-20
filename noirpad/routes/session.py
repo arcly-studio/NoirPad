@@ -7,7 +7,7 @@ from fastapi import APIRouter, Request, Response
 
 from .. import app_lock, config, storage
 from .. import server_auth as auth
-from ..__version__ import PROJECT_URL, __version__
+from ..__version__ import AUTHOR, PROJECT_URL, __version__
 from ..errors import ApiError
 from ..models import LoginReq
 from ..runtime import RUNTIME
@@ -35,8 +35,8 @@ async def session_info(request: Request):
 
 @router.get("/api/version")
 async def version():
-    """For the About box and bug reports (noirpad/__version__.py)."""
-    return {"version": __version__, "url": PROJECT_URL}
+    """For the About box, the start page and bug reports (noirpad/__version__.py)."""
+    return {"version": __version__, "url": PROJECT_URL, "author": AUTHOR}
 
 
 @router.post("/api/session/dismiss-notice")
