@@ -1,10 +1,10 @@
 """Single-note TXT/HTML export, bulk HTML / Markdown zips, Markdown import."""
 
-import io
 from datetime import datetime
 
 from fastapi import APIRouter, File, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
+from starlette.concurrency import run_in_threadpool
 
 from .. import config
 from ..errors import ApiError
@@ -27,9 +27,11 @@ def _note_for_export(note_id: str) -> tuple[dict, str, str]:
     return data, (item["name"] if item else note_id), content
 
 
-def _download(body: bytes, media_type: str, filename: str) -> StreamingResponse:
-    return StreamingResponse(io.BytesIO(body), media_type=media_type,
-                             headers={"Content-Disposition": attachment(filename)})
+def _download(body: bytes, media_type: str, filename: str) -> Response:
+    """The whole file in one response. R1: StreamingResponse(BytesIO) sent it
+    line by line – tens of thousands of tiny chunks, ~20 s for 20 MB."""
+    return Response(body, media_type=media_type,
+                    headers={"Content-Disposition": attachment(filename)})
 
 
 @router.get("/api/export/{note_id}/txt")
@@ -42,8 +44,9 @@ async def export_txt(note_id: str):
 @router.get("/api/export/{note_id}/html")
 async def export_html(note_id: str):
     data, name, content = _note_for_export(note_id)
-    doc = build_note_html(name, content, data.get("font_family", "Cascadia Code"),
-                          data.get("font_size", 12), image_data_uri)   # one file: images inline
+    doc = await run_in_threadpool(   # one file: images inline (R1: not on the event loop)
+        build_note_html, name, content, data.get("font_family", "Cascadia Code"),
+        data.get("font_size", 12), image_data_uri)
     return _download(doc.encode("utf-8"), "text/html; charset=utf-8",
                      safe_filename(name) + ".html")
 
@@ -51,7 +54,7 @@ async def export_html(note_id: str):
 @router.get("/api/export/{note_id}/md")
 async def export_md(note_id: str):
     _, name, content = _note_for_export(note_id)
-    body, media_type, filename = build_note_markdown(name, content)
+    body, media_type, filename = await run_in_threadpool(build_note_markdown, name, content)
     return _download(body, media_type, filename)
 
 
@@ -59,13 +62,13 @@ async def export_md(note_id: str):
 async def export_all_notes():
     """Every plain note as .html in one zip (encrypted ones are listed)."""
     filename = f"noirpad-notes-{datetime.now().strftime('%Y-%m-%d')}.zip"
-    return _download(build_html_zip(read_data()), "application/zip", filename)
+    return _download(await run_in_threadpool(build_html_zip, read_data()), "application/zip", filename)
 
 
 @router.get("/api/notes/export-md")
 async def export_markdown():
     """Every plain note as .md in one zip; X-NoirPad-Skipped = locked notes left out."""
-    body, skipped = build_markdown_zip(read_data())
+    body, skipped = await run_in_threadpool(build_markdown_zip, read_data())
     response = _download(body, "application/zip",
                          f"noirpad-markdown-{datetime.now().strftime('%Y-%m-%d')}.zip")
     response.headers["X-NoirPad-Skipped"] = str(skipped)

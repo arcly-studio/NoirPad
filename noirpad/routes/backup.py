@@ -9,7 +9,8 @@ import zlib
 from typing import Any
 
 from fastapi import APIRouter, File, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
+from starlette.concurrency import run_in_threadpool
 
 from .. import config, storage
 from ..errors import ApiError
@@ -37,9 +38,11 @@ def build_backup_zip(data: dict[str, Any]) -> bytes:
 
 @router.get("/api/backup")
 async def backup_download():
-    """Backup zip: the whole notes_data.json plus every referenced image."""
-    return StreamingResponse(
-        io.BytesIO(build_backup_zip(storage.read_data())),
+    """Backup zip: the whole notes_data.json plus every referenced image.
+    R1: built off the event loop and sent in one piece."""
+    body = await run_in_threadpool(build_backup_zip, storage.read_data())
+    return Response(
+        body,
         media_type="application/zip",
         headers={"Content-Disposition": 'attachment; filename="noirpad_backup.zip"'},
     )

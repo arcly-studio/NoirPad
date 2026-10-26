@@ -171,3 +171,44 @@ def test_export_md_refuses_a_locked_note(client):
     r = client.get(f"/api/export/{nid}/md")
     assert r.status_code == 409
     assert r.json()["detail"]["code"] == "export_locked_note"
+
+
+# ---- R1 (kontrola 2): záloha a exporty se stahovaly desítky sekund ---------
+#
+# StreamingResponse(BytesIO(body)) posílal soubor po řádcích (desetitisíce
+# malých kousků přes threadpool). Teď je to jedna odpověď.
+
+def test_r1_downloads_are_one_response_not_a_line_stream(client, np_backend):
+    import asyncio
+    from fastapi.responses import StreamingResponse
+    from noirpad.routes import backup, export
+    nid = new_note(client, name="N", content="řádek\n" * 1000)
+    responses = [
+        backup.backup_download(), export.export_txt(nid), export.export_html(nid),
+        export.export_md(nid), export.export_all_notes(), export.export_markdown(),
+    ]
+    for coro in responses:
+        r = asyncio.run(coro)
+        assert not isinstance(r, StreamingResponse), type(r)
+        assert len(r.body) > 0
+
+
+def test_r1_big_backup_downloads_quickly(client, np_backend):
+    import os
+    import time
+    from conftest import make_png
+    # ~3 MB of incompressible "image" data in many lines: the old stream
+    # needed several seconds for it.
+    blob = make_png()[:-12] + (os.urandom(3_000_000).replace(b"\n", b"\n\n")) + make_png()[-12:]
+    names = []
+    for _ in range(3):
+        name = f"{os.urandom(4).hex()}-0000-4000-8000-{os.urandom(6).hex()}.png"
+        (np_backend.IMAGES_DIR / name).write_bytes(blob)
+        names.append(name)
+    new_note(client, name="Pics", content=" ".join(f"<<IMG:{n}>>" for n in names))
+    start = time.perf_counter()
+    r = client.get("/api/backup")
+    took = time.perf_counter() - start
+    assert r.status_code == 200
+    assert len(r.content) > 9_000_000
+    assert took < 2.0, f"{took:.1f} s"
