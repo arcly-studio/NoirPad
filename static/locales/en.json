@@ -75,6 +75,7 @@
     "not_desktop": "This works only in the desktop app.",
     "image_incomplete": "The image file is incomplete (cut off). Try saving it again.",
     "image_write_failed": "The image could not be saved ({error}).",
+    "data_write_failed": "The notes could not be saved ({error}). Is the disk full? The last saved state is unchanged.",
     "export_locked_note": "A locked note cannot be exported. Remove the lock first."
   },
   "notice": {

@@ -6,6 +6,8 @@ content, names or passwords (uvicorn's access log stays off).
 """
 
 import logging
+import os
+import re
 import sys
 import threading
 from logging.handlers import RotatingFileHandler
@@ -16,6 +18,34 @@ MAX_BYTES = 1024 * 1024
 BACKUP_COUNT = 3
 
 log = logging.getLogger("noirpad")
+
+
+def _home_dirs() -> list[str]:
+    """The user's profile folder as it may appear in a path (S5)."""
+    homes = {os.environ.get("USERPROFILE") or "", os.environ.get("HOME") or ""}
+    try:
+        homes.add(str(Path.home()))
+    except RuntimeError:
+        pass
+    return sorted((h.rstrip("\\/") for h in homes if len(h.rstrip("\\/")) > 3), key=len, reverse=True)
+
+
+def anonymize(text: str) -> str:
+    """C:\\Users\\<name>\\… → ~\\… in any spelling (\\, /, doubled \\\\ from
+    repr(), any case): a log attached to an issue must not name the user."""
+    for home in _home_dirs():
+        parts = [re.escape(p) for p in re.split(r"[\\/]+", home) if p]
+        lead = r"[\\/]+" if home[:1] in "\\/" else r"(?<!\w)"     # /home/x vs C:\Users\x
+        pattern = lead + r"[\\/]+".join(parts) + r"(?![\w.-])"
+        text = re.sub(pattern, "~", text, flags=re.IGNORECASE)
+    return text
+
+
+class PrivateFormatter(logging.Formatter):
+    """Every line (message and traceback) without the user's profile path."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        return anonymize(super().format(record))
 
 
 def log_path(data_dir: Path) -> Path:
@@ -29,7 +59,7 @@ def setup_logging(data_dir: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     handler = RotatingFileHandler(path, maxBytes=MAX_BYTES, backupCount=BACKUP_COUNT,
                                   encoding="utf-8")
-    handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    handler.setFormatter(PrivateFormatter(LOG_FORMAT))
     root = logging.getLogger()
     root.setLevel(logging.INFO)
     if not any(isinstance(h, RotatingFileHandler) and Path(h.baseFilename) == path

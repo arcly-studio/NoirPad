@@ -83,6 +83,7 @@
     "not_desktop": "Funguje jen v desktopové aplikaci.",
     "image_incomplete": "Soubor obrázku je neúplný (useknutý). Zkuste ho uložit znovu.",
     "image_write_failed": "Obrázek se nepodařilo uložit ({error}).",
+    "data_write_failed": "Poznámky se nepodařilo uložit ({error}). Není plný disk? Naposledy uložený stav zůstal beze změny.",
     "export_locked_note": "Zamčenou poznámku nelze exportovat. Nejdřív odstraňte zámek."
   },
   "notice": {

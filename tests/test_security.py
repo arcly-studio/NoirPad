@@ -266,3 +266,18 @@ def test_s3_backup_tags_must_be_strings(client):
     assert r.status_code == 400
     assert r.json()["detail"]["code"] == "backup_corrupt_data"
     assert client.get("/api/tags").status_code == 200
+
+
+def test_s4_an_unexpected_error_keeps_the_security_headers(client, monkeypatch):
+    from noirpad.routes import notes as notes_routes
+
+    def boom():
+        raise RuntimeError("unexpected")
+
+    monkeypatch.setattr(notes_routes, "read_data", boom)
+    r = client.get("/api/tags")
+    assert r.status_code == 500
+    assert r.json() == {"detail": {"code": "generic", "params": {"status": 500}}}
+    assert "default-src" in r.headers["content-security-policy"]
+    assert r.headers["x-content-type-options"] == "nosniff"
+    assert "no-store" in r.headers["cache-control"]

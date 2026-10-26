@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import IO, Any, Callable, Optional
 
 from . import config
+from .errors import ApiError
 from .runtime import RUNTIME
 from .tree import has_user_ids, strip_user_ids
 
@@ -155,20 +156,24 @@ def make_backup(force: bool = False) -> Optional[Path]:
 
     Callers writing the data file hold file_lock; the file being copied
     was just read successfully, so a snapshot is always a valid file.
+    R7: a snapshot that cannot be made never stops the save itself.
     """
-    if not DATA_FILE.exists():
-        return None
-    bdir = backups_dir()
-    bdir.mkdir(exist_ok=True)
-    existing = sorted(bdir.glob("notes_data-*.json"))
-    if (not force and existing
-            and time.time() - existing[-1].stat().st_mtime < BACKUP_MIN_INTERVAL):
-        return None
-    dest = bdir / f"notes_data-{stamp()}.json"
+    dest = None
     try:
+        if not DATA_FILE.exists():
+            return None
+        bdir = backups_dir()
+        bdir.mkdir(exist_ok=True)
+        existing = sorted(bdir.glob("notes_data-*.json"))
+        if (not force and existing
+                and time.time() - existing[-1].stat().st_mtime < BACKUP_MIN_INTERVAL):
+            return None
+        dest = bdir / f"notes_data-{stamp()}.json"
         dest.write_bytes(DATA_FILE.read_bytes())
     except OSError as exc:
-        log.warning("Could not write backup %s: %s", dest.name, exc)
+        log.warning("Could not write a backup snapshot: errno %s (%s)", exc.errno, exc.strerror)
+        if dest is not None:
+            dest.unlink(missing_ok=True)
         return None
     rotate("notes_data-*.json", BACKUP_KEEP)
     return dest
@@ -180,21 +185,77 @@ def make_backup(force: bool = False) -> Optional[Path]:
 
 
 def _load_json_file(path: Path) -> dict[str, Any]:
-    """Parse a data file. ValueError (bad UTF-8 / JSON / shape) = corrupt."""
-    data = json.loads(path.read_bytes().decode("utf-8"))
+    """Parse a data file. ValueError (bad UTF-8 / JSON / shape) = corrupt.
+    R10: a BOM (Notepad, PowerShell 5.1) is fine; a hand-edited structure
+    is repaired in memory instead of breaking the app."""
+    data = json.loads(path.read_bytes().decode("utf-8-sig"))
     if not isinstance(data, dict):
         raise ValueError("top level is not an object")
+    if _repair_shape(data):
+        log.warning("%s had an unexpected structure; repaired in memory", path.name)
     return data
 
 
+def _repair_items(items: Any) -> tuple[list, bool]:
+    """A tree as a list of {id, type, ...} dicts with list children."""
+    if not isinstance(items, list):
+        return [], items is not None
+    out, changed = [], False
+    for item in items:
+        if not isinstance(item, dict) or not isinstance(item.get("id"), str):
+            changed = True
+            continue
+        if "children" in item or item.get("type") == "folder":
+            kids, kids_changed = _repair_items(item.get("children"))
+            changed |= kids_changed or ("children" in item and not isinstance(item["children"], list))
+            item["children"] = kids
+        if "tags" in item and not isinstance(item["tags"], list):
+            item["tags"] = []
+            changed = True
+        out.append(item)
+    return out, changed
+
+
+def _repair_shape(data: dict[str, Any]) -> bool:
+    """Structural keys get the type the app expects (settings are left
+    alone: a missing glow_enabled still means "migrate the effects")."""
+    changed = False
+    data["tree"], c = _repair_items(data.get("tree"))
+    changed |= c
+    trash = data.get("trash")
+    if not isinstance(trash, dict):
+        trash, changed = {}, changed or trash is not None
+    trash["tree"], c = _repair_items(trash.get("tree"))
+    changed |= c
+    data["trash"] = trash
+    for holder, key in ((data, "notes"), (trash, "notes"), (data, "note_formats"),
+                        (data, "note_images"), (data, "note_modes")):
+        if not isinstance(holder.get(key, {}), dict):
+            holder[key] = {}
+            changed = True
+        holder.setdefault(key, {})
+    if not isinstance(data.get("favorites", []), list):
+        data["favorites"] = []
+        changed = True
+    return changed
+
+
 def _atomic_write_json(path: Path, data: dict[str, Any]) -> None:
-    """tmp file + fsync + os.replace: a crash never leaves a half file."""
+    """tmp file + fsync + os.replace: a crash never leaves a half file, a
+    failed write no leftover .tmp (R7)."""
     tmp = path.with_name(path.name + ".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-        f.flush()
-        os.fsync(f.fileno())
-    os.replace(tmp, path)
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
 
 
 def _recover_corrupt_data(reason: Exception) -> dict[str, Any]:
@@ -267,7 +328,12 @@ def update_data(mutator: Callable[[dict[str, Any]], Any]) -> Any:
     with file_lock:
         data = read_data_unlocked()
         result = mutator(data)
-        write_data_unlocked(data)
+        try:
+            write_data_unlocked(data)
+        except OSError as exc:
+            # R7: say why (e.g. the disk is full); the file on disk is unchanged.
+            log.error("Saving notes_data.json failed: errno %s (%s)", exc.errno, exc.strerror)
+            raise ApiError(507, "data_write_failed", error=exc.strerror or type(exc).__name__)
     return result
 
 

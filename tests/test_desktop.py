@@ -397,3 +397,29 @@ def test_r2_a_slow_save_has_a_limit(monkeypatch):
     page = _ClosingPage("close", delay=30, busy="saving")
     _close(page)
     assert page.destroyed.wait(2)
+
+
+# ---- S5 (kontrola 2): uživatelské jméno Windows v logu --------------------
+
+def test_s5_the_log_never_names_the_user(tmp_path, monkeypatch):
+    home = r"C:\Users\Jan Novák"
+    monkeypatch.setenv("USERPROFILE", home)
+    monkeypatch.setenv("HOME", home)
+    monkeypatch.setattr(logs.Path, "home", classmethod(lambda cls: Path(home)))
+    path = logs.setup_logging(tmp_path)
+    log = logging.getLogger("noirpad")
+    log.info("data dir %s", home + r"\AppData\Local\NoirPad")
+    log.warning("mixed %s and %s", "c:/users/jan novák/Documents/x.md", home.upper() + r"\Y")
+    try:
+        open(home + r"\nope\notes_data.json", encoding="utf-8")
+    except OSError:
+        log.exception("Could not read")          # repr() doubles the backslashes
+    log.info(r"C:\Users\Jan Nováková stays: another user's folder")
+    for h in logging.getLogger().handlers:
+        h.flush()
+    text = path.read_text(encoding="utf-8")
+    assert r"~\AppData\Local\NoirPad" in text
+    assert "~/Documents/x.md" in text and r"~\Y" in text
+    assert r"~\\nope\\notes_data.json" in text
+    assert "Nováková stays" in text
+    assert "jan novák\\" not in text.lower() and "jan novák/" not in text.lower()

@@ -7,6 +7,7 @@ from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 
 from .. import config
+from ..crypto import is_encrypted_content
 from ..errors import ApiError
 from ..export import (attachment, build_html_zip, build_note_html, image_data_uri,
                       safe_filename)
@@ -23,6 +24,10 @@ def _note_for_export(note_id: str) -> tuple[dict, str, str]:
     content = data.get("notes", {}).get(note_id)
     if content is None or not note_exists(data, note_id):
         raise ApiError(404, "note_not_found")
+    # E9: a locked note is never exported as its cipher envelope (TXT, HTML
+    # and Markdown alike) — the user removes the lock first.
+    if is_encrypted_content(content):
+        raise ApiError(409, "export_locked_note")
     item = find_item_by_id(data["tree"], note_id)
     return data, (item["name"] if item else note_id), content
 

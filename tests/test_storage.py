@@ -147,3 +147,71 @@ def test_reset_settings_keeps_the_recent_notes(client):
     client.post("/api/settings/reset")
     data = client.get("/api/data").json()
     assert data["theme"] == "matrix" and data["recent_notes"] == recent
+
+
+# ---- R7 (kontrola 2): chyba snapshotu / plný disk -------------------------
+
+def test_r7_a_snapshot_that_cannot_be_made_does_not_stop_saving(client, np_backend):
+    from conftest import new_note
+    nid = new_note(client, name="N", content="first")
+    bdir = np_backend.DATA_DIR / "backups"
+    for f in bdir.glob("*"):
+        f.unlink()
+    bdir.rmdir()
+    bdir.write_text("not a folder", encoding="utf-8")       # mkdir / glob fail
+    np_backend.make_backup(force=True)                      # never raises
+    r = client.put(f"/api/note/{nid}", json={"content": "second", "formats": []})
+    assert r.status_code == 200, r.text
+    assert client.get(f"/api/note/{nid}").json()["content"] == "second"
+
+
+def test_r7_disk_full_is_a_clear_507_and_leaves_no_tmp(client, np_backend, monkeypatch):
+    import errno
+    from conftest import new_note
+    from noirpad import storage
+    nid = new_note(client, name="N", content="kept")
+    before = np_backend.DATA_FILE.read_bytes()
+    real_replace = storage.os.replace
+
+    def full(src, dst):
+        if str(dst).endswith("notes_data.json"):
+            raise OSError(errno.ENOSPC, "No space left on device")
+        return real_replace(src, dst)
+
+    monkeypatch.setattr(storage.os, "replace", full)
+    r = client.put(f"/api/note/{nid}", json={"content": "lost?", "formats": []})
+    assert r.status_code == 507
+    assert r.json()["detail"] == {"code": "data_write_failed",
+                                  "params": {"error": "No space left on device"}}
+    assert np_backend.DATA_FILE.read_bytes() == before
+    assert not list(np_backend.DATA_DIR.glob("*.tmp"))
+
+
+# ---- R10 (kontrola 2): ručně upravený datový soubor -----------------------
+
+def _write_raw(np_backend, text, bom=False):
+    raw = text.encode("utf-8")
+    np_backend.DATA_FILE.write_bytes((b"\xef\xbb\xbf" if bom else b"") + raw)
+
+
+def test_r10_a_bom_is_not_damage(client, np_backend):
+    _write_raw(np_backend, json.dumps({"tree": [{"id": "n", "type": "note", "name": "Č"}],
+                                       "notes": {"n": "text"}}), bom=True)
+    assert client.get("/api/note/n").json()["content"] == "text"
+    assert not list(np_backend.DATA_DIR.glob("notes_data.corrupt-*"))
+    assert client.get("/api/session").json()["data_notice"] is None
+
+
+@pytest.mark.parametrize("data", [
+    {"tree": None, "notes": {}},
+    {"tree": [{"id": "f", "type": "folder", "name": "F", "children": "oops"}], "notes": {}},
+    {"tree": [{"id": "n", "type": "note", "name": "N", "tags": "x"}, 7, {"no": "id"}],
+     "notes": None, "trash": [], "favorites": "n"},
+], ids=["tree-null", "children-string", "junk-items"])
+def test_r10_a_mangled_structure_still_works(client, np_backend, data):
+    _write_raw(np_backend, json.dumps(data))
+    for url in ("/api/data", "/api/tags", "/api/trash"):
+        assert client.get(url).status_code == 200, url
+    r = client.post("/api/tree/new-note", json={"name": "Nová", "parent_id": None})
+    assert r.status_code == 200, r.text
+    assert client.get("/api/backup").status_code == 200

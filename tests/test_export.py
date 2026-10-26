@@ -7,6 +7,8 @@ covered by tests/js/print.test.js.
 import io
 import re
 import zipfile
+
+import pytest
 from urllib.parse import unquote
 
 from conftest import new_folder, new_note, pending
@@ -165,10 +167,11 @@ def test_export_md_with_picture_is_a_zip_with_assets(client):
     assert zf.read("Foto.md").decode("utf-8") == f"před ![](assets/{up['filename']}) po"
 
 
-def test_export_md_refuses_a_locked_note(client):
+@pytest.mark.parametrize("fmt", ["md", "txt", "html"])   # E9: TXT / HTML gave the cipher envelope
+def test_export_refuses_a_locked_note(client, fmt):
     nid = new_note(client, "Tajné", content="sss")
     client.post("/api/encrypt", json={"id": nid, "password": "heslo123"})
-    r = client.get(f"/api/export/{nid}/md")
+    r = client.get(f"/api/export/{nid}/{fmt}")
     assert r.status_code == 409
     assert r.json()["detail"]["code"] == "export_locked_note"
 

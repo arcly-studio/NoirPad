@@ -8,7 +8,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import config, desktop_save, images, server_auth, storage
@@ -46,7 +46,14 @@ app.mount("/static", StaticFiles(directory=str(config.STATIC_DIR)), name="static
 async def _http_guard(request: Request, call_next):
     response = server_auth.check_request(request)
     if response is None:
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception:
+            # S4: an unexpected error still gets the security headers (CSP,
+            # nosniff, no-store) — and the page its usual error shape.
+            log.exception("Unhandled error in %s %s", request.method, request.url.path)
+            response = JSONResponse({"detail": {"code": "generic", "params": {"status": 500}}},
+                                    status_code=500)
         if desktop_save.wants_native_save(request):
             response = await desktop_save.save_response(response)
     server_auth.apply_security_headers(request, response)
