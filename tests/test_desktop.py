@@ -46,7 +46,7 @@ def test_missing_webview2_explains_and_points_to_log(desk, np_backend, monkeypat
     assert len(desk) == 1 and "WebView2" in desk[0]
     assert str(logs.log_path(np_backend.DATA_DIR)) in desk[0]
     text = log_text(np_backend)
-    assert "NoirPad 1.0.0 starting" in text and "WebView2 runtime: MISSING" in text
+    assert f"NoirPad {desktop.__version__} starting" in text and "WebView2 runtime: MISSING" in text
 
 
 def test_crash_at_start_is_logged_and_shown(desk, np_backend, monkeypatch):
