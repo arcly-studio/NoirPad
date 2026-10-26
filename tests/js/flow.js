@@ -103,7 +103,32 @@ export function startApp({ tree, notes, modes = {}, scripts = [], body = BODY } 
             return Promise.resolve({ ok: true });
         }),
         setNoteMode: vi.fn((id, mode) => { srv.modes[id] = mode; return Promise.resolve({ ok: true }); }),
-        setTags: vi.fn(() => Promise.resolve({ ok: true })),
+        setTags: vi.fn((id, tags) => {
+            const answer = () => {
+                const hit = findWithParent(srv.tree, id);
+                if (!hit) throw err("Not found", 404);
+                if (tags.length > 50 || tags.some((t) => t.length > 100)) throw err("Invalid input", 422);
+                hit.item.tags = [...tags];
+                etag++;
+                return { ok: true };
+            };
+            if (srv.holds["tags:" + id]) return new Promise((res, rej) => {
+                srv.holds["tags:" + id] = () => { try { res(answer()); } catch (e) { rej(e); } };
+            });
+            try { return Promise.resolve(answer()); } catch (e) { return Promise.reject(e); }
+        }),
+        restoreFromTrash: vi.fn((id) => {
+            const i = srv.trash.tree.findIndex((t) => t.id === id);
+            if (i === -1) return Promise.reject(err("Not found", 404));
+            const [item] = srv.trash.tree.splice(i, 1);
+            srv.tree.push(item);
+            for (const nid of noteIds(item)) {
+                srv.notes[nid] = srv.trash.notes[nid];
+                delete srv.trash.notes[nid];
+            }
+            etag++;
+            return Promise.resolve({ ok: true });
+        }),
         toggleFavorite: vi.fn(() => Promise.resolve({ ok: true })),
         lock: vi.fn(() => Promise.resolve({ ok: true })),
     };

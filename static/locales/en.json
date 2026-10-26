@@ -659,7 +659,9 @@
     "remove": "Remove tag",
     "allTags": "All tags:",
     "none": "(none)",
-    "removeNamed": "Remove the tag {tag}"
+    "removeNamed": "Remove the tag {tag}",
+    "tooMany": "A note can have at most {n} tags.",
+    "tooLong": "A tag can be at most {n} characters long."
   },
   "trash": {
     "confirmEmpty": "Permanently delete all items in trash? This cannot be undone.",

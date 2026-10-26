@@ -8,6 +8,8 @@ window.NP = window.NP || {};
         toggle: function () {
             var noteId = NP.state && NP.state.currentNoteId;
             if (!noteId) return Promise.resolve();
+            /* A note shown from the trash cannot be a favorite (T9). */
+            if (NP.editor && NP.editor._trashedId === noteId) return Promise.resolve();
 
             return NP.api.toggleFavorite(noteId).then(function () {
                 /* Update local state */
@@ -24,6 +26,7 @@ window.NP = window.NP || {};
                 if (NP.topbar && NP.topbar.refresh) NP.topbar.refresh();
             }).catch(function (err) {
                 console.error("Failed to toggle favorite:", err);
+                if (NP.dialog && NP.dialog.failed) NP.dialog.failed(err);
             });
         },
 

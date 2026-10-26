@@ -202,6 +202,12 @@ window.NP = window.NP || {};
             var data = NP.state.data;
             if (!data || !data.tree) return;
 
+            /* T7: the filter's tag is on no note any more (its last one
+               was removed): the filter goes off instead of "no matches". */
+            if (NP.tree.tagFilter && !collectTags(data.tree, {})[NP.tree.tagFilter]) {
+                NP.tree.tagFilter = null;
+            }
+
             var items = sortItems(data.tree);
             for (var i = 0; i < items.length; i++) {
                 NP.tree._renderItem(items[i], 0, container);
@@ -360,7 +366,10 @@ window.NP = window.NP || {};
                         return NP.state.init();
                     }).then(function () {
                         NP.tree.render();
-                    });
+                        /* T9: the note on screen came back: editable again. */
+                        var shown = NP.editor && NP.editor._trashedId;
+                        if (shown && findItemById(NP.state.data.tree, shown)) NP.editor.loadNote(shown);
+                    }).catch(NP.dialog.failed);
                 });
             }
 
@@ -547,7 +556,11 @@ window.NP = window.NP || {};
             else if (e.key === "Home") go(rows[0]);
             else if (e.key === "End") go(rows[rows.length - 1]);
             else if (e.key === "ArrowRight" && folder) {
-                if (open) go(rows[i + 1]);
+                /* T8: into the first child — an open empty folder has none
+                   (the next row is a sibling): stay put. */
+                var next = rows[i + 1];
+                var level = function (r) { return parseInt(r.getAttribute("aria-level"), 10) || 1; };
+                if (open) { if (next && level(next) > level(row)) go(next); }
                 else { NP.state.setFolderOpenState(id, true); NP.tree.render(); }
             } else if (e.key === "ArrowLeft") {
                 if (folder && open) { NP.state.setFolderOpenState(id, false); NP.tree.render(); }

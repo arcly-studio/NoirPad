@@ -7,6 +7,10 @@ window.NP = window.NP || {};
     var tagBar = null;
     var tagInput = null;
 
+    /* The server's limits (config.py MAX_TAGS / MAX_TAG_LEN). */
+    var MAX_TAGS = 50;
+    var MAX_TAG_LEN = 100;
+
     /* #tag-bar lives in the note header (index.html). */
     function ensureDOM() {
         if (tagBar) return true;
@@ -21,10 +25,12 @@ window.NP = window.NP || {};
                 if (e.key === "Enter") {
                     e.preventDefault();
                     var v = tagInput.value.trim();
-                    if (v) {
-                        NP.tags.addTag(v);
-                        tagInput.value = "";
-                    }
+                    if (!v) return;
+                    /* T6: the text stays in the field until the tag is
+                       really added; a refusal says why. */
+                    NP.tags.addTag(v).then(function (ok) {
+                        if (ok && tagInput.value.trim() === v) tagInput.value = "";
+                    });
                 }
             });
         }
@@ -78,7 +84,9 @@ window.NP = window.NP || {};
             }
 
             tagBar.style.display = "flex";
-            if (tagInput) tagInput.disabled = !(NP.state && NP.state.currentNoteId);
+            /* No tags for a note shown from the trash (T9). */
+            var cur = NP.state && NP.state.currentNoteId;
+            if (tagInput) tagInput.disabled = !cur || !NP.tags._findItem(NP.state.data && NP.state.data.tree, cur);
             tags.forEach(function (t) {
                 /* Insert pills before the input (or append if no input) */
                 if (tagInput && tagInput.parentNode === tagBar) {
@@ -89,44 +97,62 @@ window.NP = window.NP || {};
             });
         },
 
+        /* Resolves true when the tag is on the note (added now or already
+           there), false when it was refused (the user is told why). */
         addTag: function (name) {
-            if (!name) return;
-            name = name.trim();
+            name = (name || "").trim();
+            /* T5: the note is fixed now — a tab switch while the request
+               is on its way must not put the tag on the next note. */
             var noteId = NP.state && NP.state.currentNoteId;
-            if (!noteId) return;
+            if (!name || !noteId) return Promise.resolve(false);
 
-            if (!name) return;
-            var tags = NP.tags._getNoteTags();
+            var tags = NP.tags._getNoteTags(noteId);
             /* "Work" and "work" are the same tag (C5). */
             var lower = name.toLowerCase();
-            if (tags.some(function (t) { return String(t).toLowerCase() === lower; })) return;
+            if (tags.some(function (t) { return String(t).toLowerCase() === lower; })) {
+                return Promise.resolve(true);
+            }
+            /* T6: the server's limits, said up front instead of a silent 422. */
+            var problem = name.length > MAX_TAG_LEN ? NP.t("tags.tooLong", { n: MAX_TAG_LEN })
+                : tags.length >= MAX_TAGS ? NP.t("tags.tooMany", { n: MAX_TAGS }) : null;
+            if (problem) {
+                if (NP.dialog) NP.dialog.alert(problem);
+                return Promise.resolve(false);
+            }
 
             tags.push(name);
-            NP.api.setTags(noteId, tags).then(function () {
-                NP.tags._setNoteTags(tags);
-                NP.tags.render();
-                if (NP.tree && NP.tree.render) NP.tree.render();
+            return NP.api.setTags(noteId, tags).then(function () {
+                NP.tags._saved(noteId, tags);
+                return true;
             }).catch(function (err) {
-                console.error("Failed to add tag:", err);
+                if (NP.dialog && NP.dialog.failed) NP.dialog.failed(err);
+                return false;
             });
         },
 
         removeTag: function (name) {
             var noteId = NP.state && NP.state.currentNoteId;
-            if (!noteId) return;
+            if (!noteId) return Promise.resolve(false);
 
-            var tags = NP.tags._getNoteTags();
+            var tags = NP.tags._getNoteTags(noteId);
             var idx = tags.indexOf(name);
-            if (idx === -1) return;
+            if (idx === -1) return Promise.resolve(true);
 
             tags.splice(idx, 1);
-            NP.api.setTags(noteId, tags).then(function () {
-                NP.tags._setNoteTags(tags);
-                NP.tags.render();
-                if (NP.tree && NP.tree.render) NP.tree.render();
+            return NP.api.setTags(noteId, tags).then(function () {
+                NP.tags._saved(noteId, tags);
+                return true;
             }).catch(function (err) {
-                console.error("Failed to remove tag:", err);
+                if (NP.dialog && NP.dialog.failed) NP.dialog.failed(err);
+                return false;
             });
+        },
+
+        /* The server has *tags* for *noteId*: keep the local copy, redraw. */
+        _saved: function (noteId, tags) {
+            NP.tags._setNoteTags(tags, noteId);
+            NP.tags.render();
+            if (NP.tree && NP.tree.render) NP.tree.render();
         },
 
         showAll: function () {
@@ -140,8 +166,8 @@ window.NP = window.NP || {};
             });
         },
 
-        _getNoteTags: function () {
-            var noteId = NP.state && NP.state.currentNoteId;
+        _getNoteTags: function (noteId) {
+            noteId = noteId || (NP.state && NP.state.currentNoteId);
             if (!noteId || !NP.state.data) return [];
 
             /* Look in tree items */
@@ -150,8 +176,8 @@ window.NP = window.NP || {};
             return [];
         },
 
-        _setNoteTags: function (tags) {
-            var noteId = NP.state && NP.state.currentNoteId;
+        _setNoteTags: function (tags, noteId) {
+            noteId = noteId || (NP.state && NP.state.currentNoteId);
             if (!noteId || !NP.state.data) return;
             var item = NP.tags._findItem(NP.state.data.tree, noteId);
             if (item) item.tags = tags;

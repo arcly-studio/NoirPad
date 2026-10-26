@@ -361,8 +361,10 @@ window.NP = window.NP || {};
                 split.setAttribute("data-title-key", md ? "ui.topBar.split" : "ui.topBar.splitMdOnly");
             }
 
-            setPressed(document.getElementById("btn-favorite"),
-                !!(id && NP.favorites && NP.favorites.isFavorite(id)));
+            var fav = document.getElementById("btn-favorite");
+            setPressed(fav, !!(id && NP.favorites && NP.favorites.isFavorite(id)));
+            /* A note shown from the trash: no star (T9). */
+            if (fav) fav.disabled = !!(id && NP.editor && NP.editor._trashedId === id);
 
             var lock = document.getElementById("btn-lock");
             var ed = NP.editor;

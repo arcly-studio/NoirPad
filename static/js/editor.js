@@ -231,6 +231,7 @@ window.NP = window.NP || {};
             NP.editor._forgetUnlock();
 
             NP.editor._currentNoteId = id;
+            NP.editor._trashedId = null;
             document.body.classList.remove("np-no-note");
             NP.state.currentNoteId = id;
             /* Until this note's content is in the editor, the editor still
@@ -371,7 +372,10 @@ window.NP = window.NP || {};
 
         /* Read-only view of a note in the trash (content null: a locked
            one, which cannot be opened there). Offers "Restore". */
+        _trashedId: null,     /* the note on screen is one from the trash */
+
         _showTrashed: function (id, content) {
+            NP.editor._trashedId = id;
             NP.editor.stopAutosave();
             if (NP.markdown && NP.markdown.leaveForLoad) NP.markdown.leaveForLoad();
             if (content === null) {
@@ -382,8 +386,16 @@ window.NP = window.NP || {};
                 NP.editor.el.style.opacity = "0.75";
                 NP.editor.updateCharCount();
             }
+            /* T9: its name comes from the trash (it is not in the tree). */
             var titleInput = NP.$("#note-title-input");
-            if (titleInput) titleInput.readOnly = true;
+            if (titleInput) {
+                var trashed = NP.editor._findItemInTree(
+                    (NP.state.data && NP.state.data.trash && NP.state.data.trash.tree) || [], id);
+                if (trashed) titleInput.value = trashed.name;
+                titleInput.readOnly = true;
+            }
+            if (NP.tags && NP.tags.render) NP.tags.render();
+            if (NP.topbar && NP.topbar.refresh) NP.topbar.refresh();
             NP.editor._refreshLockButton();
             if (NP.toast) {
                 NP.toast(NP.t("editor.trashedNote"), {
@@ -440,6 +452,7 @@ window.NP = window.NP || {};
 
             NP.editor.stopAutosave();
             NP.editor._currentNoteId = null;
+            NP.editor._trashedId = null;
             NP.editor._forgetUnlock();
             NP.editor._currentNoteEncrypted = false;
             NP.editor.el.contentEditable = "false";

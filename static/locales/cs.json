@@ -691,7 +691,9 @@
     "remove": "Odebrat štítek",
     "allTags": "Všechny štítky:",
     "none": "(žádné)",
-    "removeNamed": "Odebrat štítek {tag}"
+    "removeNamed": "Odebrat štítek {tag}",
+    "tooMany": "Poznámka může mít nejvýš {n} štítků.",
+    "tooLong": "Štítek může mít nejvýš {n} znaků."
   },
   "trash": {
     "confirmEmpty": "Trvale smazat všechny položky v koši? Tuto akci nelze vrátit.",
