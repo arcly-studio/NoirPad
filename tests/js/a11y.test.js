@@ -202,3 +202,12 @@ describe("Matrix rain and reduced motion (U9)", () => {
         expect(rain(false)).toBeGreaterThan(5);
     });
 });
+
+describe("font picker size field (found while testing review 2)", () => {
+    it("shows the current size", () => {
+        const win = loadApp(["js/utils.js", "js/dialog.js", "js/font-picker.js"], { body: '<div id="editor"></div>' });
+        win.NP.state = { data: { font_family: "Consolas", font_size: 17 } };
+        win.NP.fontPicker.show();
+        expect(win.document.getElementById("font-picker-size").value).toBe("17");
+    });
+});

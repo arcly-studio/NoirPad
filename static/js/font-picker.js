@@ -295,6 +295,7 @@ window.NP = window.NP || {};
             /* Re-get sizeInput after innerHTML concat */
             body.appendChild(sizeRow);
             sizeInput = sizeRow.querySelector("input");
+            sizeInput.value = currentSize;       /* innerHTML += dropped the typed-in value */
 
             /* Preview area */
             var previewBox = document.createElement("div");
