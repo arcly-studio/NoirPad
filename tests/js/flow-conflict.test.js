@@ -67,3 +67,22 @@ describe("a note changed in another window (R6)", () => {
         await flush();
     });
 });
+
+describe("overlapping saves of one window (review)", () => {
+    it("never look like a change from another window, and the last text wins", async () => {
+        const a = startApp({ tree: TREE, notes: { A: "text of A", B: "text of B" } });
+        await a.ready();
+        await a.open("A");
+        const real = a.NP.api.saveNote;
+        a.NP.api.saveNote = (...args) => flush(30).then(() => real(...args));   // a slow disk
+        a.type("one");
+        const first = a.NP.editor.save(true);            // e.g. the autosave
+        a.type("one two");
+        const second = a.NP.editor.save(true);           // e.g. a click on another tab
+        expect(await first).toBe(true);
+        expect(await second).toBe(true);
+        expect(a.NP.dialog.confirm).not.toHaveBeenCalled();
+        expect(a.srv.notes.A).toBe("one two");
+        expect(a.srv.saves.map(([, t]) => t)).toEqual(["one", "one two"]);
+    });
+});

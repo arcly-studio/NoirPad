@@ -69,8 +69,9 @@ def put_note(note_id: str, body: NoteBody):
             raise ApiError(409, "note_is_encrypted")
         # R6: another window saved this note since this one loaded it —
         # never overwrite that silently (the page asks the user).
-        if (body.base_rev is not None and current != body.content
-                and note_rev(current, data.get("note_formats", {}).get(note_id, [])) != body.base_rev):
+        stored_rev = note_rev(current, data.get("note_formats", {}).get(note_id, []))
+        if (body.base_rev is not None and stored_rev != body.base_rev
+                and stored_rev != note_rev(body.content, body.formats)):
             raise ApiError(409, "note_changed_elsewhere")
         data.setdefault("notes", {})[note_id] = body.content
         if body.formats:

@@ -310,3 +310,11 @@ def test_i6_the_conversion_snapshot_keeps_no_account_secrets(np_backend, tmp_pat
         data = json.loads(text)
         assert data["users"] == {"u1": {"username": "jana"}}     # whose notes were whose
         assert data["notes"] == {"a": "1"}
+
+
+def test_r6_same_text_but_other_formats_elsewhere_is_a_conflict_too(client):
+    nid = new_note(client, content="abc")
+    rev1 = client.get(f"/api/note/{nid}").json()["rev"]
+    client.put(f"/api/note/{nid}", json={"content": "abc", "formats": [{"start": "1.0", "end": "1.1", "bold": True}]})
+    r = client.put(f"/api/note/{nid}", json={"content": "abc", "formats": [], "base_rev": rev1})
+    assert r.status_code == 409

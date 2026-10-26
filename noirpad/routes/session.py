@@ -64,13 +64,9 @@ def login(req: LoginReq, response: Response):
     if not (RUNTIME.mode == "server" and RUNTIME.password):
         return {"ok": True}
     now = time.time()
-    RUNTIME.login_failures[:] = [t for t in RUNTIME.login_failures
-                                 if t > now - auth.LOGIN_WINDOW]
-    if len(RUNTIME.login_failures) >= auth.LOGIN_MAX_FAILURES:
-        raise ApiError(429, "too_many_attempts")
-    if len(req.password) > 1024 or not auth.password_matches(req.password):
-        RUNTIME.login_failures.append(now)
-        raise ApiError(401, "wrong_password")
+    with auth.guarded_attempt(RUNTIME.login_failures):
+        if len(req.password) > 1024 or not auth.password_matches(req.password):
+            raise ApiError(401, "wrong_password")
     token = secrets.token_urlsafe(32)
     ttl = auth.SESSION_TTL_REMEMBER if req.remember else auth.SESSION_TTL_SHORT
     RUNTIME.sessions[token] = now + ttl

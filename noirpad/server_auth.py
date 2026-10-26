@@ -17,13 +17,16 @@ state-changing requests must carry a custom header and a same-origin Origin
 import hashlib
 import hmac
 import os
+import threading
 import time
+from contextlib import contextmanager
 from typing import Any, Optional
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 
 from . import app_lock
+from .errors import ApiError
 from .runtime import LOOPBACK_HOSTS, RUNTIME, env_allowed_hosts
 
 SESSION_COOKIE_NAME = "noirpad_session"
@@ -38,6 +41,29 @@ SESSION_COOKIE_SECURE = (os.environ.get("NOIRPAD_SECURE_COOKIES") or "").lower()
 
 LOGIN_MAX_FAILURES = 10      # per LOGIN_WINDOW seconds, across all clients
 LOGIN_WINDOW = 60
+
+_attempt_lock = threading.Lock()
+
+
+@contextmanager
+def guarded_attempt(failures: list):
+    """One password try against a rate limit (*failures*: times of recent
+    failed tries). The try takes its slot BEFORE the password is checked
+    and gives it back only when the block finishes without an error: the
+    handlers run in threads (R8), so parallel guesses must not all pass the
+    limit before the first failure is written down."""
+    now = time.time()
+    with _attempt_lock:
+        failures[:] = [t for t in failures if t > now - LOGIN_WINDOW]
+        if len(failures) >= LOGIN_MAX_FAILURES:
+            raise ApiError(429, "too_many_attempts")
+        failures.append(now)
+    yield
+    with _attempt_lock:
+        try:
+            failures.remove(now)
+        except ValueError:
+            pass
 
 # Endpoints reachable before login (server mode with a password).
 PUBLIC_API = {("GET", "/api/session"), ("POST", "/api/login"), ("POST", "/api/logout")}

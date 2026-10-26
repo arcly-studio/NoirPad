@@ -152,3 +152,33 @@ describe("locked in another window with unsaved text (R11)", () => {
         expect(win.document.body.classList.contains("np-locked-elsewhere")).toBe(false);
     });
 });
+
+describe("locked elsewhere: a typo never costs the text (R11, review)", () => {
+    it("a wrong password asks again with the reason; cancel asks before discarding", async () => {
+        const win = loadApp(["js/utils.js", "js/api.js"]);
+        let tries = 0;
+        win.fetch = (url) => {
+            const unlock = url.includes("/api/app-lock/unlock");
+            const ok = unlock && ++tries === 2;                     // 1st password wrong
+            const status = ok ? 200 : unlock ? 401 : 423;
+            return Promise.resolve({ ok, status,
+                headers: { get: (k) => (k.toLowerCase() === "content-type" ? "application/json" : null) },
+                json: () => Promise.resolve({ ok: true }),
+                text: () => Promise.resolve(JSON.stringify({ detail: { code: unlock ? "wrong_password" : "app_locked" } })) });
+        };
+        const saves = [];
+        win.NP.editor = { _saveState: "dirty", _currentNoteId: "n", save: (s) => { saves.push(s); return Promise.resolve(true); } };
+        const asked = [];
+        const answers = [null, "tpyo", "right"];             // cancel, wrong, right
+        win.NP.passwordDialog = { ask: (o) => { asked.push(o.warning || ""); return Promise.resolve(answers.shift()); } };
+        const confirms = [];
+        win.NP.dialog = { confirm: (m, o) => { confirms.push(o.danger); return Promise.resolve(false); } };   // "try again"
+        await win.NP.api.saveNote("n", "text", []).catch(() => {});
+        for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0));
+        expect(confirms).toEqual([true]);                    // cancel → "discard?" → no
+        expect(asked.length).toBe(3);
+        expect(asked[2]).toBe(win.NP.t("errors.wrong_password"));
+        expect(saves).toEqual([true]);
+        expect(win.document.body.classList.contains("np-locked-elsewhere")).toBe(false);
+    });
+});

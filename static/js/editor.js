@@ -149,6 +149,8 @@ window.NP = window.NP || {};
         _flushBeacon: function (leaving) {
             var id = NP.editor._currentNoteId;
             if (!id || NP.editor._loadedNoteId !== id) return;
+            /* Only hidden, and a save is on its way: that one stores it. */
+            if (!leaving && NP.editor._saving) return;
             var token = NP.editor._unlockToken;
             if (NP.editor._currentNoteEncrypted && !token) return;
             var mdActive = NP.markdown && NP.markdown.isActive &&
@@ -893,9 +895,25 @@ window.NP = window.NP || {};
 
         /* ---- Save ---- */
 
+        /* One save at a time: two overlapping ones (autosave + a tab click,
+           Ctrl+S…) would carry the same old rev — a false "changed in
+           another window" (R6) — and could arrive out of order (the server
+           handles requests in threads). The next save starts when the one
+           before is done and stores what is in the editor by then. */
+        _saving: null,
+
+        save: function (silent) {
+            var run = function () { return NP.editor._saveNow(silent); };
+            var prev = NP.editor._saving;
+            var p = prev ? prev.then(run, run) : run();
+            NP.editor._saving = p;
+            p.then(function () { if (NP.editor._saving === p) NP.editor._saving = null; });
+            return p;
+        },
+
         /* Resolves true when the open note is stored (or there is nothing
            to store), false when the save failed (E2). Never rejects. */
-        save: function (silent) {
+        _saveNow: function (silent) {
             var id = NP.editor._currentNoteId;
             if (!id || !NP.editor.el || NP.editor._loadedNoteId !== id) {
                 /* Nothing open, or the editor still holds another note. */

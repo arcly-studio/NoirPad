@@ -294,3 +294,39 @@ def test_r8_handlers_never_block_the_event_loop(np_backend):
     async_routes = {r.endpoint.__name__ for r in np_backend.app.routes
                     if isinstance(r, APIRoute) and inspect.iscoroutinefunction(r.endpoint)}
     assert async_routes == ASYNC_OK
+
+
+def test_r8_parallel_password_guesses_cannot_pass_the_limit(np_backend):
+    """Review of R8: the handlers run in threads; 30 guesses at once must
+    still get at most LOGIN_MAX_FAILURES checks, the rest 429."""
+    import threading
+    import time as _time
+    from noirpad import server_auth
+    from noirpad.errors import ApiError
+    failures, results, start = [], [], threading.Barrier(30)
+
+    def guess():
+        start.wait()
+        try:
+            with server_auth.guarded_attempt(failures):
+                _time.sleep(0.05)                       # a slow KDF
+                raise ApiError(401, "wrong_password")
+        except ApiError as e:
+            results.append(e.status_code)
+
+    threads = [threading.Thread(target=guess) for _ in range(30)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert results.count(401) == server_auth.LOGIN_MAX_FAILURES
+    assert results.count(429) == 30 - server_auth.LOGIN_MAX_FAILURES
+
+
+def test_r8_a_right_password_does_not_use_up_the_limit(np_backend):
+    from noirpad import server_auth
+    failures = []
+    for _ in range(3 * server_auth.LOGIN_MAX_FAILURES):
+        with server_auth.guarded_attempt(failures):
+            pass
+    assert failures == []

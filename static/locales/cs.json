@@ -115,6 +115,8 @@
     "lockedElsewhereTitle": "NoirPad je zamčený",
     "lockedElsewhere": "NoirPad se zamkl v jiném okně. V tomto okně jsou neuložené změny: zadejte heslo a zůstanou zachované.",
     "unlockKeep": "Odemknout a uložit",
+    "discardUnsaved": "Zahodit neuložené změny v tomto okně a načíst znovu? Nepůjde je obnovit.",
+    "tryAgain": "Zadat heslo znovu",
     "chooseMessage": {
       "one": "Zvolte heslo dlouhé alespoň {n} znak.",
       "few": "Zvolte heslo dlouhé alespoň {n} znaky.",
@@ -256,6 +258,9 @@
       "rawDark": "Zdrojový text – tmavý (bílé na černém)",
       "cancel": "Zrušit"
     }
+  },
+  "tabs": {
+    "trashedElsewhere": "Otevřenou poznámku jiné okno přesunulo do koše. Co jste tu napsali od posledního uložení, se nepodařilo uložit."
   },
   "images": {
     "notInserted": "Obrázek se nevložil: mezitím se otevřela jiná poznámka. Vložte ho znovu.",
@@ -773,7 +778,8 @@
     "bottomBar": {
       "chars": "0 znaků",
       "words": "0 slov"
-    },
+    },
+
     "settings": {
       "title": "Nastavení",
       "section": {

@@ -85,20 +85,36 @@ window.NP = window.NP || {};
             return;
         }
         document.body.classList.add("np-locked-elsewhere");
-        NP.passwordDialog.ask({
-            title: NP.t("appLock.lockedElsewhereTitle"),
-            message: NP.t("appLock.lockedElsewhere"),
-            okLabel: NP.t("appLock.unlockKeep")
-        }).then(function (password) {
-            if (!password) throw new Error("cancelled");
-            return NP.api.appLockUnlock(password);
-        }).then(function () {
-            document.body.classList.remove("np-locked-elsewhere");
-            reloadingForLock = false;
-            return ed.save(true);
-        }).catch(function () {
-            window.location.reload();
-        });
+        /* A typo, a rate limit or a network hiccup asks again (with why);
+           the text is only dropped after an explicit "discard". */
+        function attempt(problem) {
+            return NP.passwordDialog.ask({
+                title: NP.t("appLock.lockedElsewhereTitle"),
+                message: NP.t("appLock.lockedElsewhere"),
+                warning: problem || undefined,
+                okLabel: NP.t("appLock.unlockKeep")
+            }).then(function (password) {
+                if (!password) {
+                    return NP.dialog.confirm(NP.t("appLock.discardUnsaved"), {
+                        title: NP.t("appLock.lockedElsewhereTitle"),
+                        okLabel: NP.t("editor.discardChanges"),
+                        cancelLabel: NP.t("appLock.tryAgain"),
+                        danger: true
+                    }).then(function (discard) {
+                        if (discard) window.location.reload();
+                        else return attempt();
+                    });
+                }
+                return NP.api.appLockUnlock(password).then(function () {
+                    document.body.classList.remove("np-locked-elsewhere");
+                    reloadingForLock = false;
+                    return ed.save(true);
+                }, function (err) {
+                    return attempt(err && err.message ? err.message : String(err));
+                });
+            });
+        }
+        attempt();
     }
 
     function request(method, url, body) {

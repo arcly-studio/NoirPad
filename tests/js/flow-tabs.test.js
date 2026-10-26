@@ -231,3 +231,17 @@ describe("an untouched note is not written again (E8)", () => {
         expect(a.srv.refused).toEqual([]);
     });
 });
+
+describe("the open note trashed in another window while typing here (review)", () => {
+    it("says that the typing could not be saved", async () => {
+        const a = await app();
+        a.NP.toast = (m) => toasts.push(m);
+        const toasts = [];
+        await a.open("A");
+        a.type("typed here");
+        a.NP.api.deleteItem("A");               // the other window
+        await a.NP.state.poll();
+        expect(a.tabs()).toEqual([]);
+        expect(toasts).toEqual([a.NP.t("tabs.trashedElsewhere")]);
+    });
+});

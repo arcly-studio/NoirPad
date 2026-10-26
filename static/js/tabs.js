@@ -122,11 +122,18 @@ window.NP = window.NP || {};
            their tabs close. If the open note was one of them, the editor
            lets go of it first, so nothing typed afterwards is "saved" into
            a trashed note, and the start page takes its place (T1, T2). */
-        closeNotes: function (ids) {
+        closeNotes: function (ids, opts) {
             var gone = {};
             ids.forEach(function (id) { gone[id] = true; });
             var openGone = !!(NP.state.currentNoteId && gone[NP.state.currentNoteId]) ||
                 !!(NP.state.activeTabId && gone[NP.state.activeTabId]);
+            /* A switch still waiting for its save may be headed for one of
+               them: it is off (review). */
+            ++switchSeq;
+            /* Trashed in another window while typing here: the server takes
+               no more saves for it — at least say so (review). */
+            var lost = openGone && opts && opts.elsewhere && NP.editor &&
+                NP.editor._saveState && NP.editor._currentNoteId === NP.state.currentNoteId;
             for (var i = NP.state.openTabs.length - 1; i >= 0; i--) {
                 if (gone[NP.state.openTabs[i].id]) NP.state.openTabs.splice(i, 1);
             }
@@ -135,6 +142,7 @@ window.NP = window.NP || {};
                 NP.state.currentNoteId = null;
                 if (NP.editor) NP.editor.showWelcome();
             }
+            if (lost && NP.toast) NP.toast(NP.t("tabs.trashedElsewhere"), { timeout: 12000 });
             NP.tabs.render();
         },
 
@@ -160,7 +168,7 @@ window.NP = window.NP || {};
             var cur = NP.state.currentNoteId;
             if (title && cur && cur in names && document.activeElement !== title &&
                 title.value !== names[cur]) title.value = names[cur];
-            if (gone.length) NP.tabs.closeNotes(gone);
+            if (gone.length) NP.tabs.closeNotes(gone, { elsewhere: true });
             else if (renamed) NP.tabs.render();
         },
 

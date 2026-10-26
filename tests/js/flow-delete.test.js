@@ -89,3 +89,18 @@ describe("deleting a note open in a background tab (T2)", () => {
         expect(a.win.document.querySelector(".tab-pill.active")).toBe(null);
     });
 });
+
+describe("deleting the open note when its last typing cannot be saved (review)", () => {
+    it("asks first; 'stay' deletes nothing and keeps the text", async () => {
+        const a = await app();
+        await a.open("A");
+        a.srv.failSaves = true;
+        a.type("unsaved typing");
+        a.srv.confirmAnswer = false;                       // "Stay on the note"
+        await a.NP.tree.deleteSelected("A");
+        await flush();
+        expect(a.NP.api.deleteItem).not.toHaveBeenCalled();
+        expect(a.tabs()).toEqual(["A"]);
+        expect(a.NP.editor.el.textContent).toBe("unsaved typing");
+    });
+});

@@ -107,6 +107,8 @@
     "lockedElsewhereTitle": "NoirPad is locked",
     "lockedElsewhere": "NoirPad was locked in another window. This window has changes that are not saved yet: enter the password to keep them.",
     "unlockKeep": "Unlock and save",
+    "discardUnsaved": "Discard the unsaved changes in this window and reload? They cannot be recovered.",
+    "tryAgain": "Enter the password again",
     "chooseMessage": {
       "one": "Choose a password of at least {n} character.",
       "other": "Choose a password of at least {n} characters."
@@ -234,6 +236,9 @@
       "rawDark": "Raw text — dark (white on black)",
       "cancel": "Cancel"
     }
+  },
+  "tabs": {
+    "trashedElsewhere": "The open note was moved to the trash in another window. What you typed here since the last save could not be saved."
   },
   "images": {
     "notInserted": "The picture was not inserted: another note was opened meanwhile. Paste it again.",
@@ -741,7 +746,8 @@
     "bottomBar": {
       "chars": "0 chars",
       "words": "0 words"
-    },
+    },
+
     "settings": {
       "title": "Settings",
       "section": {

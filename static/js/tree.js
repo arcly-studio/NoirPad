@@ -722,11 +722,15 @@ window.NP = window.NP || {};
             return ask.then(function (ok) {
                 if (!ok) return;
                 var openGone = goneIds.indexOf(NP.state.currentNoteId) !== -1;
-                /* What was typed last goes to the trash with the note. */
-                var flushed = openGone && NP.editor ? NP.editor.save(true) : Promise.resolve();
-                return flushed.then(function () {
-                    return NP.api.deleteItem(id);
-                }).then(function () {
+                /* What was typed last goes to the trash with the note. If
+                   that save fails, the user decides (discard / stay): "stay"
+                   keeps the note and its text, nothing is deleted. */
+                var flushed = openGone && NP.editor && NP.editor.leave ? NP.editor.leave() : Promise.resolve(true);
+                return flushed.then(function (go) {
+                    if (!go) return false;
+                    return NP.api.deleteItem(id).then(function () { return true; });
+                }).then(function (deleted) {
+                    if (!deleted) return;
                     if (NP.tabs) NP.tabs.closeNotes(goneIds);
                     else if (openGone) {
                         NP.state.currentNoteId = null;

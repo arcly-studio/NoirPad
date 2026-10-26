@@ -302,7 +302,7 @@ window.NP = window.NP || {};
         modalOpen: function () {
             return !!document.querySelector(
                 "#settings-overlay.visible, #help-overlay.visible, #shortcuts-overlay.visible, " +
-                "#font-overlay.visible, .np-modal, .np-findall-overlay, .np-dialog, " +
+                ".np-modal, .np-findall-overlay, .np-dialog, " +
                 ".np-password-dialog, #image-viewer-overlay");
         },
 
