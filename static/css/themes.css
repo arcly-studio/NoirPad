@@ -41,7 +41,7 @@
     --fg:        var(--accent);                                  /* themed text */
     --fg-bright: color-mix(in srgb, var(--accent) 64%, #ffffff); /* emphasis    */
     --fg-dim:    color-mix(in srgb, var(--accent) 74%, #000000); /* secondary   */
-    --fg-muted:  color-mix(in srgb, var(--accent) 42%, #5a5a60); /* tertiary    */
+    --fg-muted:  color-mix(in srgb, var(--accent) 42%, #5a5a60); /* tertiary; text, so >= 4.5:1 (U5) */
 
     --border:        color-mix(in srgb, var(--accent) 15%, #2c2c33);
     --border-strong: color-mix(in srgb, var(--accent) 28%, #3a3a44);
@@ -145,15 +145,16 @@
 [data-theme="orange"] { --accent: #ff6600; }
 [data-theme="ice"]    { --accent: #88ddff; }
 
-/* Darker accents: the default --fg-dim (accent + black) is under 4.5:1 on
-   --bg-light for small text. A greyer, lighter tint keeps it "dim" but
-   readable: >= 4.8:1 (D12). */
+/* Darker accents: the default --fg-dim / --fg-muted (accent + black / grey)
+   are under 4.5:1 on --bg-light for small text. Greyer, lighter tints keep
+   them "dim" / "muted" but readable (D12, U5). */
 [data-theme="red"],
 [data-theme="purple"],
 [data-theme="blue"],
 [data-theme="orange"],
 [data-theme="pink"] {
-    --fg-dim: color-mix(in srgb, var(--accent) 60%, #9a9aa2);
+    --fg-dim: color-mix(in srgb, var(--accent) 60%, #b4b4bc);
+    --fg-muted: color-mix(in srgb, var(--accent) 45%, #92929a);
 }
 
 /* ------------------------------------------------------------
@@ -174,13 +175,14 @@
     --fg:        #f8f8f2;
     --fg-bright: #ffffff;
     --fg-dim:    #b8bccb;
-    --fg-muted:  #8190c0;   /* >= 3:1 on --bg-light (G8) */
+    --fg-muted:  #94a1c9;   /* >= 4.5:1: also used for text (U5) */
     --border:        #44475a;
     --border-strong: #565a72;
     --hover-bg:  color-mix(in srgb, var(--accent) 14%, var(--bg-light));
     --select-bg: color-mix(in srgb, var(--accent) 22%, var(--bg));
     --cursor-color: var(--accent);
     --glow: rgba(189, 147, 249, 0.4);
+    --danger:    #ff7878;   /* red text >= 4.5:1 on --bg-light (U7) */
 }
 
 [data-theme="synthwave"] {
@@ -194,13 +196,14 @@
     --fg:        #f4eee4;
     --fg-bright: #ffffff;
     --fg-dim:    #c9bcd6;
-    --fg-muted:  #8a7a9e;
+    --fg-muted:  #9f92af;   /* >= 4.5:1 (U5) */
     --border:        #463763;
     --border-strong: #5c4a7d;
     --hover-bg:  color-mix(in srgb, var(--accent) 14%, var(--bg-light));
     --select-bg: color-mix(in srgb, var(--accent) 22%, var(--bg));
     --cursor-color: var(--accent);
     --glow: rgba(255, 126, 219, 0.5);
+    --danger:    #ff6161;   /* red text >= 4.5:1 on --bg-light (U7) */
 }
 
 [data-theme="nord"] {
@@ -213,14 +216,16 @@
     --accent:    #88c0d0;
     --fg:        #d8dee9;
     --fg-bright: #eceff4;
-    --fg-dim:    #aeb6c6;   /* 4.9:1 on --bg-light (D12) */
-    --fg-muted:  #8f99ae;   /* >= 3:1 on --bg-light (G8) */
+    --fg-dim:    #c2c9d6;   /* above --fg-muted, >= 4.5:1 on --bg-light (D12) */
+    --fg-muted:  #a9b0c1;   /* >= 4.5:1 (U5) */
     --border:        #434c5e;
     --border-strong: #4c566a;
     --hover-bg:  color-mix(in srgb, var(--accent) 14%, var(--bg-light));
     --select-bg: color-mix(in srgb, var(--accent) 22%, var(--bg));
     --cursor-color: var(--accent);
     --glow: rgba(136, 192, 208, 0.4);
+    --danger:    #ff9090;   /* red text >= 4.5:1 on --bg-light (U7) */
+    --control-off: #9c968f;   /* off switch outline >= 3:1 on --bg-light (U13); warm grey, far from the cyan accent */
 }
 
 [data-theme="gruvbox"] {
@@ -234,13 +239,15 @@
     --fg:        #ebdbb2;
     --fg-bright: #fbf1c7;
     --fg-dim:    #bdae93;
-    --fg-muted:  #928374;
+    --fg-muted:  #ada297;   /* >= 4.5:1 (U5) */
     --border:        #504945;
     --border-strong: #665c54;
     --hover-bg:  color-mix(in srgb, var(--accent) 14%, var(--bg-light));
     --select-bg: color-mix(in srgb, var(--accent) 22%, var(--bg));
     --cursor-color: var(--accent);
     --glow: rgba(250, 189, 47, 0.4);
+    --danger:    #ff7b7b;   /* red text >= 4.5:1 on --bg-light (U7) */
+    --control-off: #88888f;   /* off switch outline >= 3:1 on --bg-light (U13) */
 }
 
 [data-theme="tokyo-night"] {
@@ -254,7 +261,7 @@
     --fg:        #c0caf5;
     --fg-bright: #ffffff;
     --fg-dim:    #9aa5ce;
-    --fg-muted:  #7a83b0;   /* >= 3:1 on --bg-light (G8) */
+    --fg-muted:  #878fb8;   /* >= 4.5:1 (U5) */
     --border:        #292e42;
     --border-strong: #414868;
     --hover-bg:  color-mix(in srgb, var(--accent) 14%, var(--bg-light));

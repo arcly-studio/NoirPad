@@ -836,6 +836,7 @@ window.NP = window.NP || {};
                 NP.shortcutsManager.refreshSummary();
             }
             overlay.classList.add("visible");
+            if (NP.modal) NP.modal.open(overlay, { labelledBy: "settings-title" });
         },
 
         close: function () {
@@ -843,6 +844,7 @@ window.NP = window.NP || {};
             if (!overlay) return;
             closeAllDropdowns(null);
             overlay.classList.remove("visible");
+            if (NP.modal) NP.modal.close(overlay);
         },
 
         toggle: function () {

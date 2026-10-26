@@ -163,11 +163,89 @@ window.NP = window.NP || {};
             if (input) {
                 input.focus();
                 input.select();
+            } else if (opts.danger && cancel) {
+                cancel.focus();     /* U14: Enter alone never does the dangerous thing */
             } else {
                 ok.focus();
             }
         });
     }
+
+    /* ---- NP.modal: the app's own windows (Settings, Help, Shortcuts, Font
+       picker) behave like the dialogs above for the keyboard and screen
+       readers (U1): role=dialog + aria-modal + a name, the focus moves in,
+       Tab stays inside, and on close the focus goes back where it was. ---- */
+
+    var FOCUSABLE = "a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), " +
+        "select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
+    var modals = [];   /* open windows, topmost last */
+
+    function shown(node, root) {
+        for (var n = node; n && n !== root.parentNode; n = n.parentElement) {
+            if (n.hidden) return false;
+            var cs = window.getComputedStyle(n);
+            if (cs.display === "none" || cs.visibility === "hidden") return false;
+        }
+        return true;
+    }
+
+    function focusables(root) {
+        return Array.prototype.filter.call(root.querySelectorAll(FOCUSABLE), function (n) {
+            return shown(n, root);
+        });
+    }
+
+    function onModalKey(e) {
+        if (e.key !== "Tab" || stack.length) return;    /* an NP.dialog on top handles itself */
+        var top = modals[modals.length - 1];
+        if (!top) return;
+        var list = focusables(top);
+        if (!list.length) return;
+        var at = list.indexOf(document.activeElement);
+        var next = e.shiftKey ? (at <= 0 ? list.length - 1 : at - 1)
+                              : (at === -1 || at === list.length - 1 ? 0 : at + 1);
+        e.preventDefault();
+        list[next].focus();
+    }
+
+    NP.modal = {
+        /* opts: label (text) or labelledBy (element id), initialFocus (selector) */
+        open: function (overlay, opts) {
+            opts = opts || {};
+            if (!overlay || modals.indexOf(overlay) !== -1) return;
+            overlay.setAttribute("role", "dialog");
+            overlay.setAttribute("aria-modal", "true");
+            if (opts.labelledBy) overlay.setAttribute("aria-labelledby", opts.labelledBy);
+            else if (opts.label) overlay.setAttribute("aria-label", opts.label);
+            overlay.setAttribute("aria-hidden", "false");
+            overlay._npReturnFocus = document.activeElement;
+            modals.push(overlay);
+            if (modals.length === 1) document.addEventListener("keydown", onModalKey, true);
+            var first = (opts.initialFocus && overlay.querySelector(opts.initialFocus)) ||
+                focusables(overlay)[0];
+            if (first) {
+                try { first.focus(); } catch (e) { /* not focusable */ }
+            }
+        },
+
+        close: function (overlay) {
+            var i = modals.indexOf(overlay);
+            if (i === -1) return;
+            modals.splice(i, 1);
+            if (!modals.length) document.removeEventListener("keydown", onModalKey, true);
+            overlay.setAttribute("aria-hidden", "true");
+            var back = overlay._npReturnFocus;
+            overlay._npReturnFocus = null;
+            /* Only when the focus was inside (or nowhere): a click elsewhere wins. */
+            var active = document.activeElement;
+            if (back && back.focus && document.contains(back) &&
+                (!active || active === document.body || overlay.contains(active))) {
+                try { back.focus(); } catch (e) { /* gone */ }
+            }
+        },
+
+        isOpen: function (overlay) { return modals.indexOf(overlay) !== -1; }
+    };
 
     var toastTimer = null;
 

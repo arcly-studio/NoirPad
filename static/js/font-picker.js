@@ -137,13 +137,14 @@ window.NP = window.NP || {};
             overlay.className = "np-modal";
             overlay.style.cssText =
                 "position:fixed;top:0;left:0;width:100%;height:100%;" +
-                "z-index:5000;background:rgba(0,0,0,0.85);" +
+                "z-index:5000;background:rgba(0,0,0,0.55);" +
                 "display:flex;align-items:center;justify-content:center;";
 
+            /* #font-picker: background, border and radius from G7 (noirpad.css) */
             var modal = document.createElement("div");
+            modal.id = "font-picker";
             modal.style.cssText =
-                "background:var(--bg, #0a0a0a);border:1px solid var(--border, #1a2e1a);" +
-                "border-radius:8px;width:520px;max-width:90vw;max-height:85vh;" +
+                "width:520px;max-width:90vw;max-height:85vh;" +
                 "display:flex;flex-direction:column;overflow:hidden;";
 
             /* Header */
@@ -152,10 +153,10 @@ window.NP = window.NP || {};
                 "display:flex;align-items:center;justify-content:space-between;" +
                 "padding:10px 16px;border-bottom:1px solid var(--border, #1a2e1a);flex-shrink:0;";
             header.innerHTML =
-                '<span style="font-size:14px;font-weight:bold;color:var(--fg-bright, #4cff7a);' +
-                'text-shadow:0 0 6px var(--glow, #00ff41);">' + NP.escapeHtml(NP.t("fontPicker.title")) + '</span>' +
+                '<span id="font-picker-title" style="font-size:14px;font-weight:600;color:var(--fg-bright, #4cff7a);">' + NP.escapeHtml(NP.t("fontPicker.title")) + '</span>' +
                 '<button id="font-picker-close" style="font-size:18px;color:var(--fg-dim, #00bf30);' +
-                'cursor:pointer;background:none;border:none;padding:2px 8px;" title="' + NP.escapeHtml(NP.t("common.close")) + '">&times;</button>';
+                'cursor:pointer;background:none;border:none;padding:2px 8px;" title="' + NP.escapeHtml(NP.t("common.close")) +
+                '" aria-label="' + NP.escapeHtml(NP.t("common.close")) + '">&times;</button>';
             modal.appendChild(header);
 
             /* Scrollable body — header stays fixed above, footer fixed
@@ -171,6 +172,7 @@ window.NP = window.NP || {};
             var filterInput = document.createElement("input");
             filterInput.type = "text";
             filterInput.placeholder = NP.t("fontPicker.filterPlaceholder");
+            filterInput.setAttribute("aria-label", NP.t("fontPicker.filterPlaceholder"));
             filterInput.style.cssText =
                 "width:100%;padding:4px 8px;font-size:12px;background:var(--bg-entry, #0d0d0d);" +
                 "border:1px solid var(--border, #1a2e1a);border-radius:4px;color:var(--fg, #00ff41);";
@@ -179,12 +181,16 @@ window.NP = window.NP || {};
 
             /* Font list */
             var listContainer = document.createElement("div");
+            /* U1: a listbox – ↑ ↓ Home End pick a font, Tab moves on. */
+            listContainer.setAttribute("role", "listbox");
+            listContainer.setAttribute("aria-labelledby", "font-picker-title");
             listContainer.style.cssText =
                 "flex:1;overflow-y:auto;padding:4px 0;min-height:120px;max-height:200px;";
 
             var selectedFont = currentFont;
 
             function renderList(filter) {
+                var hadFocus = listContainer.contains(document.activeElement);
                 listContainer.innerHTML = "";
                 var lowerFilter = (filter || "").toLowerCase();
 
@@ -200,6 +206,7 @@ window.NP = window.NP || {};
                     if (matched.length === 0) continue;
 
                     var hdr = document.createElement("div");
+                    hdr.setAttribute("role", "presentation");
                     hdr.textContent = NP.t(cat.labelKey);
                     hdr.style.cssText =
                         "padding:8px 16px 3px;font-size:10px;letter-spacing:1px;" +
@@ -212,6 +219,9 @@ window.NP = window.NP || {};
                         var item = document.createElement("div");
                         item.textContent = fontName;
                         item.dataset.font = fontName;
+                        item.setAttribute("role", "option");
+                        item.setAttribute("aria-selected", fontName === selectedFont ? "true" : "false");
+                        item.tabIndex = -1;
                         item.style.cssText =
                             "padding:5px 16px;cursor:pointer;font-size:13px;" +
                             "font-family:'" + fontName + "'," + cat.fallback + ";" +
@@ -238,7 +248,27 @@ window.NP = window.NP || {};
                         listContainer.appendChild(item);
                     }
                 }
+                var options = listContainer.querySelectorAll("[role=option]");
+                var current = listContainer.querySelector("[aria-selected=true]") || options[0];
+                if (current) {
+                    current.tabIndex = 0;
+                    if (hadFocus) current.focus();
+                }
             }
+
+            listContainer.addEventListener("keydown", function (e) {
+                var options = Array.prototype.slice.call(listContainer.querySelectorAll("[role=option]"));
+                var i = options.indexOf(document.activeElement);
+                var to = null;
+                if (e.key === "ArrowDown") to = options[Math.min(i + 1, options.length - 1)];
+                else if (e.key === "ArrowUp") to = options[Math.max(i - 1, 0)];
+                else if (e.key === "Home") to = options[0];
+                else if (e.key === "End") to = options[options.length - 1];
+                else if (e.key === "Enter" || e.key === " ") to = document.activeElement;
+                else return;
+                e.preventDefault();
+                if (to && to.dataset.font) to.click();
+            });
 
             renderList("");
             body.appendChild(listContainer);
@@ -249,9 +279,10 @@ window.NP = window.NP || {};
                 "display:flex;align-items:center;gap:10px;padding:8px 16px;" +
                 "border-top:1px solid var(--border, #1a2e1a);flex-shrink:0;";
             sizeRow.innerHTML =
-                '<label style="font-size:12px;color:var(--fg-dim, #00bf30);">' + NP.escapeHtml(NP.t("fontPicker.sizeLabel")) + '</label>';
+                '<label for="font-picker-size" style="font-size:12px;color:var(--fg-dim, #00bf30);">' + NP.escapeHtml(NP.t("fontPicker.sizeLabel")) + '</label>';
             var sizeInput = document.createElement("input");
             sizeInput.type = "number";
+            sizeInput.id = "font-picker-size";
             sizeInput.min = MIN_SIZE;
             sizeInput.max = MAX_SIZE;
             sizeInput.value = currentSize;
@@ -388,14 +419,17 @@ window.NP = window.NP || {};
 
             function close() {
                 document.removeEventListener("keydown", escHandler, true);
+                var gone = overlayEl;
                 if (overlayEl && overlayEl.parentNode) {
                     overlayEl.parentNode.removeChild(overlayEl);
                 }
                 overlayEl = null;
+                if (NP.modal && gone) NP.modal.close(gone);
             }
 
-            /* Focus filter */
-            filterInput.focus();
+            /* Focus filter; Tab stays in the window (U1) */
+            if (NP.modal) NP.modal.open(overlay, { labelledBy: "font-picker-title", initialFocus: "input" });
+            else filterInput.focus();
         }
     };
 

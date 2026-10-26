@@ -729,15 +729,7 @@
     "bottomBar": {
       "chars": "0 chars",
       "words": "0 words"
-    },
-    "help": {
-      "title": "Keyboard Shortcuts"
-    },
-    "fontPicker": {
-      "title": "Font Settings",
-      "searchPlaceholder": "Search fonts...",
-      "size": "Size:"
-    },
+    },
     "settings": {
       "title": "Settings",
       "section": {

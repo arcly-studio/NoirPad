@@ -184,39 +184,11 @@
 
 </div>
 
-<!-- ============ Help Overlay ============ -->
-<div id="help-overlay">
-    <div id="help-window">
-        <div id="help-header">
-            <h2 data-i18n="ui.help.title">Keyboard Shortcuts</h2>
-            <button id="help-close" aria-label="Close" data-i18n-aria-label="common.close">&times;</button>
-        </div>
-        <div id="help-body"></div>
-    </div>
-</div>
-
-<!-- ============ Font Picker Overlay ============ -->
-<div id="font-overlay">
-    <div id="font-picker">
-        <div id="font-picker-header">
-            <h2 data-i18n="ui.fontPicker.title">Font Settings</h2>
-            <button id="font-picker-close" aria-label="Close" data-i18n-aria-label="common.close">&times;</button>
-        </div>
-        <input id="font-search" type="text" placeholder="Search fonts..." data-i18n-placeholder="ui.fontPicker.searchPlaceholder" spellcheck="false" autocomplete="off">
-        <div id="font-list"></div>
-        <div id="font-size-row">
-            <label for="font-size-input" data-i18n="ui.fontPicker.size">Size:</label>
-            <input id="font-size-input" type="number" min="8" max="32" value="14">
-            <span translate="no">px</span>
-        </div>
-    </div>
-</div>
-
 <!-- ============ Settings Overlay ============ -->
 <div id="settings-overlay">
     <div id="settings-window">
         <div id="settings-header">
-            <h2 data-i18n="ui.settings.title">Settings</h2>
+            <h2 id="settings-title" data-i18n="ui.settings.title">Settings</h2>
             <button id="settings-close" aria-label="Close" data-i18n-aria-label="common.close">&times;</button>
         </div>
         <div id="settings-body">
@@ -312,8 +284,8 @@
             </div>
 
             <div class="settings-row">
-                <span class="settings-label" data-i18n="ui.settings.showSplash">Show splash on startup</span>
-                <button class="settings-toggle" id="setting-show-splash" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+                <span class="settings-label" id="setting-show-splash-label" data-i18n="ui.settings.showSplash">Show splash on startup</span>
+                <button class="settings-toggle" id="setting-show-splash" role="switch" aria-checked="false" aria-labelledby="setting-show-splash-label"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <hr class="settings-divider">
@@ -357,10 +329,10 @@
 
             <div class="settings-row">
                 <div class="settings-label-col">
-                    <span class="settings-label" data-i18n="ui.settings.autosave">Autosave</span>
+                    <span class="settings-label" id="setting-autosave-label" data-i18n="ui.settings.autosave">Autosave</span>
                     <span class="settings-sublabel" data-i18n="ui.settings.autosaveHint">Off: safety save every 30 s</span>
                 </div>
-                <button class="settings-toggle" id="setting-autosave" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+                <button class="settings-toggle" id="setting-autosave" role="switch" aria-checked="false" aria-labelledby="setting-autosave-label"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">
@@ -388,16 +360,16 @@
             </div>
 
             <div class="settings-row">
-                <span class="settings-label" data-i18n="ui.settings.spellcheck">Spellcheck</span>
-                <button class="settings-toggle" id="setting-spellcheck" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+                <span class="settings-label" id="setting-spellcheck-label" data-i18n="ui.settings.spellcheck">Spellcheck</span>
+                <button class="settings-toggle" id="setting-spellcheck" role="switch" aria-checked="false" aria-labelledby="setting-spellcheck-label"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <hr class="settings-divider">
             <div class="settings-section-title" data-i18n="ui.settings.section.behavior">Behavior</div>
 
             <div class="settings-row">
-                <span class="settings-label" data-i18n="ui.settings.confirmDelete">Confirm before delete</span>
-                <button class="settings-toggle" id="setting-confirm-delete" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+                <span class="settings-label" id="setting-confirm-delete-label" data-i18n="ui.settings.confirmDelete">Confirm before delete</span>
+                <button class="settings-toggle" id="setting-confirm-delete" role="switch" aria-checked="false" aria-labelledby="setting-confirm-delete-label"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">
@@ -420,8 +392,8 @@
             </div>
 
             <div class="settings-row">
-                <span class="settings-label" data-i18n="ui.settings.defaultEncrypted">Default new note as encrypted</span>
-                <button class="settings-toggle" id="setting-default-encrypted" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+                <span class="settings-label" id="setting-default-encrypted-label" data-i18n="ui.settings.defaultEncrypted">Default new note as encrypted</span>
+                <button class="settings-toggle" id="setting-default-encrypted" role="switch" aria-checked="false" aria-labelledby="setting-default-encrypted-label"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row">
@@ -437,10 +409,10 @@
 
             <div class="settings-row">
                 <div class="settings-label-col">
-                    <span class="settings-label" data-i18n="ui.settings.appLock">Ask for a password to open NoirPad</span>
+                    <span class="settings-label" id="setting-app-lock-label" data-i18n="ui.settings.appLock">Ask for a password to open NoirPad</span>
                     <span class="settings-sublabel" data-i18n="ui.settings.appLockHint">At start and after auto-lock. It keeps people out of the app but does NOT encrypt your notes &mdash; only locked notes are encrypted.</span>
                 </div>
-                <button class="settings-toggle" id="setting-app-lock" role="switch" aria-checked="false"><span class="settings-toggle-knob"></span></button>
+                <button class="settings-toggle" id="setting-app-lock" role="switch" aria-checked="false" aria-labelledby="setting-app-lock-label"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <div class="settings-row" id="setting-app-lock-actions" hidden>

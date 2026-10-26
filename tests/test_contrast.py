@@ -109,10 +109,15 @@ PAIRS = [
     ("--fg-dim", "--bg", 4.5), ("--fg-dim", "--bg-panel", 4.5), ("--fg-dim", "--bg-light", 4.5),
     ("--fg-bright", "--accent-soft", 4.5),      # selected tree row
     ("--accent", "--accent-soft", 4.5),         # active tab, tag filter
-    # icons, muted labels, marks
-    ("--fg-muted", "--bg", 3.0), ("--fg-muted", "--bg-panel", 3.0), ("--fg-muted", "--bg-light", 3.0),
-    ("--accent", "--bg", 3.0), ("--folder-color", "--bg-panel", 3.0), ("--danger", "--bg", 3.0),
-    ("--danger", "--bg-light", 3.0),
+    # muted text (status bar, NOTES / TAGS, section titles, menu shortcuts,
+    # placeholders, the trash) is text too: 4.5:1 (U5); red buttons (U7)
+    ("--fg-muted", "--bg", 4.5), ("--fg-muted", "--bg-panel", 4.5), ("--fg-muted", "--bg-light", 4.5),
+    ("--fg-muted", "--bg-entry", 4.5),
+    ("--danger", "--bg", 4.5), ("--danger", "--bg-light", 4.5),
+    # icons, marks
+    ("--accent", "--bg", 3.0), ("--folder-color", "--bg-panel", 3.0),
+    # an "off" switch's outline against the window (U13)
+    ("--control-off", "--bg-light", 3.0),
 ]
 
 

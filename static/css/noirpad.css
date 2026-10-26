@@ -67,6 +67,15 @@ button {
     color: inherit;
 }
 
+/* U3: whatever the keyboard is on shows it (a mouse click shows nothing:
+   :focus-visible). Beats the bare `button` / `input` resets; controls with
+   their own ring (tabs, tree, dialog buttons…) keep theirs. Text fields
+   mark focus with their border instead. */
+:focus-visible:not(input[type="text"], input[type="search"], input[type="password"], input:not([type]), textarea, [contenteditable]) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
 input, textarea {
     font-family: inherit;
     font-size: inherit;
@@ -236,7 +245,7 @@ input, textarea {
 }
 
 .tb-btn:disabled {
-    opacity: 0.4;
+    opacity: 0.55;   /* U12: off, but its shape stays visible */
     cursor: default;
 }
 
@@ -311,6 +320,12 @@ input, textarea {
     margin-left: 16px;
     font-size: 11px;
     color: var(--fg-muted);
+}
+
+/* On the highlighted row --fg-muted is under 4.5:1 in some themes (U5). */
+.np-menu-item:hover .np-menu-keys,
+.np-menu-item:focus .np-menu-keys {
+    color: var(--fg);
 }
 
 .np-menu-sep {
@@ -809,6 +824,11 @@ input, textarea {
     color: var(--fg-muted);
 }
 
+/* No border to light up: an underline shows the field has the focus (U3). */
+#tag-input:focus-visible {
+    box-shadow: 0 1px 0 var(--accent);
+}
+
 #tag-input:disabled {
     visibility: hidden;
 }
@@ -1103,8 +1123,8 @@ body #editor:has(.welcome-wrap) {
 
 #editor:empty::before {
     content: attr(data-placeholder);
-    color: var(--fg-dim);
-    opacity: 0.4;
+    color: var(--fg-muted);   /* >= 4.5:1, no fading (U5) */
+    opacity: 1;
     pointer-events: none;
 }
 
@@ -1169,8 +1189,8 @@ body #editor:has(.welcome-wrap) {
 }
 
 #search-input::placeholder {
-    color: var(--fg-dim);
-    opacity: 0.4;
+    color: var(--fg-muted);   /* >= 4.5:1, no fading (U5) */
+    opacity: 1;
 }
 
 .search-btn {
@@ -1244,8 +1264,8 @@ body #editor:has(.welcome-wrap) {
 }
 
 #command-input::placeholder {
-    color: var(--fg-dim);
-    opacity: 0.5;
+    color: var(--fg-muted);   /* >= 4.5:1, no fading (U5) */
+    opacity: 1;
 }
 
 #command-results {
@@ -1273,8 +1293,13 @@ body #editor:has(.welcome-wrap) {
 
 .command-item .command-shortcut {
     font-size: 10px;
-    color: var(--fg-dim);
-    opacity: 0.6;
+    color: var(--fg-muted);   /* U5 */
+}
+
+.command-item:hover .command-shortcut,
+.command-item.selected .command-shortcut,
+.ctx-item:hover .ctx-shortcut {
+    color: var(--fg);   /* --fg-muted is too faint on --hover-bg (U5) */
 }
 
 /* ---- Bottom Bar: "● saved · markdown"  …  "727 chars · 104 words" ---- */
@@ -1407,16 +1432,14 @@ body.focus-mode #sidebar {
     display: block;
 }
 
-/* ---- Help Window ---- */
+/* ---- Help Window (help.js; colours, border and title come from G7) ---- */
 #help-overlay {
     position: fixed;
     inset: 0;
-    z-index: 200;
+    z-index: 5000;
     display: none;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(3px);
 }
 
 #help-overlay.visible {
@@ -1424,39 +1447,33 @@ body.focus-mode #sidebar {
 }
 
 #help-window {
-    width: 560px;
+    width: 860px;
     max-width: 90vw;
+    height: 75vh;
     max-height: 80vh;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 12px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.8);
 }
 
 #help-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
+    padding: 10px 16px;
     border-bottom: 1px solid var(--border);
-}
-
-#help-header h2 {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--fg);
-    text-shadow: 0 0 var(--glow-core, 4px) var(--accent), 0 0 var(--glow-blur, 22px) var(--glow), 0 0 var(--glow-blur-lg, 40px) var(--glow);
+    flex-shrink: 0;
 }
 
 #help-close {
-    font-size: 16px;
+    font-size: 18px;
+    line-height: 1;
     color: var(--fg-dim);
     cursor: pointer;
-    padding: 2px 6px;
+    padding: 2px 8px;
     border-radius: 6px;
+    background: none;
+    border: none;
 }
 
 #help-close:hover {
@@ -1464,36 +1481,60 @@ body.focus-mode #sidebar {
     background: var(--hover-bg);
 }
 
-#help-body {
-    padding: 16px;
-    overflow-y: auto;
-    font-size: 12px;
-    color: var(--fg-dim);
-    line-height: 1.8;
-}
-
-#help-body .help-section {
-    margin-bottom: 16px;
-}
-
-#help-body .help-section h3 {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--fg);
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-#help-body .help-row {
+.help-layout {
     display: flex;
-    justify-content: space-between;
-    padding: 2px 0;
+    flex: 1;
+    min-height: 0;
 }
 
-#help-body .help-key {
-    color: var(--accent);
-    font-weight: 600;
+#help-nav {
+    width: 200px;
+    min-width: 160px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    padding: 8px 0;
+    border-right: 1px solid var(--border);
+}
+
+.help-nav-item {
+    display: block;
+    width: 100%;
+    padding: 6px 16px;
+    font: inherit;
+    font-size: 12px;
+    text-align: left;
+    color: var(--fg-dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.help-nav-item:hover {
+    color: var(--fg);
+    background: var(--hover-bg);
+}
+
+.help-nav-item[aria-selected="true"] {
+    color: var(--fg-bright);
+    background: var(--hover-bg);
+}
+
+#help-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--fg);
+}
+
+#help-content .help-section-title {
+    margin: 0 0 12px;
+    font-size: 16px;
+    color: var(--fg-bright);
 }
 
 /* ---- Font Picker ---- */
@@ -1856,7 +1897,7 @@ body.focus-mode #sidebar {
     width: 34px;
     height: 17px;
     padding: 0;
-    border: 1px solid var(--control-off-track);   /* off: grey track + grey knob */
+    border: 1px solid var(--control-off);   /* off: grey outline (>= 3:1, U13) + grey knob */
     border-radius: 10px;
     background: var(--bg-entry);
     cursor: pointer;
@@ -2366,7 +2407,7 @@ body.focus-mode #sidebar {
 }
 
 .ctx-item.danger:hover {
-    color: #ff3333;
+    color: var(--danger);
 }
 
 .ctx-separator {
@@ -2377,8 +2418,7 @@ body.focus-mode #sidebar {
 
 .ctx-shortcut {
     font-size: 10px;
-    color: var(--fg-dim);
-    opacity: 0.5;
+    color: var(--fg-muted);   /* U5 */
     margin-left: 20px;
 }
 
@@ -2474,12 +2514,12 @@ body.focus-mode #sidebar {
 }
 
 .dialog-btn.danger {
-    color: #ff3333;
-    border-color: #ff3333;
+    color: var(--danger);
+    border-color: var(--danger);
 }
 
 .dialog-btn.danger:hover {
-    background: #ff3333;
+    background: var(--danger);
     color: var(--bg);
 }
 
@@ -2777,8 +2817,8 @@ body.md-no-preview #md-preview { display: none; }
 }
 
 #editor-md::placeholder {
-    color: var(--fg-dim);
-    opacity: 0.4;
+    color: var(--fg-muted);   /* >= 4.5:1, no fading (U5) */
+    opacity: 1;
 }
 
 /* Coloured source (md-source.js): #md-highlight sits exactly under the
@@ -4337,7 +4377,6 @@ body.auth-active #matrix-canvas {
     color: var(--fg-dim);
     letter-spacing: var(--tracking-wide);
     margin-bottom: 22px;
-    opacity: 0.85;
 }
 
 .auth-form {
@@ -4559,8 +4598,7 @@ body.auth-active #matrix-canvas {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--fg-dim);
-    opacity: 0.6;
+    color: var(--fg-muted);   /* U6: readable, still quieter than the notes */
 }
 .tree-item--trash {
     gap: 4px;
@@ -4571,7 +4609,8 @@ body.auth-active #matrix-canvas {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    opacity: 0.55;
+    color: var(--fg-muted);   /* U6 */
+    font-style: italic;
 }
 .tree-trash-label {
     color: var(--fg-dim);
@@ -4637,7 +4676,7 @@ body.auth-active #matrix-canvas {
     margin-bottom: 8px;
 }
 .np-dialog--danger .dialog-box {
-    border-color: #ff3333;
+    border-color: var(--danger);
 }
 .np-dialog .dialog-btn:focus-visible {
     outline: 2px solid var(--accent);

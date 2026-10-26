@@ -15,6 +15,11 @@ window.NP = window.NP || {};
     var MAX_TRAIL = 25;
     var CHAR_CHANGE_PROB = 0.016; /* ~1x per second at 60fps */
 
+    /* "Reduce motion" in Windows / the browser: the rain stands still (U9). */
+    function reducedMotion() {
+        return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    }
+
     function randInt(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
@@ -136,6 +141,8 @@ window.NP = window.NP || {};
                 for (var j = 0; j < col.trail; j++) {
                     col.chars.push(randChar());
                 }
+                /* The still picture (reduced motion) shows the rain on screen. */
+                if (reducedMotion()) col.head = randInt(0, rows + col.trail);
                 this.columns.push(col);
             }
         },
@@ -236,6 +243,11 @@ window.NP = window.NP || {};
                 }
             }
 
+            /* Reduced motion: this one frame stays as a still picture. */
+            if (reducedMotion()) {
+                this.animId = null;
+                return;
+            }
             this._scheduleFrame();
         }
     };

@@ -323,6 +323,7 @@ window.NP = window.NP || {};
             renderList();
             ov.classList.add("visible");
             ov.setAttribute("aria-hidden", "false");
+            if (NP.modal) NP.modal.open(ov, { labelledBy: "shortcuts-title", initialFocus: "#shortcuts-search" });
         },
 
         close: function () {
@@ -331,6 +332,7 @@ window.NP = window.NP || {};
             if (!ov) return;
             ov.classList.remove("visible");
             ov.setAttribute("aria-hidden", "true");
+            if (NP.modal) NP.modal.close(ov);
         },
 
         refreshSummary: function () {

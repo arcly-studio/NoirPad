@@ -761,15 +761,7 @@
     "bottomBar": {
       "chars": "0 znaků",
       "words": "0 slov"
-    },
-    "help": {
-      "title": "Klávesové zkratky"
-    },
-    "fontPicker": {
-      "title": "Nastavení písma",
-      "searchPlaceholder": "Hledat písmo…",
-      "size": "Velikost:"
-    },
+    },
     "settings": {
       "title": "Nastavení",
       "section": {

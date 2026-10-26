@@ -6,7 +6,9 @@ window.NP = window.NP || {};
 
     /* The table holds i18n KEYS, not texts: dictionaries load after this
        script is parsed, so NP.t() is called when a section is rendered.
-       Key caps, commands and "raw" bullets (theme names) stay as they are. */
+       Key caps, commands and "raw" bullets (theme names) stay as they are.
+       A shortcut row may name its NP.shortcuts id (third item): the key
+       shown is then the one currently set, also after remapping (U10). */
     var HELP_SECTIONS = [
         {
             title: "help.overview.title",
@@ -20,40 +22,40 @@ window.NP = window.NP || {};
             content: [
                 { type: "header", value: "help.keys.basic" },
                 { type: "shortcuts", value: [
-                    ["Ctrl+S", "help.keys.save"],
-                    ["Ctrl+F", "help.keys.find"],
-                    ["Ctrl+B", "help.keys.focus"],
-                    ["Ctrl+L", "help.keys.orientation"],
+                    ["Ctrl+S", "help.keys.save", "save"],
+                    ["Ctrl+F", "help.keys.find", "find"],
+                    ["Ctrl+B", "help.keys.focus", "toggle-sidebar"],
+                    ["Ctrl+L", "help.keys.orientation", "toggle-orientation"],
                     ["Ctrl+I", "help.keys.italic"],
                     ["Ctrl+U", "help.keys.underline"],
                     ["Ctrl+Z", "help.keys.undo"],
                     ["Ctrl+Y", "help.keys.redo"],
                     ["Ctrl+V", "help.keys.paste"],
                     ["Ctrl+Shift+V", "help.keys.pastePlain"],
-                    ["Ctrl+Space", "help.keys.clearFormatting"],
+                    ["Ctrl+Space", "help.keys.clearFormatting", "clear-formatting"],
                     ["Ctrl+Click", "help.keys.linkOpen"],
-                    ["Ctrl+Shift+P", "help.keys.commandBar"],
-                    ["Ctrl+Shift+K", "help.keys.findAll"],
-                    ["Ctrl+M", "shortcuts.labels.toggleMarkdown"],
-                    ["Ctrl+D", "shortcuts.labels.toggleFavorite"],
-                    ["Ctrl+Shift+L", "shortcuts.labels.toggleLock"],
-                    ["Ctrl+Shift+N", "shortcuts.labels.newNote"],
-                    ["Ctrl+Shift+F", "shortcuts.labels.newFolder"],
-                    ["Ctrl+Shift+I", "shortcuts.labels.insertImage"],
-                    ["Ctrl+Shift+T", "shortcuts.labels.openFontPicker"],
-                    ["Ctrl+,", "shortcuts.labels.openSettings"],
-                    ["Ctrl+Tab", "help.keys.nextTab"],
-                    ["Ctrl+Shift+Tab", "help.keys.prevTab"],
-                    ["Ctrl+W", "help.keys.closeTab"]
+                    ["Ctrl+Shift+P", "help.keys.commandBar", "open-command-palette"],
+                    ["Ctrl+Shift+K", "help.keys.findAll", "find-all"],
+                    ["Ctrl+M", "shortcuts.labels.toggleMarkdown", "toggle-markdown"],
+                    ["Ctrl+D", "shortcuts.labels.toggleFavorite", "toggle-favorite"],
+                    ["Ctrl+Shift+L", "shortcuts.labels.toggleLock", "toggle-lock"],
+                    ["Ctrl+Shift+N", "shortcuts.labels.newNote", "new-note"],
+                    ["Ctrl+Shift+F", "shortcuts.labels.newFolder", "new-folder"],
+                    ["Ctrl+Shift+I", "shortcuts.labels.insertImage", "insert-image"],
+                    ["Ctrl+Shift+T", "shortcuts.labels.openFontPicker", "open-font-picker"],
+                    ["Ctrl+,", "shortcuts.labels.openSettings", "open-settings"],
+                    ["Ctrl+Tab", "help.keys.nextTab", "next-tab"],
+                    ["Ctrl+Shift+Tab", "help.keys.prevTab", "prev-tab"],
+                    ["Ctrl+W", "help.keys.closeTab", "close-tab"]
                 ]},
                 { type: "header", value: "help.keys.function" },
                 { type: "shortcuts", value: [
-                    ["F1", "help.keys.help"],
-                    ["F2", "help.keys.rename"],
-                    ["F3", "help.keys.findNext"],
-                    ["Shift+F3", "help.keys.findPrev"],
-                    ["F11", "help.keys.fullscreen"],
-                    ["Delete", "help.keys.delete"],
+                    ["F1", "help.keys.help", "open-help"],
+                    ["F2", "help.keys.rename", "rename"],
+                    ["F3", "help.keys.findNext", "find-next"],
+                    ["Shift+F3", "help.keys.findPrev", "find-prev"],
+                    ["F11", "help.keys.fullscreen", "fullscreen"],
+                    ["Delete", "help.keys.delete", "delete"],
                     ["Escape", "help.keys.closeOverlay"]
                 ]}
             ]
@@ -233,10 +235,10 @@ window.NP = window.NP || {};
                 ]},
                 /* Row: [key cap, key of the markdown sample shown in <code>] */
                 { type: "md-shortcuts", title: "help.md.shortcuts", items: [
-                    ["Ctrl+B", "help.md.wrap.bold"],
-                    ["Ctrl+I", "help.md.wrap.italic"],
-                    ["Ctrl+E", "help.md.wrap.code"],
-                    ["Ctrl+K", "help.md.wrap.link"]
+                    ["Ctrl+B", "help.md.wrap.bold", "md-bold"],
+                    ["Ctrl+I", "help.md.wrap.italic", "md-italic"],
+                    ["Ctrl+E", "help.md.wrap.code", "md-code-inline"],
+                    ["Ctrl+K", "help.md.wrap.link", "md-link"]
                 ]}
             ]
         }
@@ -244,59 +246,56 @@ window.NP = window.NP || {};
 
     var overlayEl = null;
 
-    function buildHTML() {
-        var html = "";
-
-        /* Overlay container */
-        html += '<div id="help-overlay" class="np-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;' +
-            'z-index:5000;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;">';
-
-        /* Modal box */
-        html += '<div style="display:flex;width:80%;max-width:900px;height:75vh;' +
-            'background:var(--bg, #0a0a0a);border:1px solid var(--border, #1a2e1a);border-radius:8px;overflow:hidden;">';
-
-        /* Left nav */
-        html += '<div id="help-nav" style="width:200px;min-width:160px;border-right:1px solid var(--border, #1a2e1a);' +
-            'overflow-y:auto;padding:12px 0;flex-shrink:0;">';
-        for (var i = 0; i < HELP_SECTIONS.length; i++) {
-            html += '<div class="help-nav-item" data-idx="' + i + '" style="padding:6px 16px;cursor:pointer;' +
-                'font-size:12px;color:var(--fg-dim, #00bf30);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' +
-                'transition:background 0.15s ease, color 0.15s ease;">' +
-                NP.escapeHtml(NP.t(HELP_SECTIONS[i].title)) + '</div>';
+    /* The key shown for a row: the current binding when the row names a
+       shortcut id ("—" when the user removed it), else the fixed key. */
+    function keyOf(row) {
+        if (row[2] && NP.shortcuts && NP.shortcuts.getCurrent) {
+            var current = NP.shortcuts.getCurrent(row[2]);
+            if (current !== null && current !== undefined) return current || "—";
         }
-        html += '</div>';
+        return row[0];
+    }
 
-        /* Right content */
-        html += '<div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">';
+    function el(tag, attrs, text) {
+        var node = document.createElement(tag);
+        Object.keys(attrs || {}).forEach(function (k) { node.setAttribute(k, attrs[k]); });
+        if (text != null) node.textContent = text;
+        return node;
+    }
 
-        /* Header bar with close button */
-        html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;' +
-            'border-bottom:1px solid var(--border, #1a2e1a);flex-shrink:0;">';
-        html += '<span style="font-size:14px;font-weight:bold;color:var(--fg-bright, #4cff7a);' +
-            'text-shadow:0 0 6px var(--glow, #00ff41);">' + NP.escapeHtml(NP.t("help.title")) + '</span>';
-        html += '<button id="help-close-btn" style="font-size:18px;color:var(--fg-dim, #00bf30);' +
-            'cursor:pointer;background:none;border:none;padding:2px 8px;" title="' +
-            NP.escapeHtml(NP.t("help.close")) + '">&times;</button>';
-        html += '</div>';
+    /* The window in the shared G7 style (#help-overlay / #help-window in
+       noirpad.css): sections on the left as a vertical tab list (↑ ↓ Home
+       End, U2), the open section on the right. */
+    function buildOverlay() {
+        var overlay = el("div", { id: "help-overlay", "class": "visible np-modal" });  // i18n-ignore (CSS classes)
+        var win = el("div", { id: "help-window" });
+        var header = el("div", { id: "help-header" });
+        header.appendChild(el("h2", { id: "help-title" }, NP.t("help.title")));
+        var close = el("button", { id: "help-close", type: "button",
+            title: NP.t("help.close"), "aria-label": NP.t("help.close") }, "×");
+        header.appendChild(close);
+        win.appendChild(header);
 
-        /* Content area */
-        html += '<div id="help-content" style="flex:1;overflow-y:auto;padding:16px 20px;font-size:13px;' +
-            'line-height:1.7;color:var(--fg, #00ff41);">';
-        html += '</div>';
-
-        html += '</div>'; /* /right */
-        html += '</div>'; /* /modal */
-        html += '</div>'; /* /overlay */
-
-        return html;
+        var layout = el("div", { "class": "help-layout" });
+        var nav = el("div", { id: "help-nav", role: "tablist", "aria-orientation": "vertical",
+            "aria-labelledby": "help-title" });
+        for (var i = 0; i < HELP_SECTIONS.length; i++) {
+            nav.appendChild(el("button", { type: "button", role: "tab", "class": "help-nav-item",
+                id: "help-tab-" + i, "data-idx": String(i), "aria-controls": "help-content",
+                "aria-selected": "false", tabindex: "-1" }, NP.t(HELP_SECTIONS[i].title)));
+        }
+        layout.appendChild(nav);
+        layout.appendChild(el("div", { id: "help-content", role: "tabpanel", tabindex: "0" }));
+        win.appendChild(layout);
+        overlay.appendChild(win);
+        return overlay;
     }
 
     function renderSection(idx) {
         var section = HELP_SECTIONS[idx];
         if (!section) return "";
 
-        var html = '<h2 style="margin:0 0 12px 0;font-size:16px;color:var(--fg-bright, #4cff7a);' +
-            'text-shadow:0 0 4px var(--glow, #00ff41);">' + NP.escapeHtml(NP.t(section.title)) + '</h2>';
+        var html = '<h3 class="help-section-title">' + NP.escapeHtml(NP.t(section.title)) + '</h3>';
 
         for (var i = 0; i < section.content.length; i++) {
             var block = section.content[i];
@@ -324,7 +323,7 @@ window.NP = window.NP || {};
                         html += '<tr>';
                         html += '<td style="padding:3px 12px 3px 0;white-space:nowrap;color:var(--fg-bright, #4cff7a);' +
                             'font-weight:bold;font-size:12px;border-bottom:1px solid var(--border, #1a2e1a);">' +
-                            NP.escapeHtml(row[0]) + '</td>';
+                            NP.escapeHtml(keyOf(row)) + '</td>';
                         html += '<td style="padding:3px 0;color:var(--fg-dim, #00bf30);font-size:12px;' +
                             'border-bottom:1px solid var(--border, #1a2e1a);">' +
                             NP.escapeHtml(NP.t(row[1])) + '</td>';
@@ -360,7 +359,7 @@ window.NP = window.NP || {};
                     for (var sr = 0; sr < block.items.length; sr++) {
                         var row2 = block.items[sr];
                         html += '<div class="md-help-shortcut-row">' +
-                            '<kbd class="md-help-kbd">' + NP.escapeHtml(row2[0]) + '</kbd>' +
+                            '<kbd class="md-help-kbd">' + NP.escapeHtml(keyOf(row2)) + '</kbd>' +
                             '<span>' + NP.escapeHtml(NP.t("help.md.wrapSelection")) +
                             ' <code>' + NP.escapeHtml(NP.t(row2[1])) + '</code></span>' +
                             '</div>';
@@ -427,52 +426,48 @@ window.NP = window.NP || {};
     NP.help = {
 
         show: function () {
-            /* If already open, just focus */
+            /* Already open: nothing to do */
             if (overlayEl) {
                 return;
             }
 
-            var wrapper = document.createElement("div");
-            wrapper.innerHTML = buildHTML();
-            overlayEl = wrapper.firstChild;
+            overlayEl = buildOverlay();
             document.body.appendChild(overlayEl);
 
-            var contentEl = document.getElementById("help-content");
+            var contentEl = overlayEl.querySelector("#help-content");
             var navItems = overlayEl.querySelectorAll(".help-nav-item");
-            var activeIdx = 0;
 
-            function selectSection(idx) {
-                activeIdx = idx;
-                contentEl.innerHTML = renderSection(idx);
+            function selectSection(idx, focus) {
+                contentEl.innerHTML = renderSection(idx);   /* texts escaped in renderSection */
+                contentEl.setAttribute("aria-labelledby", "help-tab-" + idx);
                 for (var n = 0; n < navItems.length; n++) {
-                    if (n === idx) {
-                        navItems[n].style.background = "var(--hover-bg, #0f2314)";
-                        navItems[n].style.color = "var(--fg-bright, #4cff7a)";
-                    } else {
-                        navItems[n].style.background = "transparent";
-                        navItems[n].style.color = "var(--fg-dim, #00bf30)";
-                    }
+                    navItems[n].setAttribute("aria-selected", n === idx ? "true" : "false");
+                    navItems[n].tabIndex = n === idx ? 0 : -1;
                 }
+                contentEl.scrollTop = 0;
+                if (focus) navItems[idx].focus();
             }
 
-            /* Nav click handlers */
+            /* Sections: click, or ↑ ↓ Home End on the list (U2) */
             for (var i = 0; i < navItems.length; i++) {
                 (function (idx) {
                     navItems[idx].addEventListener("click", function () {
-                        selectSection(idx);
-                    });
-                    navItems[idx].addEventListener("mouseenter", function () {
-                        if (idx !== activeIdx) {
-                            navItems[idx].style.background = "var(--hover-bg, #0f2314)";
-                        }
-                    });
-                    navItems[idx].addEventListener("mouseleave", function () {
-                        if (idx !== activeIdx) {
-                            navItems[idx].style.background = "transparent";
-                        }
+                        selectSection(idx, true);
                     });
                 })(i);
             }
+            overlayEl.querySelector("#help-nav").addEventListener("keydown", function (e) {
+                var at = Array.prototype.indexOf.call(navItems, document.activeElement);
+                if (at === -1) return;
+                var to = null;
+                if (e.key === "ArrowDown") to = (at + 1) % navItems.length;
+                else if (e.key === "ArrowUp") to = (at - 1 + navItems.length) % navItems.length;
+                else if (e.key === "Home") to = 0;
+                else if (e.key === "End") to = navItems.length - 1;
+                else return;
+                e.preventDefault();
+                selectSection(to, true);
+            });
 
             /* Delegated click-to-copy for any .md-help-item rendered into
                the content pane. Attached once on contentEl (which is
@@ -486,13 +481,10 @@ window.NP = window.NP || {};
             });
 
             /* Show first section */
-            selectSection(0);
+            selectSection(0, false);
 
             /* Close button */
-            var closeBtn = document.getElementById("help-close-btn");
-            if (closeBtn) {
-                closeBtn.addEventListener("click", function () { NP.help.hide(); });
-            }
+            overlayEl.querySelector("#help-close").addEventListener("click", function () { NP.help.hide(); });
 
             /* Click overlay backdrop to close */
             overlayEl.addEventListener("click", function (e) {
@@ -511,6 +503,9 @@ window.NP = window.NP || {};
                 }
             };
             document.addEventListener("keydown", this._escHandler, true);
+
+            /* A window for the keyboard and screen readers (U1). */
+            if (NP.modal) NP.modal.open(overlayEl, { labelledBy: "help-title", initialFocus: "#help-tab-0" });
         },
 
         hide: function () {
@@ -518,10 +513,12 @@ window.NP = window.NP || {};
                 document.removeEventListener("keydown", this._escHandler, true);
                 this._escHandler = null;
             }
+            var gone = overlayEl;
             if (overlayEl && overlayEl.parentNode) {
                 overlayEl.parentNode.removeChild(overlayEl);
             }
             overlayEl = null;
+            if (NP.modal && gone) NP.modal.close(gone);
         }
     };
 
