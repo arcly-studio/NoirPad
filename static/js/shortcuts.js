@@ -88,6 +88,24 @@ window.NP = window.NP || {};
         "Ctrl+Shift+J", "Ctrl+U", "Ctrl+Shift+C"
     ];
 
+    /* U11: the desktop window has no browser around it, so NoirPad's own
+       default keys from that list work there (and may be set again). */
+    var DESKTOP_ALLOWED = ["Ctrl+Shift+T", "Ctrl+Shift+N", "Ctrl+Shift+I", "F11"];
+
+    /* U11: in a browser tab (NoirPad-web) the browser takes these default
+       keys (new window, reopen tab, dev tools) before the page sees them;
+       there NoirPad uses Alt+Shift instead. */
+    var WEB_DEFAULTS = {
+        "new-note": "Alt+Shift+N",
+        "open-font-picker": "Alt+Shift+T",
+        "insert-image": "Alt+Shift+I"
+    };
+
+    /* The desktop app opens the page with its per-launch token (api.js). */
+    function inDesktop() {
+        return !!(NP.api && NP.api.hasToken && NP.api.hasToken());
+    }
+
     /* Canonical form for comparison: single-char final key uppercased
        (matches the registry defaults like "Ctrl+S" and the BLACKLIST),
        so blacklist / conflict checks aren't defeated by letter case. */
@@ -252,6 +270,7 @@ window.NP = window.NP || {};
                 };
             }
             for (var i = 0; i < BLACKLIST.length; i++) {
+                if (inDesktop() && DESKTOP_ALLOWED.indexOf(BLACKLIST[i]) !== -1) continue;
                 if (normKs(BLACKLIST[i]) === keystroke) {
                     return {
                         ok: false,
@@ -288,6 +307,15 @@ window.NP = window.NP || {};
         },
 
         init: function () {
+            if (!inDesktop() && !NP.shortcuts._webDefaults) {
+                NP.shortcuts._webDefaults = true;
+                for (var wid in WEB_DEFAULTS) {
+                    if (registry[wid]) {
+                        if (registry[wid].current === registry[wid].default) registry[wid].current = WEB_DEFAULTS[wid];
+                        registry[wid].default = WEB_DEFAULTS[wid];
+                    }
+                }
+            }
             NP.shortcuts.loadFromState();
 
             if (NP.shortcuts._bound) return;   /* one listener only */

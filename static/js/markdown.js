@@ -67,7 +67,9 @@ window.NP = window.NP || {};
             out.push(t);
         }
         children.length = 0;
-        Array.prototype.push.apply(children, out);
+        /* R4: no push.apply — a paragraph of ~80 000 lines would exceed
+           the call stack ("Maximum call stack size exceeded"). */
+        for (var o = 0; o < out.length; o++) children.push(out[o]);
     }
 
     function getMd() {
@@ -224,6 +226,9 @@ window.NP = window.NP || {};
             if (ta) ta.value = "";
             var pv = document.getElementById("md-preview");
             if (pv) pv.innerHTML = "";
+            /* E6: the coloured copy of the source too (K3: a locked note's
+               text never stays in the page). */
+            if (NP.mdSource && NP.mdSource.clear) NP.mdSource.clear();
             lastRendered = null;
             updateMdButtonState();
         },

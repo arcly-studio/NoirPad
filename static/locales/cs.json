@@ -250,6 +250,7 @@
     }
   },
   "images": {
+    "notInserted": "Obrázek se nevložil: mezitím se otevřela jiná poznámka. Vložte ho znovu.",
     "uploadFailed": "Nahrání obrázku se nezdařilo: {error}",
     "linkLabel": "Obrázek",
     "pasteDialog": {
@@ -787,7 +788,7 @@
       "matrixRain": "Matrix déšť na pozadí",
       "showSplash": "Zobrazit úvodní obrazovku při spuštění",
       "autosave": "Automatické ukládání",
-      "autosaveHint": "Vypnuto: pojistné uložení každých 30 s",
+      "autosaveHint": "Vypnuto: ukládá se i tak chvíli po dopsání a každých 30 s",
       "autosaveInterval": "Interval automatického ukládání",
       "duration": {
         "s5": "5 sekund",
@@ -802,6 +803,7 @@
       "portrait": "Na výšku",
       "spellcheck": "Kontrola pravopisu",
       "glitchEffect": "Efekt „glitch“ při psaní",
+      "glitchNeedsGlow": "Projeví se jen se zapnutou Září.",
       "confirmDelete": "Potvrzovat mazání",
       "idleLock": "Automaticky zamknout při nečinnosti",
       "idleLockHint": "Zamkne šifrované poznámky — a při zapnutém zámku aplikace i celou aplikaci",

@@ -100,10 +100,18 @@ window.NP = window.NP || {};
             if (!NP.editor || !NP.editor._currentNoteId) {
                 return Promise.resolve();
             }
+            /* E5: the picture belongs to the note it was pasted into. */
+            var noteId = NP.editor._currentNoteId;
             return NP.api.uploadImage(file).then(function (res) {
                 var url = res && (res.url || res.path);
                 var filename = res && res.filename;
                 if (!url || !filename) return;
+                if (NP.editor._currentNoteId !== noteId || NP.editor._loadedNoteId !== noteId) {
+                    /* Another note is open by now: not into that one. The
+                       unused file is cleaned up later (D14). */
+                    if (NP.toast) NP.toast(NP.t("images.notInserted"));
+                    return;
+                }
 
                 if (inMarkdownMode()) {
                     NP.images._insertMarkdown(url);

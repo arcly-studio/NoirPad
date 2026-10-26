@@ -1904,6 +1904,12 @@ body.focus-mode #sidebar {
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 
+/* A switch that has no effect right now (e.g. Glitch without Glow, U8). */
+.settings-toggle:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .settings-toggle.on {
     background: color-mix(in srgb, var(--accent) 15%, transparent);
     border-color: var(--accent);
@@ -4300,6 +4306,14 @@ body.editor-md-active.orientation-landscape #md-stack {
 
 body.editor-md-active #editor-wrapper {
     padding: 0 !important;
+    /* E14: the source pane is as tall as the window (not a fixed 650 px +
+       padding), so there is one scrollbar: the textarea's for a long
+       source, the window's for a long preview. */
+    align-items: stretch;
+}
+
+body.editor-md-active #editor-md {
+    min-height: 0;
 }
 
 /* ============================================================

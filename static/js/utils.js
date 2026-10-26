@@ -250,31 +250,44 @@ window.NP = window.NP || {};
 
     /* ---- Tkinter-style line.col <-> offset conversion ---- */
 
+    /* R3: where each line starts, built once per text (the last text is
+       kept). A note with thousands of formats converts each in O(log n)
+       instead of walking the whole text every time. */
+    var lineCache = { text: null, starts: null };
+
+    function lineStarts(text) {
+        if (lineCache.starts && lineCache.text === text) return lineCache.starts;
+        var starts = [0];
+        for (var i = text.indexOf("\n"); i !== -1; i = text.indexOf("\n", i + 1)) starts.push(i + 1);
+        lineCache.text = text;
+        lineCache.starts = starts;
+        return starts;
+    }
+
     NP.lineColToOffset = function (text, lineCol) {
         var parts = lineCol.split(".");
         var line = parseInt(parts[0], 10); // 1-based
         var col = parseInt(parts[1], 10);  // 0-based
-        var lines = text.split("\n");
-        var offset = 0;
-        for (var i = 0; i < line - 1 && i < lines.length; i++) {
-            offset += lines[i].length + 1; // +1 for newline
+        var starts = lineStarts(text);
+        var k = line - 1;
+        var base = 0;
+        if (k > 0) {
+            /* Past the last line: as if every line had its newline. */
+            base = k < starts.length ? starts[k] : text.length + 1;
         }
-        offset += col;
-        return offset;
+        return base + col;
     };
 
     NP.offsetToLineCol = function (text, offset) {
-        var line = 1;
-        var col = 0;
-        for (var i = 0; i < offset && i < text.length; i++) {
-            if (text[i] === "\n") {
-                line++;
-                col = 0;
-            } else {
-                col++;
-            }
+        var o = Math.min(offset, text.length);
+        if (!(o > 0)) return "1.0";
+        var starts = lineStarts(text);
+        var lo = 0, hi = starts.length - 1;      /* the last start <= o */
+        while (lo < hi) {
+            var mid = (lo + hi + 1) >> 1;
+            if (starts[mid] <= o) lo = mid; else hi = mid - 1;
         }
-        return line + "." + col;
+        return (lo + 1) + "." + (o - starts[lo]);
     };
 
 })(window.NP);

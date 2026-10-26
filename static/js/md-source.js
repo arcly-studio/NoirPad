@@ -150,16 +150,24 @@ window.NP = window.NP || {};
         }
         if (src !== lastSrc) {
             var frag = document.createDocumentFragment();
+            /* R5: uncoloured runs (and the "\n" between lines) as one text
+               node — the DOM nodes, not the tokenizer, were the cost. */
+            var plain = "";
             tokenize(src).forEach(function (seg) {
                 if (!seg[0]) {
-                    frag.appendChild(document.createTextNode(seg[1]));
+                    plain += seg[1];
                     return;
+                }
+                if (plain) {
+                    frag.appendChild(document.createTextNode(plain));
+                    plain = "";
                 }
                 var span = document.createElement("span");
                 span.className = "mds-" + seg[0];
                 span.textContent = seg[1];
                 frag.appendChild(span);
             });
+            if (plain) frag.appendChild(document.createTextNode(plain));
             /* A trailing newline is an empty last line in the textarea but
                nothing in a div: keep the heights (and the scroll range) equal. */
             if (src.charAt(src.length - 1) === "\n") frag.appendChild(document.createTextNode("\u200b"));
@@ -169,16 +177,48 @@ window.NP = window.NP || {};
         sync();
     }
 
+    /* R5: a long source is recoloured once typing pauses; meanwhile the
+       textarea shows its own (plain) text, so nothing stale is on screen. */
+    var BIG = 20000;
+    var BIG_DELAY = 250;
+    var bigTimer = 0;
+
     function schedule() {
+        var e = els();
+        if (e.ta && e.box && e.ta.value.length > BIG) {
+            if (pending) {
+                if (window.cancelAnimationFrame) window.cancelAnimationFrame(pending);
+                pending = 0;
+            }
+            e.box.classList.remove("md-hl-on");
+            clearTimeout(bigTimer);
+            bigTimer = setTimeout(render, BIG_DELAY);
+            return;
+        }
         if (pending) return;
         pending = window.requestAnimationFrame ? window.requestAnimationFrame(render)
                                                : setTimeout(render, 16);
     }
 
+    /* The note leaves the editor (another note, the lock screen): its text
+       must not stay in the hidden underlay either (E6). */
+    function clear() {
+        clearTimeout(bigTimer);
+        if (pending) {
+            if (window.cancelAnimationFrame) window.cancelAnimationFrame(pending);
+            clearTimeout(pending);
+            pending = 0;
+        }
+        var e = els();
+        if (e.hl) e.hl.replaceChildren();
+        lastSrc = null;
+    }
+
     NP.mdSource = {
         _tokenize: tokenize,          /* tests */
         refresh: render,
-        schedule: schedule
+        schedule: schedule,
+        clear: clear
     };
 
     document.addEventListener("DOMContentLoaded", function () {

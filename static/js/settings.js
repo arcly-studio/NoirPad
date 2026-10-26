@@ -222,6 +222,12 @@ window.NP = window.NP || {};
         setToggle("setting-crt", e.crt);
         var row = document.getElementById("setting-glow-intensity-row");
         if (row) row.hidden = !e.glow;
+        /* U8: the glitch is a colour shift of the glow — without Glow it
+           cannot show, so its switch is off-limits and says why. */
+        var glitch = document.getElementById("setting-glitch-effect");
+        if (glitch) glitch.disabled = !e.glow;
+        var hint = document.getElementById("setting-glitch-hint");
+        if (hint) hint.hidden = e.glow;
     }
 
     /* CRT used to live only in this browser (localStorage). Data that has

@@ -208,6 +208,13 @@ window.NP = window.NP || {};
             }
             if (tag === "IMG") {
                 var img = ownImage(node);
+                if (img && st.href) {
+                    /* E11: a linked picture keeps its link. */
+                    var link = doc.createElement("a");
+                    link.setAttribute("href", st.href);
+                    link.appendChild(img);
+                    img = link;
+                }
                 if (img) emitNode(img);
                 return;
             }
@@ -358,15 +365,29 @@ window.NP = window.NP || {};
         return sel.getRangeAt(0);
     }
 
-    /* A selection reaching into a read-only code block covers the whole
-       block, so the block is never cut in half or duplicated. */
+    /* The first (or last) node a range edge touches. */
+    function edgeNode(container, offset, atEnd) {
+        if (container.nodeType !== 1) return container.parentNode;
+        return container.childNodes[atEnd ? offset - 1 : offset] || container;
+    }
+
+    function isBr(n) { return !!n && n.nodeType === 1 && n.tagName === "BR"; }
+
+    /* A selection reaching into (or starting / ending right at) a read-only
+       code block covers the whole block, so the block is never cut in half
+       or duplicated. E7: with the line break next to it — Chrome drops a
+       <br> at the edge of an insertHTML, gluing the fence to the text. */
     function wholeCodeBlocks(r) {
-        var a = r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentNode;
-        var b = r.endContainer.nodeType === 1 ? r.endContainer : r.endContainer.parentNode;
+        var a = edgeNode(r.startContainer, r.startOffset, false);
+        var b = edgeNode(r.endContainer, r.endOffset, true);
         var preA = a && a.closest ? a.closest("pre.np-code") : null;
         var preB = b && b.closest ? b.closest("pre.np-code") : null;
-        if (preA) r.setStartBefore(preA);
-        if (preB) r.setEndAfter(preB);
+        if (preA) {
+            r.setStartBefore(isBr(preA.previousSibling) ? preA.previousSibling : preA);
+        }
+        if (preB) {
+            r.setEndAfter(isBr(preB.nextSibling) ? preB.nextSibling : preB);
+        }
     }
 
     /* Context-menu Paste: the async clipboard API (may be refused). */
@@ -432,11 +453,13 @@ window.NP = window.NP || {};
             var html = plain ? "" : cd.getData("text/html");
             var text = cd.getData("text/plain");
             var frag = html ? NP.paste.cleanHtml(html) : null;
+            /* E13: whatever comes, the browser never inserts it itself —
+               HTML that cleans down to nothing would come in uncleaned. */
+            e.preventDefault();
             if (!frag || !frag.childNodes.length) {
                 if (!text) return;
                 frag = plainFragment(text);
             }
-            e.preventDefault();
             insertFragment(frag);
         },
 

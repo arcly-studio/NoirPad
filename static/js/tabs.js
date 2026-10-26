@@ -200,7 +200,9 @@ window.NP = window.NP || {};
             /* Load the note */
             if (NP.editor) {
                 loaded = NP.editor.loadNote(noteId, { focus: !opts.keepFocus }).then(function () {
-                    /* Restore saved scroll and selection */
+                    /* Restore saved scroll and selection — only if this tab is
+                       still the one on screen (E14). */
+                    if (NP.state.activeTabId !== noteId || NP.editor._loadedNoteId !== noteId) return;
                     var idx = findTab(noteId);
                     if (idx !== -1) {
                         var tab = NP.state.openTabs[idx];
@@ -353,6 +355,9 @@ window.NP = window.NP || {};
 
         _saveTabState: function () {
             if (!NP.state.activeTabId) return;
+            /* The editor still shows another note (loading): nothing of it
+               belongs to this tab (E14). */
+            if (NP.editor && NP.editor._loadedNoteId !== NP.state.activeTabId) return;
             var idx = findTab(NP.state.activeTabId);
             if (idx === -1) return;
 

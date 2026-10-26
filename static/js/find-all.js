@@ -7,6 +7,7 @@ window.NP = window.NP || {};
     var SNIPPET_RADIUS = 40;       /* chars on each side of match */
     var MAX_HITS_PER_NOTE = 5;
     var MAX_TOTAL_HITS = 200;
+    var SEARCH_DELAY = 150;        /* ms after the last key (R5) */
 
     var overlayEl = null;
 
@@ -148,15 +149,26 @@ window.NP = window.NP || {};
                 });
             }
 
-            input.addEventListener("input", function () {
+            /* R5: search once typing pauses, not on every key (a big note
+               collection took ~300 ms per character). */
+            var pending = null;
+            function renderNow() {
+                clearTimeout(pending);
+                pending = null;
                 render(input.value.trim());
+            }
+            input.addEventListener("input", function () {
+                clearTimeout(pending);
+                pending = setTimeout(renderNow, SEARCH_DELAY);
             });
             input.addEventListener("keydown", function (e) {
                 if (e.key === "Escape") {
                     e.preventDefault();
+                    clearTimeout(pending);
                     NP.findAll.close();
                 } else if (e.key === "Enter") {
                     e.preventDefault();
+                    if (pending) renderNow();       /* the results for what is typed */
                     /* Click the first result if any */
                     var first = list.querySelector(".np-findall-result");
                     if (first) first.click();

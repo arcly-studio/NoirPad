@@ -228,6 +228,7 @@
     }
   },
   "images": {
+    "notInserted": "The picture was not inserted: another note was opened meanwhile. Paste it again.",
     "uploadFailed": "Image upload failed: {error}",
     "linkLabel": "Image",
     "pasteDialog": {
@@ -755,7 +756,7 @@
       "matrixRain": "Matrix rain background",
       "showSplash": "Show splash on startup",
       "autosave": "Autosave",
-      "autosaveHint": "Off: safety save every 30 s",
+      "autosaveHint": "Off: still saved a moment after you stop typing, and every 30 s",
       "autosaveInterval": "Autosave interval",
       "duration": {
         "s5": "5 seconds",
@@ -770,6 +771,7 @@
       "portrait": "Portrait",
       "spellcheck": "Spellcheck",
       "glitchEffect": "Glitch typing effect",
+      "glitchNeedsGlow": "Shows only with Glow on.",
       "confirmDelete": "Confirm before delete",
       "idleLock": "Auto-lock when idle",
       "idleLockHint": "Locks encrypted notes — and the whole app if App lock is on",

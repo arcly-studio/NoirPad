@@ -709,16 +709,24 @@ window.NP = window.NP || {};
            boundaries and turning \n into <br>. */
         _appendFormatted: function (parent, text, start, end, marks) {
             if (end <= start) return;
+            /* R3: one sweep over the cuts (marks are sorted by start), not
+               every mark for every cut — 6 000 formats took seconds. */
+            var local = marks.filter(function (mk) { return mk.end > start && mk.start < end; });
             var cuts = [start, end];
-            marks.forEach(function (mk) {
-                if (mk.start > start && mk.start < end) cuts.push(mk.start);
-                if (mk.end > start && mk.end < end) cuts.push(mk.end);
+            local.forEach(function (mk) {
+                if (mk.start > start) cuts.push(mk.start);
+                if (mk.end < end) cuts.push(mk.end);
             });
             cuts.sort(function (a, b) { return a - b; });
+            var active = [];
+            var next = 0;
             for (var i = 0; i < cuts.length - 1; i++) {
                 var a = cuts[i], b = cuts[i + 1];
                 if (b <= a) continue;
-                var active = marks.filter(function (mk) { return mk.start <= a && mk.end >= b; });
+                while (next < local.length && local[next].start <= a) active.push(local[next++]);
+                if (active.some(function (mk) { return mk.end <= a; })) {
+                    active = active.filter(function (mk) { return mk.end > a; });
+                }
                 parent.appendChild(NP.editor._styledRun(text.substring(a, b), active));
             }
         },

@@ -101,14 +101,9 @@ window.NP = window.NP || {};
 
     function isEncrypted(id) {
         if (!NP.state.data || !NP.state.data.notes) return false;
-        var content = NP.state.data.notes[id];
-        if (typeof content !== "string") return false;
-        try {
-            var obj = JSON.parse(content);
-            return obj && obj.encrypted === true;
-        } catch (e) {
-            return false;
-        }
+        /* The same test as the editor's (E14): a plain note that only
+           contains {"encrypted": true} as text gets no lock icon. */
+        return NP.isEncryptedEnvelope(NP.state.data.notes[id]);
     }
 
     /* Walk up the tree to find every folder that contains `id`, so

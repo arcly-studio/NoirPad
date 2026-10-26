@@ -320,8 +320,11 @@
             </div>
 
             <div class="settings-row">
-                <span class="settings-label" data-i18n="ui.settings.glitchEffect">Glitch typing effect</span>
-                <button class="settings-toggle" id="setting-glitch-effect" role="switch" aria-checked="false" aria-label="Glitch typing effect" data-i18n-aria-label="ui.settings.glitchEffect"><span class="settings-toggle-knob"></span></button>
+                <div class="settings-label-col">
+                    <span class="settings-label" data-i18n="ui.settings.glitchEffect">Glitch typing effect</span>
+                    <span class="settings-sublabel" id="setting-glitch-hint" data-i18n="ui.settings.glitchNeedsGlow" hidden>Shows only with Glow on.</span>
+                </div>
+                <button class="settings-toggle" id="setting-glitch-effect" role="switch" aria-checked="false" aria-label="Glitch typing effect" data-i18n-aria-label="ui.settings.glitchEffect" aria-describedby="setting-glitch-hint"><span class="settings-toggle-knob"></span></button>
             </div>
 
             <hr class="settings-divider">
