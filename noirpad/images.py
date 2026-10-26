@@ -20,7 +20,7 @@ IMAGE_MEDIA_TYPES = {
 }
 IMAGE_NAME_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-    r"\.(png|jpe?g|gif|webp)$", re.IGNORECASE)
+    r"\.(png|jpe?g|gif|webp)\Z", re.IGNORECASE)   # \Z: "$" would accept a trailing "\n"
 
 # Image references in PLAINTEXT note content: rich-text markers
 # `<<IMG:name>>` / `<<IMG:name|w=300>>` (zoomed), legacy desktop
@@ -64,20 +64,28 @@ def image_ext_ok(name: str, data: bytes) -> bool:
 
 
 def extract_image_names(content: Optional[str]) -> list[str]:
-    """Return image filenames referenced in *plaintext* note content."""
+    """Return image filenames referenced in *plaintext* note content (only
+    names the upload could have produced; anything else is just text)."""
     out: list[str] = []
     if not content:
         return out
     for m in _IMG_RE.finditer(content):
         fname = m.group(1) or m.group(2)
-        if fname:
+        if fname and IMAGE_NAME_RE.match(fname):
             out.append(fname)
     out.extend(m.group(1) for m in _IMG_URL_RE.finditer(content))
     return out
 
 
 def safe_image_path(filename: str) -> Optional[Path]:
-    """Resolve *filename* inside IMAGES_DIR, or None if it would escape it."""
+    """Path of a stored image in IMAGES_DIR, or None for any other name.
+
+    S1: the name is checked before a path is built. On Windows, resolving
+    "//host/share/x.png" contacts that SMB server (NTLM hash leak, ~20 s
+    blocked) — names from a foreign backup or .md file must never get there.
+    """
+    if not isinstance(filename, str) or not IMAGE_NAME_RE.match(filename):
+        return None
     candidate = (storage.IMAGES_DIR / filename).resolve()
     if not candidate.is_relative_to(storage.IMAGES_DIR_R):
         return None

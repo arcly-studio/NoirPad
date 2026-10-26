@@ -695,15 +695,27 @@ window.NP = window.NP || {};
                 title: NP.t("dialog.moveToTrashTitle"),
                 okLabel: NP.t("dialog.moveToTrash")
             });
+            /* Every note that goes to the trash with it (a folder takes its
+               whole subtree): their tabs close, the open one included (T1). */
+            var goneIds = [];
+            (function collect(it) {
+                if (it.type === "note") goneIds.push(it.id);
+                (it.children || []).forEach(collect);
+            })(item);
             return ask.then(function (ok) {
                 if (!ok) return;
-                return NP.api.deleteItem(id).then(function () {
-                    if (NP.state.currentNoteId === id) {
+                var openGone = goneIds.indexOf(NP.state.currentNoteId) !== -1;
+                /* What was typed last goes to the trash with the note. */
+                var flushed = openGone && NP.editor ? NP.editor.save(true) : Promise.resolve();
+                return flushed.then(function () {
+                    return NP.api.deleteItem(id);
+                }).then(function () {
+                    if (NP.tabs) NP.tabs.closeNotes(goneIds);
+                    else if (openGone) {
                         NP.state.currentNoteId = null;
-                        if (NP.tabs) NP.tabs.close(id);
                         if (NP.editor) NP.editor.showWelcome();
                     }
-                    if (NP.state.selectedId === id) {
+                    if (NP.state.selectedId === id || goneIds.indexOf(NP.state.selectedId) !== -1) {
                         NP.state.selectedId = null;
                     }
                     return NP.state.init();

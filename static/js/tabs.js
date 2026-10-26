@@ -82,6 +82,26 @@ window.NP = window.NP || {};
             }
         },
 
+        /* Notes that just went to the trash (a folder takes all its notes):
+           their tabs close. If the open note was one of them, the editor
+           lets go of it first, so nothing typed afterwards is "saved" into
+           a trashed note, and the start page takes its place (T1, T2). */
+        closeNotes: function (ids) {
+            var gone = {};
+            ids.forEach(function (id) { gone[id] = true; });
+            var openGone = !!(NP.state.currentNoteId && gone[NP.state.currentNoteId]) ||
+                !!(NP.state.activeTabId && gone[NP.state.activeTabId]);
+            for (var i = NP.state.openTabs.length - 1; i >= 0; i--) {
+                if (gone[NP.state.openTabs[i].id]) NP.state.openTabs.splice(i, 1);
+            }
+            if (openGone) {
+                NP.state.activeTabId = null;
+                NP.state.currentNoteId = null;
+                if (NP.editor) NP.editor.showWelcome();
+            }
+            NP.tabs.render();
+        },
+
         activate: function (noteId) {
             /* Save state of current tab */
             NP.tabs._saveTabState();

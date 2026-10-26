@@ -13,7 +13,7 @@ from fastapi.responses import StreamingResponse
 
 from .. import config, storage
 from ..errors import ApiError
-from ..images import image_ext_ok, referenced_images, safe_image_path
+from ..images import IMAGE_NAME_RE, image_ext_ok, referenced_images, safe_image_path
 from ..tree import collect_note_ids, strip_user_ids
 from ..uploads import check_archive_size, read_upload_limited
 
@@ -57,7 +57,8 @@ def _check_items(items: Any) -> None:
         if (not isinstance(item, dict) or not isinstance(item.get("id"), str)
                 or item.get("type") not in ("note", "folder")
                 or not isinstance(item.get("name", ""), str)
-                or not isinstance(item.get("tags", []), list)):
+                or not isinstance(item.get("tags", []), list)
+                or not all(isinstance(t, str) for t in item.get("tags", []))):  # S3
             raise _bad_data()
         if "children" in item:
             _check_items(item["children"])
@@ -121,8 +122,12 @@ def _read_backup(contents: bytes) -> tuple[Any, dict[str, bytes]]:
             if not name.startswith("images/") or name.endswith("/"):
                 continue
             rel = name.split("/", 1)[1]
-            if safe_image_path(rel) is None:
+            # A path (subfolder, drive, UNC "//host/…") is unsafe; a plain
+            # name that is no stored image name is simply not an image.
+            if any(c in rel for c in "/\\:") or rel in ("", ".", ".."):
                 raise ApiError(400, "backup_unsafe_path", name=name)
+            if safe_image_path(rel) is None:
+                raise ApiError(415, "backup_not_image", name=name)
             if zf.getinfo(name).file_size > config.MAX_IMAGE_BYTES:
                 raise ApiError(413, "backup_image_too_large", name=name)
             data = zf.read(name)
@@ -204,7 +209,9 @@ async def backup_import(file: UploadFile = File(...)):
         data["notes"] = _pick(imported.get("notes"))
         data["note_formats"] = _pick(imported.get("note_formats"))
         data["note_modes"] = _pick(imported.get("note_modes"))
-        data["note_images"] = _pick(imported.get("note_images"))
+        # S1: only stored-image names; anything else would reach the disk later.
+        data["note_images"] = {nid: [n for n in names if IMAGE_NAME_RE.match(n)]
+                               for nid, names in _pick(imported.get("note_images")).items()}
         data["favorites"] = [nid for nid in dict.fromkeys(imported.get("favorites") or [])
                              if nid in imp_note_ids]
 

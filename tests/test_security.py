@@ -166,3 +166,103 @@ def test_d4_desktop_token_cookie_is_not_enough_for_api(np_backend):
     c = raw_client(np_backend)
     c.cookies.set("noirpad_desktop", "tok-123")
     assert c.get("/api/data").status_code == 403
+
+
+# ---- S1 (kontrola 2): UNC název obrázku z cizí zálohy / .md -----------------
+#
+# Path("…/images") / "//host/share/x.png" je na Windows \host\share\x.png a
+# resolve() se na ten SMB server připojí (únik NTLM hashe, ~20 s blokace).
+# Testy hlídají, že se k žádné takové cestě nikdy nedojde.
+
+UNC_NAMES = ["//192.0.2.1/share/x.png", r"\\192.0.2.1\share\x.png",
+             r"\\?\UNC\192.0.2.1\share\x.png"]
+IMG = "0123abcd-0000-4000-8000-0123456789ab.png"
+
+
+def _no_unc(monkeypatch):
+    import pathlib
+    real = pathlib.Path.resolve
+    touched = []
+
+    def guarded(self, *a, **kw):
+        s = str(self).replace("/", "\\")
+        if s.startswith("\\\\") and "192.0.2." in s:
+            touched.append(s)
+            raise AssertionError(f"UNC path resolved: {s}")
+        return real(self, *a, **kw)
+
+    monkeypatch.setattr(pathlib.Path, "resolve", guarded)
+    return touched
+
+
+def test_s1_safe_image_path_rejects_anything_but_a_stored_name(np_backend, monkeypatch):
+    from noirpad.images import safe_image_path
+    touched = _no_unc(monkeypatch)
+    for name in UNC_NAMES + [IMG + "\n", "../" + IMG, "x.png", "", None]:
+        assert safe_image_path(name) is None, repr(name)
+    assert touched == []
+    assert safe_image_path(IMG) == (np_backend.IMAGES_DIR / IMG).resolve()
+
+
+def test_s1_backup_import_with_unc_image_entry_is_refused(client, monkeypatch):
+    from conftest import make_png, make_zip
+    import json
+    touched = _no_unc(monkeypatch)
+    tree = [{"id": "n", "type": "note", "name": "N"}]
+    for name in UNC_NAMES:
+        blob = make_zip({"notes_data.json": json.dumps({"tree": tree, "notes": {"n": "x"}}),
+                         "images/" + name.replace("\\", "/"): make_png()})
+        r = client.post("/api/backup/import", files={"file": ("b.zip", blob, "application/zip")})
+        assert r.status_code == 400, name
+        assert r.json()["detail"]["code"] == "backup_unsafe_path"
+    assert touched == []
+
+
+def test_s1_backup_note_images_keep_only_stored_names(client, np_backend, monkeypatch):
+    from conftest import make_zip
+    import json
+    touched = _no_unc(monkeypatch)
+    tree = [{"id": "n", "type": "note", "name": "N"}]
+    data = {"tree": tree, "notes": {"n": "x"},
+            "note_images": {"n": UNC_NAMES + [IMG, IMG + "\n"]}}
+    r = client.post("/api/backup/import",
+                    files={"file": ("b.zip", make_zip({"notes_data.json": json.dumps(data)}),
+                                    "application/zip")})
+    assert r.status_code == 200, r.text
+    assert np_backend.read_data()["note_images"] == {"n": [IMG]}
+    # Mazání poznámky (delete_images ze seznamu) se UNC cesty nedotkne.
+    assert client.post("/api/tree/delete", json={"id": "n"}).status_code == 200
+    assert client.post("/api/trash/empty").status_code in (200, 204)
+    assert touched == []
+
+
+def test_s1_html_and_md_export_ignore_unc_image_markers(client, monkeypatch):
+    from conftest import new_note
+    touched = _no_unc(monkeypatch)
+    content = " ".join(f"<<IMG:{n}>>" for n in UNC_NAMES)
+    nid = new_note(client, name="UNC", content=content)
+    assert client.get(f"/api/export/{nid}/html").status_code == 200
+    assert client.get(f"/api/export/{nid}/md").status_code == 200
+    assert client.get("/api/notes/export").status_code == 200
+    assert client.get("/api/notes/export-md").status_code == 200
+    assert touched == []
+
+
+def test_s1_md_import_with_unc_image_does_not_touch_it(client, monkeypatch):
+    touched = _no_unc(monkeypatch)
+    md = "# T\n\n![x](//192.0.2.3/share/x.png)\n<<IMG://192.0.2.3/share/y.png>>\n"
+    r = client.post("/api/notes/import-md",
+                    files={"files": ("a.md", md.encode(), "text/markdown")})
+    assert r.status_code in (200, 400, 422), r.text
+    assert touched == []
+
+
+def test_s3_backup_tags_must_be_strings(client):
+    from conftest import make_zip
+    import json
+    tree = [{"id": "n", "type": "note", "name": "N", "tags": [1, "x", {}]}]
+    blob = make_zip({"notes_data.json": json.dumps({"tree": tree, "notes": {"n": "x"}})})
+    r = client.post("/api/backup/import", files={"file": ("b.zip", blob, "application/zip")})
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "backup_corrupt_data"
+    assert client.get("/api/tags").status_code == 200
