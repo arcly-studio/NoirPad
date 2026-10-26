@@ -162,6 +162,10 @@
     "unlockFailed": "Could not unlock the note: {error}",
     "loadError": "Error loading note: {error}",
     "lockedNotSaved": "Note is locked; changes were not saved.",
+    "leaveUnsavedTitle": "Changes not saved",
+    "leaveUnsaved": "The note “{name}” could not be saved ({error}). Your latest changes are only in the editor. Discard them?",
+    "discardChanges": "Discard changes",
+    "stayOnNote": "Stay on the note",
     "clearFormatting": {
       "label": "Clear formatting",
       "noSelection": "Select the text to clear its formatting first."

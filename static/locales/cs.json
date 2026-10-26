@@ -178,6 +178,10 @@
     "unlockFailed": "Poznámku se nepodařilo odemknout: {error}",
     "loadError": "Chyba při načítání poznámky: {error}",
     "lockedNotSaved": "Poznámka je zamčená; změny nebyly uloženy.",
+    "leaveUnsavedTitle": "Změny nejsou uložené",
+    "leaveUnsaved": "Poznámku „{name}“ se nepodařilo uložit ({error}). Poslední změny jsou jen v editoru. Zahodit je?",
+    "discardChanges": "Zahodit změny",
+    "stayOnNote": "Zůstat u poznámky",
     "clearFormatting": {
       "label": "Vymazat formátování",
       "noSelection": "Nejdřív označte text, jehož formátování chcete vymazat."

@@ -15,6 +15,25 @@ window.NP = window.NP || {};
         return -1;
     }
 
+    /* Every switch / close of the open note gets a number: when the user
+       clicks on before the previous one finished (its save is still on
+       the way), only the newest one acts. */
+    var switchSeq = 0;
+
+    /* A rename typed into the title belongs to the note being left: finish
+       it before anything changes (E3 — Ctrl+Tab / Ctrl+W from the title). */
+    function finishTitleEdit() {
+        var title = document.getElementById("note-title-input");
+        if (title && document.activeElement === title) title.blur();
+    }
+
+    /* The open note's last typing is saved before it makes way; a failed
+       save asks first (E2). Resolves true = go ahead. */
+    function leaveOpenNote() {
+        if (!NP.editor || !NP.editor.leave || !NP.editor._currentNoteId) return Promise.resolve(true);
+        return NP.editor.leave();
+    }
+
     function truncate(name) {
         if (name.length > NAME_MAX_LEN) {
             return name.substring(0, NAME_MAX_LEN - 1) + "\u2026";
@@ -22,13 +41,15 @@ window.NP = window.NP || {};
         return name;
     }
 
+    /* add / activate / close resolve to true (done), false (the user chose
+       to stay on a note that could not be saved) or null (a newer switch
+       took over). */
     NP.tabs = {
         add: function (noteId, name) {
             var idx = findTab(noteId);
             if (idx !== -1) {
                 /* Tab already exists, just activate */
-                NP.tabs.activate(noteId);
-                return;
+                return NP.tabs.activate(noteId);
             }
 
             /* Enforce max tabs */
@@ -50,36 +71,51 @@ window.NP = window.NP || {};
                 selectionEnd: null
             });
 
-            NP.tabs.activate(noteId);
-        },
-
-        close: function (noteId) {
-            var idx = findTab(noteId);
-            if (idx === -1) return;
-
-            var wasActive = NP.state.activeTabId === noteId;
-            NP.state.openTabs.splice(idx, 1);
-
-            if (wasActive) {
-                if (NP.state.openTabs.length > 0) {
-                    /* Switch to nearest neighbor */
-                    var newIdx = idx >= NP.state.openTabs.length ? NP.state.openTabs.length - 1 : idx;
-                    NP.tabs.activate(NP.state.openTabs[newIdx].id);
-                } else {
-                    /* Unsaved typing in the last tab: write it before the note
-                       is forgotten (the debounced save would find no note).
-                       Not for a note just moved to the trash (tree.js clears
-                       currentNoteId first): the server would refuse it. */
-                    if (NP.editor && NP.editor._saveState === "dirty" &&
-                        NP.state.currentNoteId === noteId) NP.editor.save(true);
-                    NP.state.activeTabId = null;
-                    NP.state.currentNoteId = null;
-                    if (NP.editor) NP.editor.showWelcome({ focus: true });
+            return NP.tabs.activate(noteId).then(function (done) {
+                /* Stayed on the previous note: the new tab goes away again. */
+                if (done === false && NP.state.activeTabId !== noteId) {
+                    var i = findTab(noteId);
+                    if (i !== -1) NP.state.openTabs.splice(i, 1);
                     NP.tabs.render();
                 }
-            } else {
+                return done;
+            });
+        },
+
+        /* opts.keepFocus: the keyboard is in the tab strip; the editor must
+           not take the focus (T4: a second Delete would edit the note). */
+        close: function (noteId, opts) {
+            opts = opts || {};
+            var idx = findTab(noteId);
+            if (idx === -1) return Promise.resolve(true);
+
+            if (NP.state.activeTabId !== noteId) {
+                NP.state.openTabs.splice(idx, 1);
                 NP.tabs.render();
+                return Promise.resolve(true);
             }
+
+            /* The open note: its typing is saved first — also for the last
+               tab, where the debounced save would find no note (E2). */
+            finishTitleEdit();
+            var seq = ++switchSeq;
+            return leaveOpenNote().then(function (go) {
+                if (seq !== switchSeq) return null;
+                if (!go) return false;
+                var i = findTab(noteId);
+                if (i === -1) return true;
+                NP.state.openTabs.splice(i, 1);
+                if (NP.state.openTabs.length > 0) {
+                    /* Switch to nearest neighbor */
+                    var next = NP.state.openTabs[Math.min(i, NP.state.openTabs.length - 1)].id;
+                    return NP.tabs._show(next, opts);
+                }
+                NP.state.activeTabId = null;
+                NP.state.currentNoteId = null;
+                if (NP.editor) NP.editor.showWelcome({ focus: true });
+                NP.tabs.render();
+                return true;
+            });
         },
 
         /* Notes that just went to the trash (a folder takes all its notes):
@@ -102,21 +138,68 @@ window.NP = window.NP || {};
             NP.tabs.render();
         },
 
-        activate: function (noteId) {
+        /* After new data from the server (poll): a note trashed in another
+           window loses its tab (T2), a rename there shows here (T10). */
+        sync: function () {
+            var tree = NP.state.data && NP.state.data.tree;
+            if (!tree) return;
+            var names = {};
+            (function walk(items) {
+                items.forEach(function (it) {
+                    if (it.type === "note") names[it.id] = it.name;
+                    if (it.children) walk(it.children);
+                });
+            })(tree);
+            var gone = [];
+            var renamed = false;
+            NP.state.openTabs.forEach(function (tab) {
+                if (!(tab.id in names)) gone.push(tab.id);
+                else if (tab.name !== names[tab.id]) { tab.name = names[tab.id]; renamed = true; }
+            });
+            var title = document.getElementById("note-title-input");
+            var cur = NP.state.currentNoteId;
+            if (title && cur && cur in names && document.activeElement !== title &&
+                title.value !== names[cur]) title.value = names[cur];
+            if (gone.length) NP.tabs.closeNotes(gone);
+            else if (renamed) NP.tabs.render();
+        },
+
+        activate: function (noteId, opts) {
+            opts = opts || {};
+            var ed = NP.editor;
+            /* Already open: reloading it would throw away what was typed in
+               the last second (E1). Just back to the text. */
+            if (NP.state.activeTabId === noteId && ed && ed._currentNoteId === noteId &&
+                ed._loadedNoteId === noteId) {
+                ++switchSeq;            /* a switch still waiting for its save is off */
+                NP.tabs.render();
+                if (!opts.keepFocus && ed.focusText) ed.focusText();
+                return Promise.resolve(true);
+            }
+
+            finishTitleEdit();
             /* Save state of current tab */
             NP.tabs._saveTabState();
 
-            /* Save current note if needed */
-            if (NP.state.activeTabId && NP.state.activeTabId !== noteId && NP.editor) {
-                NP.editor.save(true);
-            }
+            var seq = ++switchSeq;
+            return leaveOpenNote().then(function (go) {
+                if (seq !== switchSeq) return null;
+                if (!go) return false;
+                return NP.tabs._show(noteId, opts);
+            });
+        },
 
+        /* Open *noteId* in the editor (the note that was open is already
+           saved, or given up by the user). */
+        _show: function (noteId, opts) {
+            opts = opts || {};
             NP.state.activeTabId = noteId;
             NP.state.currentNoteId = noteId;
 
+            var loaded = Promise.resolve();
             /* Load the note */
             if (NP.editor) {
-                NP.editor.loadNote(noteId).then(function () {
+                loaded = NP.editor.loadNote(noteId, { focus: !opts.keepFocus }).then(function () {
                     /* Restore saved scroll and selection */
                     var idx = findTab(noteId);
                     if (idx !== -1) {
@@ -146,6 +229,7 @@ window.NP = window.NP || {};
 
             /* Also update tree selection */
             if (NP.tree) NP.tree.render();
+            return loaded.then(function () { return true; });
         },
 
         render: function () {
@@ -173,9 +257,11 @@ window.NP = window.NP || {};
                     } else if (e.key === "Delete") {
                         e.preventDefault();
                         e.stopPropagation();          /* not the tree's Delete */
-                        NP.tabs.close(pill.getAttribute("data-id"));
-                        var left = bar.querySelector(".tab-pill.active");
-                        if (left) left.focus();
+                        /* The focus stays in the strip, never in the editor (T4). */
+                        NP.tabs.close(pill.getAttribute("data-id"), { keepFocus: true }).then(function () {
+                            var left = bar.querySelector(".tab-pill.active") || bar.querySelector(".tab-pill");
+                            if (left) { left.tabIndex = 0; left.focus(); }
+                        });
                         return;
                     } else return;
                     e.preventDefault();
@@ -248,7 +334,7 @@ window.NP = window.NP || {};
             if (tabs.length < 2) return;
             var idx = findTab(NP.state.activeTabId);
             var next = (idx + 1) % tabs.length;
-            NP.tabs.activate(tabs[next].id);
+            return NP.tabs.activate(tabs[next].id);
         },
 
         prev: function () {
@@ -256,12 +342,12 @@ window.NP = window.NP || {};
             if (tabs.length < 2) return;
             var idx = findTab(NP.state.activeTabId);
             var prev = (idx - 1 + tabs.length) % tabs.length;
-            NP.tabs.activate(tabs[prev].id);
+            return NP.tabs.activate(tabs[prev].id);
         },
 
         closeCurrent: function () {
             if (NP.state.activeTabId) {
-                NP.tabs.close(NP.state.activeTabId);
+                return NP.tabs.close(NP.state.activeTabId);
             }
         },
 

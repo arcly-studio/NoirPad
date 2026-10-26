@@ -330,3 +330,70 @@ def test_k5_closing_the_window_saves_first():
         time.sleep(0.02)
     assert "flushForClose()" in calls[0]
     assert calls[-1] == "destroy"
+
+
+class _ClosingPage:
+    """A window whose page answers flushForClose with *answer* after
+    *delay* s, and reports `_closeBusy` = *busy* meanwhile."""
+
+    class Handlers(list):
+        def __iadd__(self, fn):
+            self.append(fn)
+            return self
+
+    def __init__(self, answer, delay=0.0, busy=None):
+        self.events = types.SimpleNamespace(closing=self.Handlers())
+        self.answer, self.delay, self.busy = answer, delay, busy
+        self.destroyed = threading.Event()
+        self.asked = 0
+
+    def evaluate_js(self, script, callback=None):
+        if callback is None:            # the _closeBusy question
+            return self.busy
+        self.asked += 1
+        threading.Timer(self.delay, callback, [self.answer]).start()
+
+    def destroy(self):
+        self.destroyed.set()
+        assert all(h() is not False for h in self.events.closing)
+
+
+def _close(page):
+    desktop._save_before_close(page)
+    [handler] = page.events.closing
+    assert handler() is False
+    return handler
+
+
+def test_r2_failed_save_and_user_stays_keeps_the_window():
+    page = _ClosingPage("stay")
+    handler = _close(page)
+    assert not page.destroyed.wait(0.5)
+    # the next close asks the page again
+    page.answer = "close"
+    assert handler() is False
+    assert page.destroyed.wait(2)
+    assert page.asked == 2
+
+
+def test_r2_window_waits_while_the_page_is_still_busy(monkeypatch):
+    monkeypatch.setattr(desktop, "CLOSE_SAVE_TIMEOUT", 0.1)
+    page = _ClosingPage("close", delay=0.8, busy="asking")   # the question is on screen
+    _close(page)
+    assert not page.destroyed.wait(0.5)       # well past CLOSE_SAVE_TIMEOUT
+    assert page.destroyed.wait(2)
+
+
+def test_r2_a_page_that_is_not_busy_does_not_block_closing(monkeypatch):
+    monkeypatch.setattr(desktop, "CLOSE_SAVE_TIMEOUT", 0.1)
+    page = _ClosingPage("close", delay=30, busy=None)        # hung, says nothing
+    _close(page)
+    assert page.destroyed.wait(2)
+
+
+def test_r2_a_slow_save_has_a_limit(monkeypatch):
+    monkeypatch.setattr(desktop, "CLOSE_SAVE_TIMEOUT", 0.1)
+    monkeypatch.setattr(desktop, "CLOSE_BUSY_LIMIT", 0.4)
+    page = _ClosingPage("close", delay=30, busy="saving")
+    _close(page)
+    assert page.destroyed.wait(2)

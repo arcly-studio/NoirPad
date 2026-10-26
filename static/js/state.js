@@ -38,6 +38,7 @@ window.NP = window.NP || {};
                 if (!res) return;
                 NP.state.data = res.data;
                 NP.state.etag = res.etag;
+                if (NP.tabs && NP.tabs.sync) NP.tabs.sync();
                 if (NP.tree && NP.tree.render) NP.tree.render();
             }).catch(function () {
                 /* offline / locked: try again on the next tick */

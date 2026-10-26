@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { loadApp } from "./harness.js";
 
 describe("tabs: ARIA + keyboard", () => {
-    it("← → move, Enter opens, Delete closes the focused tab; × is not a nested button", () => {
+    it("← → move, Enter opens, Delete closes the focused tab; × is not a nested button", async () => {
         const win = loadApp(["js/utils.js", "js/tabs.js"], { body: '<div id="tab-bar"></div>' });
         win.NP.state = {
             openTabs: [{ id: "a", name: "Alpha" }, { id: "b", name: "Beta" }],
@@ -21,8 +21,10 @@ describe("tabs: ARIA + keyboard", () => {
         key("ArrowRight");
         expect(win.document.activeElement.textContent).toContain("Beta");
         key("Enter");
+        await new Promise((r) => setTimeout(r, 0));     // the open note is saved first (E2)
         expect(win.NP.state.activeTabId).toBe("b");
         key("Delete");
+        await new Promise((r) => setTimeout(r, 0));
         expect(win.NP.state.openTabs.map((t) => t.id)).toEqual(["a"]);
     });
 });

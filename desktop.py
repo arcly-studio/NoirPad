@@ -63,7 +63,11 @@ WEBVIEW2_DOWNLOAD = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"  # Everg
 
 SERVER_START_TIMEOUT = 15.0
 # Closing the window: how long the page may take to save the open note.
+# While it says it is still busy, the wait goes on (R2): a slow save up to
+# CLOSE_BUSY_LIMIT, the "could not be saved – close anyway?" question as long
+# as it is on screen.
 CLOSE_SAVE_TIMEOUT = 5.0
+CLOSE_BUSY_LIMIT = 120.0
 # A second launch right after the first may find no window yet: wait this
 # long for it before saying "already running".
 FOCUS_WAIT_SECONDS = 6.0
@@ -444,31 +448,70 @@ def _show_window(port: int, token: str, data_dir: Path) -> None:
     webview.start(gui=gui, private_mode=False, storage_path=str(storage_path))
 
 
+def _page_close_state(window, timeout: float = 2.0) -> Optional[str]:
+    """What the page does while the window closes: "saving", "asking" (the
+    user is answering whether to close anyway) or None (done, or the page
+    does not answer at all)."""
+    out: dict = {}
+    got = threading.Event()
+
+    def ask() -> None:
+        try:
+            out["v"] = window.evaluate_js(
+                "(window.NP && NP.editor && NP.editor._closeBusy) || null")
+        except Exception:
+            pass
+        got.set()
+
+    threading.Thread(target=ask, name="noirpad-close-busy", daemon=True).start()
+    got.wait(timeout)
+    value = out.get("v")
+    return value if value in ("saving", "asking") else None
+
+
 def _save_before_close(window) -> None:
     """K5: the page's own unload flush is a keepalive request, which may
     carry at most 64 kB, so a long note typed into just before closing was
     lost. The first close request is cancelled, the page saves the open
     note (NP.editor.flushForClose), then the window really closes. A page
-    that does not answer within CLOSE_SAVE_TIMEOUT never blocks closing."""
+    that does not answer within CLOSE_SAVE_TIMEOUT and is not busy never
+    blocks closing.
+
+    R2: if the save fails, the page asks whether to close anyway; "stay"
+    keeps the window (and the unsaved text) open."""
     state = {"started": False, "closing": False}
 
     def flush_then_close() -> None:
         done = threading.Event()
+        result: dict = {}
+
+        def answered(value) -> None:
+            result["answer"] = value
+            done.set()
 
         def ask_page() -> None:
             try:
                 window.evaluate_js(
                     "(window.NP && NP.editor && NP.editor.flushForClose)"
                     " ? NP.editor.flushForClose() : Promise.resolve(null)",
-                    lambda _result: done.set())
+                    answered)
             except Exception:
                 log.exception("Saving before close failed")
                 done.set()
 
         threading.Thread(target=ask_page, name="noirpad-close-save", daemon=True).start()
-        if not done.wait(CLOSE_SAVE_TIMEOUT):
+        started = time.monotonic()
+        while not done.wait(CLOSE_SAVE_TIMEOUT):
+            busy = _page_close_state(window)
+            if busy == "asking" or (busy == "saving"
+                                    and time.monotonic() - started < CLOSE_BUSY_LIMIT):
+                continue
             log.warning("The page did not finish saving within %.0f s; closing anyway",
-                        CLOSE_SAVE_TIMEOUT)
+                        time.monotonic() - started)
+            break
+        if result.get("answer") == "stay":
+            state["started"] = False        # the next close asks again
+            return
         state["closing"] = True
         window.destroy()
 

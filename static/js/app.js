@@ -270,6 +270,9 @@ window.NP = window.NP || {};
                 titleInput.readOnly = true;
                 titleInput.addEventListener("focus", function () {
                     titleInput._npBefore = titleInput.value;
+                    /* The rename belongs to this note, whatever is open by
+                       the time the field loses focus (E3). */
+                    titleInput._npNoteId = NP.state.currentNoteId;
                 });
                 titleInput.addEventListener("keydown", function (e) {
                     if (e.key === "Enter") {
@@ -285,7 +288,16 @@ window.NP = window.NP || {};
                 titleInput.addEventListener("blur", function () {
                     var before = titleInput._npBefore;
                     var name = titleInput.value.trim();
-                    var noteId = NP.state.currentNoteId;
+                    var noteId = titleInput._npNoteId;
+                    titleInput._npNoteId = null;
+                    if (noteId !== NP.state.currentNoteId) {
+                        /* Another note is open already: rename the one the
+                           text was typed for, the field shows the new note. */
+                        if (name && name !== before && noteId && !titleInput.readOnly) {
+                            NP.app.renameNote(noteId, name).catch(NP.dialog.failed);
+                        }
+                        return;
+                    }
                     if (!name) titleInput.value = before || "";
                     if (!name || name === before || !noteId || titleInput.readOnly) return;
                     titleInput.value = name;
@@ -346,14 +358,10 @@ window.NP = window.NP || {};
                                        bleeding. */
                                     var loaded;
                                     if (NP.tabs) {
-                                        NP.tabs.add(res.id, name);
-                                        /* tabs.activate returns void but
-                                           kicks off loadNote internally;
-                                           we don't have a handle on its
-                                           promise, so fall back to a
-                                           resolved promise for the
-                                           encrypt step below. */
-                                        loaded = Promise.resolve();
+                                        /* Resolves once the new note is
+                                           loaded (false: the user stayed
+                                           on a note that could not be saved). */
+                                        loaded = NP.tabs.add(res.id, name);
                                     } else {
                                         loaded = NP.editor.loadNote(res.id);
                                     }
@@ -367,7 +375,8 @@ window.NP = window.NP || {};
                                     if (defEnc && NP.encryption && NP.encryption.encrypt) {
                                         var after = loaded && loaded.then
                                             ? loaded : Promise.resolve();
-                                        after.then(function () {
+                                        after.then(function (opened) {
+                                            if (opened === false || NP.state.currentNoteId !== res.id) return;
                                             NP.encryption.encrypt();
                                         });
                                     }

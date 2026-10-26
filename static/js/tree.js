@@ -388,7 +388,15 @@ window.NP = window.NP || {};
             div.addEventListener("click", function (e) {
                 if (e.target.closest(".trash-btn")) return;
                 if (item.type === "note" && NP.editor) {
-                    NP.editor.loadNote(item.id);
+                    /* The open note is saved first (E2); no tab stays
+                       highlighted over a note from the trash. */
+                    var leave = NP.editor.leave ? NP.editor.leave() : Promise.resolve(true);
+                    leave.then(function (go) {
+                        if (!go) return;
+                        NP.state.activeTabId = null;
+                        if (NP.tabs) NP.tabs.render();
+                        NP.editor.loadNote(item.id);
+                    });
                 }
             });
 
@@ -414,7 +422,8 @@ window.NP = window.NP || {};
                 NP.tree.render();
             } else {
                 NP.state.selectedId = id;
-                NP.state.currentNoteId = id;
+                /* currentNoteId changes only once the open note is saved
+                   (tabs.activate / loadNote), never before (E3). */
                 if (NP.tabs) {
                     var item = findItemById(NP.state.data.tree, id);
                     var name = item ? item.name : NP.t("tree.defaultNoteName");

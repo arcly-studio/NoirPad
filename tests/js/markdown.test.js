@@ -123,6 +123,7 @@ describe("Ctrl+M on a locked note (K2)", () => {
         const calls = [];
         win.NP.state = { currentNoteId: "n1", data: { note_modes: {} } };
         win.NP.editor = {
+            _currentNoteId: "n1", _loadedNoteId: "n1",
             _currentNoteEncrypted: encrypted, _unlockToken: token,
             _htmlToTextWithImages: () => ({ text: "tajný text" }), _extractFormats: () => [],
         };

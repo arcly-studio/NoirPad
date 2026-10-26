@@ -235,6 +235,10 @@ window.NP = window.NP || {};
             var data = NP.state.data;
             if (!data) return;
             var ed = NP.editor;
+            /* Until this note's content is in the editor, the editor and the
+               textarea still hold the previous note: switching now would
+               save that text under this id (E4, the K1 rule). */
+            if (!ed || ed._currentNoteId !== id || ed._loadedNoteId !== id) return;
             var locked = !!(ed && ed._currentNoteEncrypted);
             /* A locked note that is not unlocked has nothing to switch. */
             if (locked && !ed._unlockToken) return;

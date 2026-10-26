@@ -50,6 +50,7 @@ export function startApp({ tree, notes, modes = {}, scripts = [], body = BODY } 
         refused: [],        // [id, content] the server refused
         holds: {},          // id -> resolve(): getNote waits until released
         failSaves: false,
+        confirmAnswer: true, // what the user answers in NP.dialog.confirm
     };
     const err = (msg, status) => Object.assign(new Error(msg), { status });
     const data = () => ({
@@ -107,7 +108,7 @@ export function startApp({ tree, notes, modes = {}, scripts = [], body = BODY } 
         lock: vi.fn(() => Promise.resolve({ ok: true })),
     };
     win.NP.dialog = {
-        confirm: vi.fn(() => Promise.resolve(true)),
+        confirm: vi.fn(() => Promise.resolve(srv.confirmAnswer)),
         alert: vi.fn(() => Promise.resolve()),
         failed: vi.fn(),
     };

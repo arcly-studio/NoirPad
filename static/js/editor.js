@@ -190,14 +190,35 @@ window.NP = window.NP || {};
 
         /* Desktop app: desktop.py calls this when the window is closed and
            waits for it, so even a note above the 64 kB keepalive limit is
-           stored (K5). Resolves when the save is done (or not needed). */
+           stored (K5). Resolves "close" once the note is stored (or the
+           user chose to discard what could not be saved), "stay" when the
+           user keeps the window open (R2). While this runs, _closeBusy
+           tells desktop.py not to give up waiting. */
+        _closeBusy: false,
+
         flushForClose: function () {
-            return NP.editor.save(true).then(function () { return "saved"; });
+            NP.editor._closeBusy = "saving";
+            return NP.editor.leave().then(function (go) {
+                NP.editor._closeBusy = false;
+                return go ? "close" : "stay";
+            }, function () {
+                NP.editor._closeBusy = false;
+                return "close";
+            });
         },
 
         /* ---- Note loading ---- */
 
-        loadNote: function (id) {
+        /* Back to the text of the open note (Markdown: its source). */
+        focusText: function () {
+            var md = NP.markdown && NP.markdown.isActive && NP.markdown.isActive();
+            var target = md ? document.getElementById("editor-md") : NP.editor.el;
+            if (target && target.focus) target.focus();
+        },
+
+        /* opts.focus === false: the keyboard stays where it is (T4). */
+        loadNote: function (id, opts) {
+            var focus = !(opts && opts.focus === false);
             /* A rename typed into the title belongs to the note being left. */
             var title = NP.$("#note-title-input");
             if (title && document.activeElement === title) title.blur();
@@ -287,7 +308,7 @@ window.NP = window.NP || {};
                         NP.editor.el.contentEditable = "true";
                         NP.editor.el.style.opacity = "1";
                         NP.editor.renderContent(NP.editor.el, decContent, decFormats);
-                        NP.editor.el.focus();
+                        if (focus) NP.editor.el.focus();
                         NP.editor.updateCharCount();
                         NP.editor.startAutosave();
                         if (NP.tags && NP.tags.render) NP.tags.render();
@@ -297,6 +318,7 @@ window.NP = window.NP || {};
                             NP.markdown.applyForLoadedNote(id, decContent);
                         }
                         NP.editor._loadedNoteId = id;
+                        NP.editor._lastSavedKey = NP.editor._contentKey();   /* E8, see below */
                         NP.editor._saveState = null;      /* just loaded = saved */
                         NP.editor.updateCharCount();   /* Markdown: count the source (D1) */
                     }).catch(function (err) {
@@ -312,7 +334,7 @@ window.NP = window.NP || {};
                 NP.editor.el.style.opacity = "1";
 
                 NP.editor.renderContent(NP.editor.el, content, formats);
-                NP.editor.el.focus();
+                if (focus) NP.editor.el.focus();
                 NP.editor.updateCharCount();
                 NP.editor.startAutosave();
 
@@ -326,6 +348,10 @@ window.NP = window.NP || {};
                     NP.markdown.applyForLoadedNote(id, content);
                 }
                 NP.editor._loadedNoteId = id;
+                /* What the editor holds now is what is stored: an untouched
+                   note is never written again (E8), and a broken network
+                   never asks about it on the way out (E2). */
+                NP.editor._lastSavedKey = NP.editor._contentKey();
                 NP.editor._saveState = null;      /* just loaded = saved */
                 NP.editor.updateCharCount();   /* Markdown: count the source (D1) */
             }).catch(function (err) {
@@ -827,11 +853,13 @@ window.NP = window.NP || {};
 
         /* ---- Save ---- */
 
+        /* Resolves true when the open note is stored (or there is nothing
+           to store), false when the save failed (E2). Never rejects. */
         save: function (silent) {
             var id = NP.editor._currentNoteId;
             if (!id || !NP.editor.el || NP.editor._loadedNoteId !== id) {
                 /* Nothing open, or the editor still holds another note. */
-                return Promise.resolve();
+                return Promise.resolve(true);
             }
 
             /* Markdown mode: textarea is the source of truth. Skip
@@ -847,7 +875,7 @@ window.NP = window.NP || {};
                 formats = [];
             } else {
                 if (NP.editor.el.contentEditable !== "true") {
-                    return Promise.resolve();
+                    return Promise.resolve(true);
                 }
                 text = NP.editor._htmlToTextWithImages().text;
                 formats = NP.editor._extractFormats();
@@ -858,13 +886,13 @@ window.NP = window.NP || {};
                 /* Typed and undid it (or a failed save's text is back to what
                    is stored): nothing to write, and it is saved. */
                 if (NP.editor._saveState) NP.editor._setSaveStatus(null);
-                return Promise.resolve();
+                return Promise.resolve(true);
             }
 
             var savePromise;
             if (NP.editor._currentNoteEncrypted) {
                 var token = NP.editor._unlockToken;
-                if (!token) return Promise.resolve();  /* locked: nothing editable */
+                if (!token) return Promise.resolve(true);  /* locked: nothing editable */
                 /* Re-encrypt on the server with the remembered key. A 401
                    means the key expired: ask for the password and retry,
                    so the user's edits are not lost. */
@@ -888,12 +916,42 @@ window.NP = window.NP || {};
                 if (!silent) {
                     NP.editor._showSaveFlash();
                 }
+                return true;
             }).catch(function (err) {
                 /* Never silent (D3): Ctrl+S explains why; an autosave marks
                    the status until a save succeeds again. */
                 console.error("Save failed:", err);
-                NP.editor._setSaveStatus(err);
+                if (NP.editor._currentNoteId === id) NP.editor._setSaveStatus(err);
                 if (!silent && NP.dialog && NP.dialog.failed) NP.dialog.failed(err);
+                return false;
+            });
+        },
+
+        /* Before the open note makes way for another one (tab switch, tab
+           close, a trashed note, the start page): its last typing is
+           saved first. If that fails, the user decides — stay (the text
+           remains in the editor, nothing is lost) or discard it. Resolves
+           true = go ahead (E2). */
+        leave: function () {
+            var id = NP.editor._currentNoteId;
+            /* Typing while the save was on its way: save once more. */
+            return NP.editor.save(true).then(function (ok) {
+                return ok && NP.editor._saveState === "dirty" ? NP.editor.save(true) : ok;
+            }).then(function (ok) {
+                if (ok || NP.editor._currentNoteId !== id) return true;
+                var err = NP.editor._saveState;
+                var item = NP.editor._findItemInTree((NP.state.data || {}).tree || [], id);
+                if (!NP.dialog || !NP.dialog.confirm) return false;
+                if (NP.editor._closeBusy) NP.editor._closeBusy = "asking";
+                return NP.dialog.confirm(NP.t("editor.leaveUnsaved", {
+                    name: item ? item.name : "",
+                    error: err && err.message ? err.message : String(err || "")
+                }), {
+                    title: NP.t("editor.leaveUnsavedTitle"),
+                    okLabel: NP.t("editor.discardChanges"),
+                    cancelLabel: NP.t("editor.stayOnNote"),
+                    danger: true
+                }).then(function (discard) { return !!discard; });
             });
         },
 
@@ -933,11 +991,16 @@ window.NP = window.NP || {};
 
         /* Does the editor still hold exactly what *key* describes? */
         _sameAsSaved: function (key) {
+            return key === NP.editor._contentKey();
+        },
+
+        /* The open note's text + formats, as save() compares them. */
+        _contentKey: function () {
             var id = NP.editor._currentNoteId;
             var md = NP.markdown && NP.markdown.isActive && NP.markdown.isActive();
             var text = md ? NP.markdown.getRawText() : NP.editor._htmlToTextWithImages().text;
             var formats = md ? [] : NP.editor._extractFormats();
-            return key === id + "\u0000" + text + "\u0000" + JSON.stringify(formats);
+            return id + "\u0000" + text + "\u0000" + JSON.stringify(formats);
         },
 
         _showSaveFlash: function () {
