@@ -44,6 +44,9 @@ class NoteBody(BaseModel):
     # Optional per-note rendering mode. None means "leave unchanged"; pass
     # "rich-text" to clear back to default, "markdown" to opt in.
     mode: Optional[str] = None
+    # R6: the rev (GET /api/note) this text was written on; a different
+    # stored rev = changed elsewhere meanwhile -> 409. None = overwrite.
+    base_rev: Optional[str] = Field(default=None, max_length=64)
 
 
 class TagsBody(BaseModel):

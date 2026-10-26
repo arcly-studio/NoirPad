@@ -65,11 +65,39 @@ window.NP = window.NP || {};
                password changed): reload into the lock screen. */
             if (res.status === 423 && !reloadingForLock) {
                 reloadingForLock = true;
-                window.location.reload();
+                lockedElsewhere();
             }
             // 401 = server password session missing/expired.
             e.unauthorized = res.status === 401;
             throw e;
+        });
+    }
+
+    /* R11: the reload would throw away what this window has not saved yet
+       (every save is refused while locked). Then the page hides its content
+       and asks for the password here: unlocked, the text is saved and work
+       goes on; cancelled, it reloads into the lock screen as before. */
+    function lockedElsewhere() {
+        var ed = NP.editor;
+        var unsaved = !!(ed && ed._saveState && ed._currentNoteId);
+        if (!unsaved || !NP.passwordDialog) {
+            window.location.reload();
+            return;
+        }
+        document.body.classList.add("np-locked-elsewhere");
+        NP.passwordDialog.ask({
+            title: NP.t("appLock.lockedElsewhereTitle"),
+            message: NP.t("appLock.lockedElsewhere"),
+            okLabel: NP.t("appLock.unlockKeep")
+        }).then(function (password) {
+            if (!password) throw new Error("cancelled");
+            return NP.api.appLockUnlock(password);
+        }).then(function () {
+            document.body.classList.remove("np-locked-elsewhere");
+            reloadingForLock = false;
+            return ed.save(true);
+        }).catch(function () {
+            window.location.reload();
         });
     }
 
@@ -181,7 +209,32 @@ window.NP = window.NP || {};
         saveNote: function (id, content, formats, opts) {
             var body = { content: content, formats: formats };
             if (opts && opts.mode !== undefined) body.mode = opts.mode;
-            return request("PUT", "/api/note/" + encodeURIComponent(id), body);
+            /* R6: the version this text was written on (409 if changed elsewhere). */
+            if (opts && opts.baseRev) body.base_rev = opts.baseRev;
+            return apiFetch("/api/note/" + encodeURIComponent(id), {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            }).then(function (res) {
+                if (!res.ok) return errorFrom(res);
+                /* R9: our copy of the data was exactly one write behind —
+                   this save: take it over (text + ETag), so the next poll
+                   is a 304 instead of the whole profile again. */
+                var st = NP.state;
+                var after = res.headers.get("ETag");
+                if (st && st.data && st.etag && after &&
+                    res.headers.get("X-NoirPad-ETag-Before") === st.etag) {
+                    st.data.notes = st.data.notes || {};
+                    st.data.notes[id] = content;
+                    if (body.mode !== undefined) {
+                        st.data.note_modes = st.data.note_modes || {};
+                        if (body.mode === "markdown") st.data.note_modes[id] = "markdown";
+                        else delete st.data.note_modes[id];
+                    }
+                    st.etag = after;
+                }
+                return res.json();
+            });
         },
 
         newNote: function (parentId, name) {

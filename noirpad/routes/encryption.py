@@ -78,7 +78,7 @@ def _stored_note(data: dict, note_id: str) -> str:
 
 
 @router.post("/api/encrypt")
-async def encrypt_note(req: PasswordReq):
+def encrypt_note(req: PasswordReq):
     """Lock a plain note. Returns an unlock token so it stays open."""
     _check_new_password(req.password)
     salt = os.urandom(16)
@@ -112,7 +112,7 @@ def _wrong_password() -> ApiError:
 
 
 @router.post("/api/unlock")
-async def unlock_note(req: PasswordReq):
+def unlock_note(req: PasswordReq):
     """Check the password and return the plaintext + an unlock token.
 
     The file stays encrypted.
@@ -133,7 +133,7 @@ async def unlock_note(req: PasswordReq):
 
 
 @router.post("/api/save-encrypted")
-async def save_encrypted(req: SaveEncryptedReq):
+def save_encrypted(req: SaveEncryptedReq):
     """Autosave of an unlocked note: re-encrypt with the remembered key."""
     entry = _key_for(req.unlock_token, req.id)
 
@@ -154,7 +154,7 @@ async def save_encrypted(req: SaveEncryptedReq):
 
 
 @router.post("/api/decrypt")
-async def decrypt_note(req: DecryptReq):
+def decrypt_note(req: DecryptReq):
     """Remove encryption for good (unlock token, or the password)."""
     entry = _key_for(req.unlock_token, req.id) if req.unlock_token else None
     if entry is None and not req.password:
@@ -184,14 +184,14 @@ async def decrypt_note(req: DecryptReq):
 
 
 @router.post("/api/lock")
-async def lock_note(req: LockReq):
+def lock_note(req: LockReq):
     """Forget the key behind one unlock token (lock button, closing a tab)."""
     RUNTIME.unlocked.pop(req.unlock_token, None)
     return {"ok": True}
 
 
 @router.post("/api/lock-all")
-async def lock_all():
+def lock_all():
     """Forget every remembered key (auto-lock, leaving the page)."""
     RUNTIME.unlocked.clear()
     return {"ok": True}

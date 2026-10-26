@@ -281,3 +281,16 @@ def test_s4_an_unexpected_error_keeps_the_security_headers(client, monkeypatch):
     assert "default-src" in r.headers["content-security-policy"]
     assert r.headers["x-content-type-options"] == "nosniff"
     assert "no-store" in r.headers["cache-control"]
+
+
+# ---- R8 (kontrola 2): synchronní I/O v async handlerech blokovalo server ----
+
+ASYNC_OK = {"upload_image", "backup_import", "import_markdown"}   # await the upload, then a thread
+
+
+def test_r8_handlers_never_block_the_event_loop(np_backend):
+    import inspect
+    from fastapi.routing import APIRoute
+    async_routes = {r.endpoint.__name__ for r in np_backend.app.routes
+                    if isinstance(r, APIRoute) and inspect.iscoroutinefunction(r.endpoint)}
+    assert async_routes == ASYNC_OK

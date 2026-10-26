@@ -23,6 +23,7 @@ def test_create_note_in_folder_and_read_back(client):
     assert t[0]["children"][0] == {"id": nid, "name": "Úkoly", "type": "note"}
 
     note = client.get(f"/api/note/{nid}").json()
+    assert len(note.pop("rev")) == 16                     # R6
     assert note == {"content": "ahoj\nsvěte", "formats": [], "mode": "rich-text", "trashed": False}
 
 
@@ -36,8 +37,9 @@ def test_save_formats_and_markdown_mode(client):
     fmt = [{"start": "1.0", "end": "1.4", "italic": True}]
     r = client.put(f"/api/note/{nid}", json={"content": "# hi", "formats": fmt, "mode": "markdown"})
     assert r.status_code == 200
-    assert client.get(f"/api/note/{nid}").json() == {
-        "content": "# hi", "formats": fmt, "mode": "markdown", "trashed": False}
+    note = client.get(f"/api/note/{nid}").json()
+    note.pop("rev")
+    assert note == {"content": "# hi", "formats": fmt, "mode": "markdown", "trashed": False}
 
     client.put(f"/api/note/{nid}", json={"content": "x", "formats": [], "mode": "rich-text"})
     assert client.get(f"/api/note/{nid}").json()["mode"] == "rich-text"
@@ -142,9 +144,12 @@ def test_settings_update_and_reset(client):
 
 def test_storage_reports_sizes(client):
     new_note(client, content="x" * 100)
+    client.put(f"/api/note/{new_note(client)}", json={"content": "y", "formats": []})
     s = client.get("/api/storage").json()
     assert s["notes_size"] > 100
-    assert s["total_size"] == s["notes_size"] + s["images_size"]
+    # R11: the automatic snapshots (backups/) take room too
+    assert s["backups_size"] > 0
+    assert s["total_size"] == s["notes_size"] + s["images_size"] + s["backups_size"]
 
 
 def test_legacy_multi_user_data_is_flattened(np_backend, tmp_path):
@@ -247,3 +252,61 @@ def test_d9_purge_forgets_favorites_and_modes(client, np_backend):
     assert a not in data["favorites"]
     assert a not in data.get("note_modes", {})
     assert a not in (data.get("trash") or {}).get("favorites", [])
+
+
+# ---- R6 (kontrola 2): dvě okna – poslední zápis tiše přepsal ten druhý ----
+
+def test_r6_a_save_on_an_old_version_is_refused(client):
+    nid = new_note(client, content="v1")
+    rev1 = client.get(f"/api/note/{nid}").json()["rev"]
+    # window 2 saves on v1 (fine)
+    r = client.put(f"/api/note/{nid}", json={"content": "v2 elsewhere", "formats": [], "base_rev": rev1})
+    assert r.status_code == 200
+    assert r.json()["rev"] == client.get(f"/api/note/{nid}").json()["rev"]
+    # window 1 still on v1: refused, v2 stays
+    r = client.put(f"/api/note/{nid}", json={"content": "v1 + typed", "formats": [], "base_rev": rev1})
+    assert r.status_code == 409
+    assert r.json()["detail"]["code"] == "note_changed_elsewhere"
+    assert client.get(f"/api/note/{nid}").json()["content"] == "v2 elsewhere"
+    # the same text as stored is no conflict; no base_rev = the user chose to overwrite
+    assert client.put(f"/api/note/{nid}", json={"content": "v2 elsewhere", "formats": [],
+                                                "base_rev": rev1}).status_code == 200
+    assert client.put(f"/api/note/{nid}", json={"content": "mine", "formats": []}).status_code == 200
+    assert client.get(f"/api/note/{nid}").json()["content"] == "mine"
+
+
+def test_r6_a_formats_only_change_elsewhere_counts_too(client):
+    nid = new_note(client, content="abc")
+    rev1 = client.get(f"/api/note/{nid}").json()["rev"]
+    client.put(f"/api/note/{nid}", json={"content": "abc", "formats": [{"start": "1.0", "end": "1.1", "bold": True}]})
+    r = client.put(f"/api/note/{nid}", json={"content": "abcd", "formats": [], "base_rev": rev1})
+    assert r.status_code == 409
+
+
+# ---- I6 (kontrola 2): staré účty a hashe hesel zůstávaly v záloze navždy ----
+
+def test_i6_the_conversion_snapshot_keeps_no_account_secrets(np_backend, tmp_path):
+    import json
+    d = tmp_path / "legacy-i6"
+    d.mkdir()
+    secret = "scrypt$16384$8$1$c2FsdA$aGFzaA"
+    (d / "notes_data.json").write_text(json.dumps({
+        "tree": [{"id": "a", "name": "A", "type": "note", "user_id": "u1"}],
+        "notes": {"a": "1"},
+        "users": {"u1": {"username": "jana", "password_hash": secret, "salt": "x"}},
+        "sessions": {"tok-123": {"user_id": "u1"}},
+    }), encoding="utf-8")
+    # an older version's snapshot that still has them
+    old = d / "notes_data.pre-single-profile-20250101-000000.json"
+    old.write_text(json.dumps({"tree": [], "notes": {"a": "1"},
+                               "users": {"u1": {"username": "jana", "password_hash": secret}},
+                               "sessions": {"tok-123": {}}}), encoding="utf-8")
+    np_backend.set_data_dir(d)
+    snaps = sorted(d.glob("notes_data.pre-single-profile-*.json"))
+    assert len(snaps) == 2
+    for snap in snaps:
+        text = snap.read_text(encoding="utf-8")
+        assert secret not in text and "tok-123" not in text and '"salt"' not in text
+        data = json.loads(text)
+        assert data["users"] == {"u1": {"username": "jana"}}     # whose notes were whose
+        assert data["notes"] == {"a": "1"}

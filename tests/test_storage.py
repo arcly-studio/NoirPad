@@ -215,3 +215,42 @@ def test_r10_a_mangled_structure_still_works(client, np_backend, data):
     r = client.post("/api/tree/new-note", json={"name": "Nová", "parent_id": None})
     assert r.status_code == 200, r.text
     assert client.get("/api/backup").status_code == 200
+
+
+# ---- R9 (kontrola 2): po vlastním uložení poll zbytečně stáhl celá data ----
+
+def test_r9_a_note_save_tells_which_data_it_turned_into(client):
+    from conftest import new_note
+    nid = new_note(client, name="N", content="a")
+    before = client.get("/api/data").headers["etag"]
+    r = client.put(f"/api/note/{nid}", json={"content": "b", "formats": []})
+    assert r.status_code == 200
+    assert r.headers["x-noirpad-etag-before"] == before
+    after = r.headers["etag"]
+    assert after != before
+    # the page that takes it over gets a 304 on its next poll
+    assert client.get("/api/data", headers={"If-None-Match": after}).status_code == 304
+
+
+# ---- R11 (kontrola 2): migrace dat běžela dřív než zámek instance ---------
+
+def test_r11_a_second_noirpad_never_migrates_the_data_of_a_running_one(tmp_path, np_backend):
+    import os
+    import subprocess
+    import sys
+    from conftest import ROOT
+    data_dir = tmp_path / "running-elsewhere"
+    data_dir.mkdir()
+    old = json.dumps({"tree": [], "notes": {}, "theme": "matrix"})    # no glow_enabled: would migrate
+    (data_dir / "notes_data.json").write_text(old, encoding="utf-8")
+    lock = np_backend.acquire_instance_lock(data_dir)                 # "the running NoirPad"
+    assert lock is not None
+    try:
+        env = dict(os.environ, NOIRPAD_DATA_DIR=str(data_dir), NOIRPAD_PORT="18299")
+        r = subprocess.run([sys.executable, "-c", "from noirpad import web; web.main()"],
+                           cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
+    finally:
+        lock.close()
+    assert r.returncode != 0
+    assert "already running" in r.stderr
+    assert (data_dir / "notes_data.json").read_text(encoding="utf-8") == old

@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 @router.get("/api/session")
-async def session_info(request: Request):
+def session_info(request: Request):
     authenticated = auth.is_authenticated(request)
     return {
         "mode": RUNTIME.mode,
@@ -34,19 +34,19 @@ async def session_info(request: Request):
 
 
 @router.get("/api/version")
-async def version():
+def version():
     """For the About box, the start page and bug reports (noirpad/__version__.py)."""
     return {"version": __version__, "url": PROJECT_URL, "author": AUTHOR}
 
 
 @router.post("/api/session/dismiss-notice")
-async def dismiss_notice():
+def dismiss_notice():
     RUNTIME.data_notice = None
     return {"ok": True}
 
 
 @router.post("/api/session/bind")
-async def session_bind(response: Response):
+def session_bind(response: Response):
     """Desktop: turn the header token into a cookie for <img> requests.
 
     Only reachable with a valid X-NoirPad-Token (see check_request).
@@ -60,7 +60,7 @@ async def session_bind(response: Response):
 
 
 @router.post("/api/login")
-async def login(req: LoginReq, response: Response):
+def login(req: LoginReq, response: Response):
     if not (RUNTIME.mode == "server" and RUNTIME.password):
         return {"ok": True}
     now = time.time()
@@ -79,7 +79,7 @@ async def login(req: LoginReq, response: Response):
 
 
 @router.post("/api/logout")
-async def logout(request: Request, response: Response):
+def logout(request: Request, response: Response):
     RUNTIME.sessions.pop(request.cookies.get(auth.SESSION_COOKIE_NAME) or "", None)
     response.delete_cookie(key=auth.SESSION_COOKIE_NAME, path="/", samesite="strict",
                            secure=auth.SESSION_COOKIE_SECURE)

@@ -4350,6 +4350,12 @@ body.auth-active #matrix-canvas {
     display: none !important;
 }
 
+/* Locked in another window, password asked to keep unsaved text (R11):
+   the notes stay in the page but are not shown. */
+body.np-locked-elsewhere #app {
+    visibility: hidden !important;
+}
+
 .auth-window {
     width: 100%;
     max-width: 460px;

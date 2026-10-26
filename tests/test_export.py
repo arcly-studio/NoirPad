@@ -190,8 +190,8 @@ def test_r1_downloads_are_one_response_not_a_line_stream(client, np_backend):
         backup.backup_download(), export.export_txt(nid), export.export_html(nid),
         export.export_md(nid), export.export_all_notes(), export.export_markdown(),
     ]
-    for coro in responses:
-        r = asyncio.run(coro)
+    for call in responses:
+        r = asyncio.run(call) if asyncio.iscoroutine(call) else call
         assert not isinstance(r, StreamingResponse), type(r)
         assert len(r.body) > 0
 

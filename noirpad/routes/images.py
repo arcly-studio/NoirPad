@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import FileResponse
+from starlette.concurrency import run_in_threadpool
 
 from .. import config
 from ..errors import ApiError
@@ -19,7 +20,12 @@ router = APIRouter()
 @router.post("/api/images/upload")
 async def upload_image(file: UploadFile = File(...)):
     contents = await read_upload_limited(file, config.MAX_IMAGE_BYTES)
-    client_ext = Path(file.filename or "").suffix.lower().lstrip(".")
+    # R8: the checks and the write (under file_lock) off the event loop.
+    return await run_in_threadpool(_store_image, file.filename, contents)
+
+
+def _store_image(filename: str, contents: bytes) -> dict:
+    client_ext = Path(filename or "").suffix.lower().lstrip(".")
     kind = sniff_image(contents)
     if kind is None or (client_ext and client_ext not in IMAGE_MEDIA_TYPES):
         raise ApiError(415, "image_type_not_allowed")
@@ -41,7 +47,7 @@ async def upload_image(file: UploadFile = File(...)):
 
 
 @router.get("/images/{filename:path}")
-async def get_image(filename: str):
+def get_image(filename: str):
     # `..%2F..%2Fnotes_data.json` reaches this handler through the :path
     # converter. Only names the upload endpoint can produce are served —
     # anything else (e.g. an .html file an old version accepted) is a 404.

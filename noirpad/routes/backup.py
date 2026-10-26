@@ -37,12 +37,11 @@ def build_backup_zip(data: dict[str, Any]) -> bytes:
 
 
 @router.get("/api/backup")
-async def backup_download():
+def backup_download():
     """Backup zip: the whole notes_data.json plus every referenced image.
-    R1: built off the event loop and sent in one piece."""
-    body = await run_in_threadpool(build_backup_zip, storage.read_data())
+    R1/R8: built in the thread pool (plain def) and sent in one piece."""
     return Response(
-        body,
+        build_backup_zip(storage.read_data()),
         media_type="application/zip",
         headers={"Content-Disposition": 'attachment; filename="noirpad_backup.zip"'},
     )
@@ -182,6 +181,11 @@ async def backup_import(file: UploadFile = File(...)):
     their `user_id` stamps are dropped. A bad archive changes nothing.
     """
     contents = await read_upload_limited(file, config.MAX_BACKUP_BYTES)
+    # R8: reading the zip, the safety copy and the writes off the event loop.
+    return await run_in_threadpool(_import_backup, contents)
+
+
+def _import_backup(contents: bytes) -> dict:
     try:
         imported, images = _read_backup(contents)
     except (zipfile.BadZipFile, zlib.error, EOFError, RuntimeError, NotImplementedError):

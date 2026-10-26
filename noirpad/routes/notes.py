@@ -1,12 +1,16 @@
 """Note content, favorites, tags and the trash."""
 
+import hashlib
+import json
+
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from ..crypto import is_encrypted_content
 from ..errors import ApiError
 from ..images import delete_images, extract_image_names, referenced_images
 from ..models import IdReq, NoteBody, TagsBody
-from ..storage import read_data, update_data
+from ..storage import read_data, update_data, update_data_tracked
 from ..tree import (collect_all_ids, collect_note_ids, find_item_by_id, find_parent_list,
                     live_note_exists, note_exists, restore_from_trash)
 
@@ -16,8 +20,14 @@ router = APIRouter()
 # ---- Notes ----
 
 
+def note_rev(content: str, formats) -> str:
+    """R6: a short fingerprint of a note's stored state (text + formats)."""
+    raw = content + "\x00" + json.dumps(formats or [], sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
 @router.get("/api/note/{note_id}")
-async def get_note(note_id: str):
+def get_note(note_id: str):
     """A note's content; a note in the trash comes back with trashed: true,
     for the read-only view (D8)."""
     data = read_data()
@@ -26,11 +36,13 @@ async def get_note(note_id: str):
     content = (store.get("notes") or {}).get(note_id)
     if content is None or not note_exists(data, note_id):
         raise ApiError(404, "note_not_found")
+    formats = (store.get("note_formats") or {}).get(note_id, [])
     return {
         "content": content,
-        "formats": (store.get("note_formats") or {}).get(note_id, []),
+        "formats": formats,
         "mode": data.get("note_modes", {}).get(note_id, "rich-text"),
         "trashed": trashed,
+        "rev": note_rev(content, formats),
     }
 
 
@@ -45,16 +57,21 @@ def set_mode(data: dict, note_id: str, mode) -> None:
 
 
 @router.put("/api/note/{note_id}")
-async def put_note(note_id: str, body: NoteBody):
+def put_note(note_id: str, body: NoteBody):
     def _mut(data: dict) -> None:
         if not live_note_exists(data, note_id):   # a note in the trash is read-only
             raise ApiError(404, "note_not_found")
         # A locked note is only ever written encrypted (/api/save-encrypted,
         # /api/decrypt): never let a stale window or a mode switch put its
         # plaintext on disk (K2).
-        if (is_encrypted_content(data.get("notes", {}).get(note_id, ""))
-                and not is_encrypted_content(body.content)):
+        current = data.get("notes", {}).get(note_id, "")
+        if is_encrypted_content(current) and not is_encrypted_content(body.content):
             raise ApiError(409, "note_is_encrypted")
+        # R6: another window saved this note since this one loaded it —
+        # never overwrite that silently (the page asks the user).
+        if (body.base_rev is not None and current != body.content
+                and note_rev(current, data.get("note_formats", {}).get(note_id, [])) != body.base_rev):
+            raise ApiError(409, "note_changed_elsewhere")
         data.setdefault("notes", {})[note_id] = body.content
         if body.formats:
             data.setdefault("note_formats", {})[note_id] = body.formats
@@ -63,15 +80,18 @@ async def put_note(note_id: str, body: NoteBody):
         set_mode(data, note_id, body.mode)
         data.setdefault("note_images", {})[note_id] = extract_image_names(body.content)
 
-    update_data(_mut)
-    return {"ok": True}
+    _, before, after = update_data_tracked(_mut)
+    # R9: the page knows which data its save turned into, so its next poll
+    # is a 304 instead of the whole profile again. R6: and the new rev.
+    return JSONResponse({"ok": True, "rev": note_rev(body.content, body.formats)},
+                        headers={"X-NoirPad-ETag-Before": before, "ETag": after})
 
 
 # ---- Favorites ----
 
 
 @router.post("/api/favorites/toggle")
-async def toggle_favorite(req: IdReq):
+def toggle_favorite(req: IdReq):
     def _mut(data: dict) -> bool:
         item = find_item_by_id(data.get("tree") or [], req.id)   # not from the trash (D9)
         if item is None:
@@ -90,7 +110,7 @@ async def toggle_favorite(req: IdReq):
 
 
 @router.get("/api/tags")
-async def list_tags():
+def list_tags():
     data = read_data()
     tags: set = set()
 
@@ -118,7 +138,7 @@ def clean_tags(tags: list[str]) -> list[str]:
 
 
 @router.put("/api/tags/{item_id}")
-async def set_tags(item_id: str, body: TagsBody):
+def set_tags(item_id: str, body: TagsBody):
     def _mut(data: dict) -> None:
         item = find_item_by_id(data["tree"], item_id)
         if item is None:
@@ -156,13 +176,13 @@ def _purge(data: dict, trash: dict, note_ids, purged_ids=None) -> None:
 
 
 @router.get("/api/trash")
-async def get_trash():
+def get_trash():
     trash = read_data().get("trash") or {}
     return {"tree": trash.get("tree") or [], "notes": trash.get("notes") or {}}
 
 
 @router.post("/api/trash/restore")
-async def trash_restore(req: IdReq):
+def trash_restore(req: IdReq):
     def _mut(data: dict) -> None:
         try:
             restore_from_trash(data, req.id)
@@ -174,7 +194,7 @@ async def trash_restore(req: IdReq):
 
 
 @router.post("/api/trash/empty")
-async def trash_empty():
+def trash_empty():
     def _mut(data: dict) -> None:
         trash = data.setdefault("trash", {"tree": [], "notes": {}})
         trashed_ids: set[str] = set()
@@ -190,7 +210,7 @@ async def trash_empty():
 
 
 @router.post("/api/trash/delete")
-async def trash_delete_item(req: IdReq):
+def trash_delete_item(req: IdReq):
     """Permanently delete a single item from trash."""
     def _mut(data: dict) -> None:
         trash = data.setdefault("trash", {"tree": [], "notes": {}})

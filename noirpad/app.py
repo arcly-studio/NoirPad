@@ -61,7 +61,7 @@ async def _http_guard(request: Request, call_next):
 
 
 @app.get("/", response_class=HTMLResponse)
-async def root():
+def root():
     index = config.STATIC_DIR / "index.html"
     if not index.exists():
         raise ApiError(404, "index_missing")

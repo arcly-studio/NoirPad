@@ -84,7 +84,8 @@
     "image_incomplete": "Soubor obrázku je neúplný (useknutý). Zkuste ho uložit znovu.",
     "image_write_failed": "Obrázek se nepodařilo uložit ({error}).",
     "data_write_failed": "Poznámky se nepodařilo uložit ({error}). Není plný disk? Naposledy uložený stav zůstal beze změny.",
-    "export_locked_note": "Zamčenou poznámku nelze exportovat. Nejdřív odstraňte zámek."
+    "export_locked_note": "Zamčenou poznámku nelze exportovat. Nejdřív odstraňte zámek.",
+    "note_changed_elsewhere": "Tuto poznámku mezitím změnilo jiné okno."
   },
   "notice": {
     "data_restored": "Soubor s poznámkami byl poškozený. Zůstal uložený jako {file} a obnovila se poslední dobrá záloha ({when}). Změny provedené po této záloze mohou chybět.",
@@ -111,6 +112,9 @@
     "startFailed": "NoirPad neodpovídá: {error}"
   },
   "appLock": {
+    "lockedElsewhereTitle": "NoirPad je zamčený",
+    "lockedElsewhere": "NoirPad se zamkl v jiném okně. V tomto okně jsou neuložené změny: zadejte heslo a zůstanou zachované.",
+    "unlockKeep": "Odemknout a uložit",
     "chooseMessage": {
       "one": "Zvolte heslo dlouhé alespoň {n} znak.",
       "few": "Zvolte heslo dlouhé alespoň {n} znaky.",
@@ -183,6 +187,10 @@
     "leaveUnsaved": "Poznámku „{name}“ se nepodařilo uložit ({error}). Poslední změny jsou jen v editoru. Zahodit je?",
     "discardChanges": "Zahodit změny",
     "stayOnNote": "Zůstat u poznámky",
+    "conflictTitle": "Změněno v jiném okně",
+    "conflict": "Poznámku „{name}“ mezitím uložilo jiné okno. Přepsat ji textem odsud?",
+    "conflictOverwrite": "Přepsat mou verzí",
+    "conflictKeep": "Ponechat, neukládat",
     "clearFormatting": {
       "label": "Vymazat formátování",
       "noSelection": "Nejdřív označte text, jehož formátování chcete vymazat."

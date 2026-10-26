@@ -332,16 +332,20 @@ class _ServerHandle:
 
 
 def _run(data_dir: Path, log_file: Path, lang: str, smoke: bool = False) -> int:
-    from noirpad import app as _backend, storage  # noqa: F401  (the import points storage at data_dir)
+    from noirpad import storage
 
     # One NoirPad per data directory (desktop or web), see D7 in the audit.
-    instance_lock = storage.acquire_instance_lock()
+    # R11: taken BEFORE the backend is imported — that import runs the data
+    # migrations, which must never run next to another NoirPad.
+    Path(data_dir).mkdir(parents=True, exist_ok=True)
+    instance_lock = storage.acquire_instance_lock(data_dir)
     if instance_lock is None:
-        log.info("Another NoirPad uses %s; focusing it", data_dir)
+        log.info("Another NoirPad uses the same data directory; focusing it")
         if smoke:
             return 3
         _focus_running_instance(lang)
         return 0
+    from noirpad import app as _backend  # noqa: F401  (the import points storage at data_dir)
     _hold_app_mutex()
     # The data lock is released before main() shows an error box, so a
     # NoirPad started meanwhile doesn't report "already running" on top of it.

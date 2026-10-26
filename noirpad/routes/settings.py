@@ -14,7 +14,7 @@ KEEP_ON_RESET = {"recent_notes"}
 
 
 @router.put("/api/settings")
-async def update_settings(body: SettingsBody):
+def update_settings(body: SettingsBody):
     values = body.model_dump()   # nested models (recent_notes) as plain dicts
 
     def _mut(data: dict) -> None:
@@ -28,7 +28,7 @@ async def update_settings(body: SettingsBody):
 
 
 @router.post("/api/settings/reset")
-async def reset_settings():
+def reset_settings():
     """Restore every settings field to its default. Notes are untouched, and so
     is the start page's RECENT list (a history, not a preference)."""
     def _mut(data: dict) -> None:

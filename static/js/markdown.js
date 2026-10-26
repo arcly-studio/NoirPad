@@ -277,7 +277,12 @@ window.NP = window.NP || {};
                 NP.api.saveEncrypted(id, ed._unlockToken, content, formats, { mode: nextMode })
                     .catch(NP.dialog.failed);
             } else if (NP.api && NP.api.saveNote) {
-                NP.api.saveNote(id, content, formats, { mode: nextMode });
+                Promise.resolve(NP.api.saveNote(id, content, formats, { mode: nextMode })).then(function (res) {
+                    /* R6: this is the note's stored version now. */
+                    if (res && res.rev && ed._currentNoteId === id) ed._rev = res.rev;
+                }).catch(function (err) {
+                    if (NP.dialog && NP.dialog.failed) NP.dialog.failed(err);
+                });
             }
         },
 

@@ -82,6 +82,7 @@ def set_data_dir(path: Path) -> None:
     RUNTIME.data_notice = None
     _migrate_legacy_data_if_needed(DATA_DIR)
     _migrate_to_single_profile()
+    _scrub_profile_snapshots()
     _migrate_noir_effects()
     RUNTIME.app_lock = read_data().get("app_lock") or None
     RUNTIME.app_lock_tokens.clear()
@@ -325,7 +326,14 @@ def update_data(mutator: Callable[[dict[str, Any]], Any]) -> Any:
     forwarded to the caller. If the mutator raises (e.g. HTTPException for a
     validation failure), the lock is released and NO write happens.
     """
+    return update_data_tracked(mutator)[0]
+
+
+def update_data_tracked(mutator: Callable[[dict[str, Any]], Any]) -> tuple[Any, str, str]:
+    """update_data + the ETag right before and right after this write (R9):
+    a client whose copy was at `before` is at `after` with its own change."""
     with file_lock:
+        before = _etag_unlocked()
         data = read_data_unlocked()
         result = mutator(data)
         try:
@@ -334,7 +342,8 @@ def update_data(mutator: Callable[[dict[str, Any]], Any]) -> Any:
             # R7: say why (e.g. the disk is full); the file on disk is unchanged.
             log.error("Saving notes_data.json failed: errno %s (%s)", exc.errno, exc.strerror)
             raise ApiError(507, "data_write_failed", error=exc.strerror or type(exc).__name__)
-    return result
+        after = _etag_unlocked()
+    return result, before, after
 
 
 def _etag_unlocked() -> str:
@@ -400,6 +409,39 @@ def _noir_effects_upgrade(data: dict[str, Any]) -> bool:
     return True
 
 
+def _without_accounts(data: dict[str, Any]) -> dict[str, Any]:
+    """I6: a copy without the old accounts' secrets — only the user names
+    stay (to tell whose notes were whose); password hashes and session
+    tokens never sit in a forgotten snapshot."""
+    def public(user: Any) -> Any:
+        return {k: v for k, v in user.items() if k in _ACCOUNT_PUBLIC} if isinstance(user, dict) else user
+
+    clean = {k: v for k, v in data.items() if k != "sessions"}
+    users = data.get("users")
+    if isinstance(users, dict):
+        clean["users"] = {uid: public(u) for uid, u in users.items()}
+    elif isinstance(users, list):
+        clean["users"] = [public(u) for u in users]
+    return clean
+
+
+_ACCOUNT_PUBLIC = ("id", "username", "name", "display_name")
+
+
+def _scrub_profile_snapshots() -> None:
+    """I6: snapshots written by older versions still hold the accounts'
+    password hashes: rewrite them once without (the notes stay)."""
+    for snap in DATA_DIR.glob("notes_data.pre-single-profile-*.json"):
+        try:
+            data = _load_json_file(snap)
+            if _without_accounts(data) == data:
+                continue
+            _atomic_write_json(snap, _without_accounts(data))
+            log.info("Removed old account data from %s", snap.name)
+        except (OSError, ValueError) as exc:
+            log.warning("Could not clean %s: %s", snap.name, exc)
+
+
 def _migrate_to_single_profile() -> None:
     """Flatten a legacy multi-user notes_data.json into the single profile.
 
@@ -423,7 +465,7 @@ def _migrate_to_single_profile() -> None:
             return
         snapshot = DATA_FILE.with_name(
             f"notes_data.pre-single-profile-{time.strftime('%Y%m%d-%H%M%S')}.json")
-        snapshot.write_bytes(DATA_FILE.read_bytes())
+        _atomic_write_json(snapshot, _without_accounts(data))
         data.pop("users", None)
         data.pop("sessions", None)
         strip_user_ids(data.get("tree") or [])

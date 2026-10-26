@@ -76,7 +76,8 @@
     "image_incomplete": "The image file is incomplete (cut off). Try saving it again.",
     "image_write_failed": "The image could not be saved ({error}).",
     "data_write_failed": "The notes could not be saved ({error}). Is the disk full? The last saved state is unchanged.",
-    "export_locked_note": "A locked note cannot be exported. Remove the lock first."
+    "export_locked_note": "A locked note cannot be exported. Remove the lock first.",
+    "note_changed_elsewhere": "This note was changed in another window meanwhile."
   },
   "notice": {
     "data_restored": "Your notes file was damaged. It was kept as {file} and the latest good backup ({when}) was restored. Changes made after that backup may be missing.",
@@ -103,6 +104,9 @@
     "startFailed": "Failed to reach NoirPad: {error}"
   },
   "appLock": {
+    "lockedElsewhereTitle": "NoirPad is locked",
+    "lockedElsewhere": "NoirPad was locked in another window. This window has changes that are not saved yet: enter the password to keep them.",
+    "unlockKeep": "Unlock and save",
     "chooseMessage": {
       "one": "Choose a password of at least {n} character.",
       "other": "Choose a password of at least {n} characters."
@@ -167,6 +171,10 @@
     "leaveUnsaved": "The note “{name}” could not be saved ({error}). Your latest changes are only in the editor. Discard them?",
     "discardChanges": "Discard changes",
     "stayOnNote": "Stay on the note",
+    "conflictTitle": "Changed in another window",
+    "conflict": "“{name}” was saved in another window meanwhile. Overwrite it with the text here?",
+    "conflictOverwrite": "Overwrite with mine",
+    "conflictKeep": "Keep mine, don’t save",
     "clearFormatting": {
       "label": "Clear formatting",
       "noSelection": "Select the text to clear its formatting first."

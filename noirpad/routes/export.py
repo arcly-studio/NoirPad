@@ -18,6 +18,9 @@ from ..uploads import read_upload_limited
 
 router = APIRouter()
 
+# R8: handlers that only read / build files are plain `def`: FastAPI runs
+# them in its thread pool, so a big export never stalls the other requests.
+
 
 def _note_for_export(note_id: str) -> tuple[dict, str, str]:
     data = read_data()
@@ -40,40 +43,39 @@ def _download(body: bytes, media_type: str, filename: str) -> Response:
 
 
 @router.get("/api/export/{note_id}/txt")
-async def export_txt(note_id: str):
+def export_txt(note_id: str):
     _, name, content = _note_for_export(note_id)
     return _download(content.encode("utf-8"), "text/plain; charset=utf-8",
                      safe_filename(name) + ".txt")
 
 
 @router.get("/api/export/{note_id}/html")
-async def export_html(note_id: str):
+def export_html(note_id: str):
     data, name, content = _note_for_export(note_id)
-    doc = await run_in_threadpool(   # one file: images inline (R1: not on the event loop)
-        build_note_html, name, content, data.get("font_family", "Cascadia Code"),
-        data.get("font_size", 12), image_data_uri)
+    doc = build_note_html(name, content, data.get("font_family", "Cascadia Code"),
+                          data.get("font_size", 12), image_data_uri)   # one file: images inline
     return _download(doc.encode("utf-8"), "text/html; charset=utf-8",
                      safe_filename(name) + ".html")
 
 
 @router.get("/api/export/{note_id}/md")
-async def export_md(note_id: str):
+def export_md(note_id: str):
     _, name, content = _note_for_export(note_id)
-    body, media_type, filename = await run_in_threadpool(build_note_markdown, name, content)
+    body, media_type, filename = build_note_markdown(name, content)
     return _download(body, media_type, filename)
 
 
 @router.get("/api/notes/export")
-async def export_all_notes():
+def export_all_notes():
     """Every plain note as .html in one zip (encrypted ones are listed)."""
     filename = f"noirpad-notes-{datetime.now().strftime('%Y-%m-%d')}.zip"
-    return _download(await run_in_threadpool(build_html_zip, read_data()), "application/zip", filename)
+    return _download(build_html_zip(read_data()), "application/zip", filename)
 
 
 @router.get("/api/notes/export-md")
-async def export_markdown():
+def export_markdown():
     """Every plain note as .md in one zip; X-NoirPad-Skipped = locked notes left out."""
-    body, skipped = await run_in_threadpool(build_markdown_zip, read_data())
+    body, skipped = build_markdown_zip(read_data())
     response = _download(body, "application/zip",
                          f"noirpad-markdown-{datetime.now().strftime('%Y-%m-%d')}.zip")
     response.headers["X-NoirPad-Skipped"] = str(skipped)
@@ -85,4 +87,4 @@ async def import_markdown(files: list[UploadFile] = File(...)):
     """Add notes from .md files or a zip of them. Never changes existing notes."""
     blobs = [(f.filename or "", await read_upload_limited(f, config.MAX_BACKUP_BYTES))
              for f in files]
-    return import_files(blobs)
+    return await run_in_threadpool(import_files, blobs)   # R8: not on the event loop

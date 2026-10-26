@@ -39,7 +39,7 @@ def _store(record) -> None:
 
 
 @router.post("/api/app-lock/unlock")
-async def unlock(req: AppLockReq, response: Response):
+def unlock(req: AppLockReq, response: Response):
     if not app_lock.enabled():
         return {"ok": True}
     _check_password(req.password)
@@ -48,7 +48,7 @@ async def unlock(req: AppLockReq, response: Response):
 
 
 @router.post("/api/app-lock/lock")
-async def lock(request: Request, response: Response):
+def lock(request: Request, response: Response):
     """Lock this client; also forget every unlocked note's key."""
     app_lock.revoke(request, response, SESSION_COOKIE_SECURE)
     RUNTIME.unlocked.clear()
@@ -56,7 +56,7 @@ async def lock(request: Request, response: Response):
 
 
 @router.post("/api/app-lock/enable")
-async def enable(req: AppLockReq, response: Response):
+def enable(req: AppLockReq, response: Response):
     """Set the lock, or change its password (then current_password is required)."""
     if app_lock.enabled():
         _check_password(req.current_password or "")
@@ -68,7 +68,7 @@ async def enable(req: AppLockReq, response: Response):
 
 
 @router.post("/api/app-lock/disable")
-async def disable(req: AppLockReq, request: Request, response: Response):
+def disable(req: AppLockReq, request: Request, response: Response):
     if app_lock.enabled():
         _check_password(req.password)
         _store(None)

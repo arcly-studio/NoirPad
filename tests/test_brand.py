@@ -77,3 +77,34 @@ def test_brand_sources_and_readme_logo():
     assert png[:8] == b"\x89PNG\r\n\x1a\n" and struct.unpack(">II", png[16:24]) == (256, 256)
     for readme in ("README.md", "README.cs.md"):
         assert '<img src="docs/logo.png"' in (ROOT / readme).read_text(encoding="utf-8")
+
+
+# ---- I3–I5 (kontrola 2): instalátor -------------------------------------------
+
+def _iss():
+    return (ROOT / "installer.iss").read_text(encoding="utf-8-sig")
+
+
+def test_i3_a_silent_install_installs_webview2_too():
+    iss = _iss()
+    prep = re.search(r"function PrepareToInstall.*?\nend;", iss, re.S).group(0)
+    assert "WizardSilent() and not WebView2Installed()" in prep
+    assert "InstallWebView2Silently" in prep
+    body = re.search(r"procedure InstallWebView2Silently\(\);.*?\nend;", iss, re.S).group(0)
+    assert "DownloadTemporaryFile" in body and "MsgBox" not in body   # never a window when silent
+
+
+def test_i4_the_dir_not_empty_text_does_not_ask_for_another_folder():
+    iss = _iss()
+    for line in re.findall(r"^\w+\.DirNotEmpty=.*$", iss, re.M):
+        assert "choose" not in line and "zvolte" not in line, line
+
+
+def test_i5_copyright_and_uninstall_name():
+    iss = _iss()
+    assert re.search(r"^AppCopyright=\{#AppCopyright\}$", iss, re.M)
+    assert re.search(r"^VersionInfoCopyright=\{#AppCopyright\}$", iss, re.M)
+    assert re.search(r"^UninstallDisplayName=\{#AppName\}$", iss, re.M)
+    spec = (ROOT / "noirpad.spec").read_text(encoding="utf-8")
+    assert "StringStruct('LegalCopyright', 'MIT License')" not in spec
+    assert re.search(r"LegalCopyright', 'Copyright \(c\) [^']+MIT License\.'", spec)

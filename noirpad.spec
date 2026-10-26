@@ -69,7 +69,7 @@ def _version_file():
       StringStruct('FileDescription', 'NoirPad'),
       StringStruct('FileVersion', '{VERSION}'),
       StringStruct('InternalName', 'NoirPad'),
-      StringStruct('LegalCopyright', 'MIT License'),
+      StringStruct('LegalCopyright', 'Copyright (c) 2025-2026 the NoirPad authors. MIT License.'),
       StringStruct('OriginalFilename', 'NoirPad.exe'),
       StringStruct('ProductName', 'NoirPad'),
       StringStruct('ProductVersion', '{VERSION}')])]),

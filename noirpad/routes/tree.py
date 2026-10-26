@@ -23,7 +23,7 @@ def _insert(data: dict, parent_id, item: dict) -> None:
 
 
 @router.post("/api/tree/new-note")
-async def new_note(req: NewItemReq):
+def new_note(req: NewItemReq):
     note_id = str(uuid.uuid4())
     item = {"id": note_id, "name": req.name, "type": "note"}
 
@@ -36,7 +36,7 @@ async def new_note(req: NewItemReq):
 
 
 @router.post("/api/tree/new-folder")
-async def new_folder(req: NewItemReq):
+def new_folder(req: NewItemReq):
     folder_id = str(uuid.uuid4())
     item = {"id": folder_id, "name": req.name, "type": "folder", "children": []}
     update_data(lambda data: _insert(data, req.parent_id, item))
@@ -44,7 +44,7 @@ async def new_folder(req: NewItemReq):
 
 
 @router.post("/api/tree/rename")
-async def rename_item(req: RenameReq):
+def rename_item(req: RenameReq):
     def _mut(data: dict) -> None:
         item = find_item_by_id(data["tree"], req.id)
         if item is None:
@@ -56,7 +56,7 @@ async def rename_item(req: RenameReq):
 
 
 @router.post("/api/tree/move")
-async def move_item(req: MoveReq):
+def move_item(req: MoveReq):
     def _mut(data: dict) -> None:
         source_list = find_parent_list(data["tree"], req.id)
         if source_list is None:
@@ -89,7 +89,7 @@ async def move_item(req: MoveReq):
 
 
 @router.post("/api/tree/delete")
-async def delete_item(req: IdReq):
+def delete_item(req: IdReq):
     def _mut(data: dict) -> None:
         try:
             move_to_trash(data, req.id)

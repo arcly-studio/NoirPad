@@ -7,7 +7,20 @@ import sys
 def main() -> None:
     import uvicorn
 
-    from . import storage
+    from . import config, storage
+
+    # R11: the lock first — importing the app runs the data migrations,
+    # which must never run while another NoirPad uses the same data.
+    data_dir = config.get_data_dir()
+    data_dir.mkdir(parents=True, exist_ok=True)
+    instance_lock = storage.acquire_instance_lock(data_dir)
+    if instance_lock is None:
+        sys.exit(
+            f"NoirPad is already running with the data directory {data_dir} "
+            "(desktop app or another web server). Close it first: two "
+            "instances would overwrite each other's changes."
+        )
+
     from .app import app
     from .runtime import RUNTIME
     from .runtime_imports import UVICORN_OPTIONS
@@ -18,13 +31,6 @@ def main() -> None:
         sys.exit(
             f"Refusing to listen on {host}: set NOIRPAD_PASSWORD first, "
             "otherwise anyone on the network can read your notes."
-        )
-    instance_lock = storage.acquire_instance_lock()
-    if instance_lock is None:
-        sys.exit(
-            f"NoirPad is already running with the data directory {storage.DATA_DIR} "
-            "(desktop app or another web server). Close it first: two "
-            "instances would overwrite each other's changes."
         )
     from .__version__ import __version__
     print(f"NoirPad {__version__} - http://{host}:{port}/  (data: {storage.DATA_DIR})")

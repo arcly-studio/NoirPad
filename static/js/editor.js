@@ -165,10 +165,17 @@ window.NP = window.NP || {};
                 text = NP.editor._htmlToTextWithImages().text;
                 formats = NP.editor._extractFormats();
             }
+            var plainKey = id + "\u0000" + text + "\u0000" + JSON.stringify(formats);
+            /* Nothing typed since the last save: nothing to write (E8) —
+               and a hidden window never puts back an older text (R6). A
+               locked note still goes: lock_after makes the server forget its key. */
+            if (!NP.editor._currentNoteEncrypted && plainKey === NP.editor._lastSavedKey) return;
             try {
                 var url = "/api/note/" + encodeURIComponent(id);
                 var method = "PUT";
                 var payload = { content: text, formats: formats };
+                /* R6: changed elsewhere meanwhile → 409, never overwritten. */
+                if (NP.editor._rev) payload.base_rev = NP.editor._rev;
                 if (NP.editor._currentNoteEncrypted) {
                     url = "/api/save-encrypted";
                     method = "POST";
@@ -181,6 +188,15 @@ window.NP = window.NP || {};
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload),
                     keepalive: true
+                }).then(function (res) {
+                    /* The page is still here (only hidden): this is what is
+                       stored now. */
+                    if (!res || !res.ok || method !== "PUT") return;
+                    return res.json().then(function (j) {
+                        if (NP.editor._currentNoteId !== id) return;
+                        if (j && j.rev) NP.editor._rev = j.rev;
+                        NP.editor._lastSavedKey = plainKey;
+                    });
                 }).catch(function () {
                     /* unload — request may or may not have left;
                        nothing to do either way. */
@@ -232,6 +248,8 @@ window.NP = window.NP || {};
 
             NP.editor._currentNoteId = id;
             NP.editor._trashedId = null;
+            NP.editor._rev = null;
+            NP.editor._conflictHold = null;
             document.body.classList.remove("np-no-note");
             NP.state.currentNoteId = id;
             /* Until this note's content is in the editor, the editor still
@@ -261,6 +279,7 @@ window.NP = window.NP || {};
 
                 var content = data.content || "";
                 var formats = data.formats || [];
+                NP.editor._rev = data.rev || null;      /* R6 */
 
                 /* Mirror the server's mode into state so toggles + the MD
                    button stay in sync without a separate fetch. */
@@ -925,11 +944,21 @@ window.NP = window.NP || {};
                     });
                 });
             } else {
-                savePromise = NP.api.saveNote(id, text, formats);
+                /* R6: after "keep mine, don't save" the autosave does not
+                   ask again every second; Ctrl+S or leaving the note does. */
+                if (silent && NP.editor._conflictHold === id) {
+                    NP.editor._setSaveStatus(new Error(NP.t("errors.note_changed_elsewhere")));
+                    return Promise.resolve(false);
+                }
+                savePromise = NP.api.saveNote(id, text, formats, { baseRev: NP.editor._rev }).catch(function (err) {
+                    if (!(err && err.code === "note_changed_elsewhere")) throw err;
+                    return NP.editor._resolveConflict(id, text, formats);
+                });
             }
             NP.editor._lastSave = savePromise;
 
-            return savePromise.then(function () {
+            return savePromise.then(function (res) {
+                if (res && res.rev && NP.editor._currentNoteId === id) NP.editor._rev = res.rev;
                 NP.editor._lastSavedKey = key;
                 /* Typing during the request keeps it "not saved". */
                 if (NP.editor._currentNoteId === id) NP.editor._setSaveStatus(
@@ -943,8 +972,38 @@ window.NP = window.NP || {};
                    the status until a save succeeds again. */
                 console.error("Save failed:", err);
                 if (NP.editor._currentNoteId === id) NP.editor._setSaveStatus(err);
-                if (!silent && NP.dialog && NP.dialog.failed) NP.dialog.failed(err);
+                if (!silent && !(err && err.answered) && NP.dialog && NP.dialog.failed) NP.dialog.failed(err);
                 return false;
+            });
+        },
+
+        /* R6 (NoirPad-web, two windows): the note was saved elsewhere since
+           this window loaded it. The user decides: overwrite it with this
+           text, or keep this text unsaved (nothing is lost either way). */
+        _rev: null,
+        _conflictHold: null,
+        _conflictAsking: false,
+
+        _resolveConflict: function (id, text, formats) {
+            var err = new Error(NP.t("errors.note_changed_elsewhere"));
+            err.code = "note_changed_elsewhere";
+            if (NP.editor._conflictAsking || !NP.dialog || !NP.dialog.confirm) return Promise.reject(err);
+            NP.editor._conflictAsking = true;
+            if (NP.editor._closeBusy) NP.editor._closeBusy = "asking";
+            var item = NP.editor._findItemInTree((NP.state.data || {}).tree || [], id);
+            return NP.dialog.confirm(NP.t("editor.conflict", { name: item ? item.name : "" }), {
+                title: NP.t("editor.conflictTitle"),
+                okLabel: NP.t("editor.conflictOverwrite"),
+                cancelLabel: NP.t("editor.conflictKeep")
+            }).then(function (overwrite) {
+                NP.editor._conflictAsking = false;
+                if (!overwrite) {
+                    NP.editor._conflictHold = id;
+                    err.answered = true;
+                    throw err;
+                }
+                NP.editor._conflictHold = null;
+                return NP.api.saveNote(id, text, formats);
             });
         },
 

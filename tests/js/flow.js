@@ -53,6 +53,7 @@ export function startApp({ tree, notes, modes = {}, scripts = [], body = BODY } 
         confirmAnswer: true, // what the user answers in NP.dialog.confirm
     };
     const err = (msg, status) => Object.assign(new Error(msg), { status });
+    const rev = (content) => "r:" + content;
     const data = () => ({
         tree: clone(srv.tree), favorites: [], note_modes: { ...srv.modes },
         trash: { tree: clone(srv.trash.tree), notes: {} }, confirm_delete: false,
@@ -64,7 +65,7 @@ export function startApp({ tree, notes, modes = {}, scripts = [], body = BODY } 
             tag === String(etag) ? null : { data: data(), etag: String(etag) })),
         getNote: vi.fn((id) => {
             const answer = () => {
-                if (id in srv.notes) return { content: srv.notes[id], formats: [], mode: srv.modes[id] || "richtext" };
+                if (id in srv.notes) return { content: srv.notes[id], formats: [], mode: srv.modes[id] || "richtext", rev: rev(srv.notes[id]) };
                 if (id in srv.trash.notes) return { content: srv.trash.notes[id], formats: [], trashed: true };
                 throw err("Note not found", 404);
             };
@@ -73,15 +74,20 @@ export function startApp({ tree, notes, modes = {}, scripts = [], body = BODY } 
             });
             try { return Promise.resolve(answer()); } catch (e) { return Promise.reject(e); }
         }),
-        saveNote: vi.fn((id, content) => {
+        saveNote: vi.fn((id, content, formats, opts) => {
             if (srv.failSaves || !(id in srv.notes)) {
                 srv.refused.push([id, content]);
                 return Promise.reject(err(srv.failSaves ? "Disk full" : "The note no longer exists.", srv.failSaves ? 507 : 404));
             }
+            /* R6 like the backend: changed since base_rev → 409 */
+            if (opts && opts.baseRev && srv.notes[id] !== content && rev(srv.notes[id]) !== opts.baseRev) {
+                srv.refused.push([id, content]);
+                return Promise.reject(Object.assign(err("Changed elsewhere", 409), { code: "note_changed_elsewhere" }));
+            }
             srv.notes[id] = content;
             srv.saves.push([id, content]);
             etag++;
-            return Promise.resolve({ ok: true });
+            return Promise.resolve({ ok: true, rev: rev(content) });
         }),
         rename: vi.fn((id, name) => {
             const hit = findWithParent(srv.tree, id);

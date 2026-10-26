@@ -12,7 +12,9 @@ window.NP = window.NP || {};
             }
             document.documentElement.setAttribute("data-theme", name);
 
-            /* Update state if loaded */
+            /* Update state if loaded. R9: the start applies the stored
+               theme — nothing to write then. */
+            var changed = !(NP.state && NP.state.data && NP.state.data.theme === name);
             if (NP.state && NP.state.data) {
                 NP.state.data.theme = name;
             }
@@ -25,7 +27,7 @@ window.NP = window.NP || {};
             ));
 
             /* Persist to server */
-            if (NP.api && NP.api.saveSettings) {
+            if (changed && NP.api && NP.api.saveSettings) {
                 NP.api.saveSettings({ theme: name }).catch(function () {
                     /* silently ignore save errors */
                 });

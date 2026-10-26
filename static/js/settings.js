@@ -777,7 +777,8 @@ window.NP = window.NP || {};
             if (value !== "portrait" && value !== "landscape") return;
             applyOrientation(value);
             syncRadioGroup("page-orientation", value);
-            saveSetting({ page_orientation: value });
+            /* R9: only a change is written (every start sets Landscape). */
+            if (sget("page_orientation", "landscape") !== value) saveSetting({ page_orientation: value });
         },
 
         toggleOrientation: function () {

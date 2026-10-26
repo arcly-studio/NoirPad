@@ -22,6 +22,8 @@
 
 #define AppName       "NoirPad"
 #define AppPublisher  "Arcly Studio"
+; I5: a real copyright line (the holder is named in LICENSE).
+#define AppCopyright  "Copyright (c) 2025-2026 the NoirPad authors. MIT License."
 #define AppExeName    "NoirPad.exe"
 #define SourceDir     "dist\NoirPad"
 ; Same name as APP_MUTEX in desktop.py: setup/uninstall see a running NoirPad.
@@ -48,6 +50,8 @@ VersionInfoVersion={#AppVersion}
 VersionInfoProductVersion={#AppVersion}
 VersionInfoCompany={#AppPublisher}
 VersionInfoDescription={#AppName} Setup
+VersionInfoCopyright={#AppCopyright}
+AppCopyright={#AppCopyright}
 LicenseFile=LICENSE
 
 ; Per-user install only — no elevation, no "install for all users" dialog.
@@ -83,7 +87,8 @@ SetupIconFile=noirpad.ico
 WizardSmallImageFile=installer\wizard-small-55.bmp,installer\wizard-small-64.bmp,installer\wizard-small-69.bmp,installer\wizard-small-83.bmp,installer\wizard-small-92.bmp,installer\wizard-small-110.bmp,installer\wizard-small-138.bmp
 WizardImageAlphaFormat=defined
 UninstallDisplayIcon={app}\{#AppExeName}
-UninstallDisplayName={#AppName} {#AppVersion}
+; I5: Apps & features shows the version in its own column.
+UninstallDisplayName={#AppName}
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -94,8 +99,8 @@ english.WebView2Missing=NoirPad needs the Microsoft Edge WebView2 Runtime, which
 czech.WebView2Missing=NoirPad potřebuje Microsoft Edge WebView2 Runtime, který na tomto počítači není nainstalovaný.%n%nStáhnout ho teď od Microsoftu a nainstalovat?%n(Když zvolíte Ne, NoirPad vám to připomene při spuštění.)
 english.WebView2Failed=WebView2 could not be installed automatically (%1).%n%nThe download page will open in your browser.
 czech.WebView2Failed=WebView2 se nepodařilo nainstalovat automaticky (%1).%n%nV prohlížeči se otevře stránka ke stažení.
-english.DirNotEmpty=The folder %1 already contains other files.%n%nUninstalling NoirPad removes its whole folder, so please choose an empty folder or a new one (for example ...\NoirPad).
-czech.DirNotEmpty=Složka %1 už obsahuje jiné soubory.%n%nOdinstalace NoirPadu maže celou jeho složku, proto zvolte prázdnou nebo novou složku (například ...\NoirPad).
+english.DirNotEmpty=The folder %1 already contains other files.%n%nUninstalling NoirPad removes its whole folder, so Setup will not install there. Move those files elsewhere (or delete them) and run Setup again.
+czech.DirNotEmpty=Složka %1 už obsahuje jiné soubory.%n%nOdinstalace NoirPadu maže celou jeho složku, proto do ní instalátor nic nenainstaluje. Přesuňte ty soubory jinam (nebo je smažte) a spusťte instalaci znovu.
 english.AppStillRunning=NoirPad is still running and cannot be removed while it is open.%n%nClose it now? Unsaved changes in an open note may be lost.
 czech.AppStillRunning=NoirPad pořád běží a nejde odebrat, dokud je otevřený.%n%nZavřít ho teď? Neuložené změny v otevřené poznámce se mohou ztratit.
 english.DeleteData=Also delete your notes, backups and settings?%n%n%1%n%nThis cannot be undone. Choose No to keep them (recommended if you plan to reinstall).
@@ -186,6 +191,23 @@ begin
     until not FindNext(Rec);
   finally
     FindClose(Rec);
+  end;
+end;
+
+{ I3: a silent install (/VERYSILENT: winget, store) installs WebView2 too,
+  without asking and without any window. A failure is only logged — NoirPad
+  explains it at its first start. }
+procedure InstallWebView2Silently();
+var
+  Code: Integer;
+begin
+  try
+    DownloadTemporaryFile('{#WebView2Url}', 'MicrosoftEdgeWebview2Setup.exe', '', nil);
+    if not Exec(ExpandConstant('{tmp}\MicrosoftEdgeWebview2Setup.exe'), '/silent /install', '',
+                SW_HIDE, ewWaitUntilTerminated, Code) or (Code <> 0) then
+      Log(Format('WebView2 setup failed: exit code %d', [Code]));
+  except
+    Log('WebView2 download failed: ' + GetExceptionMessage);
   end;
 end;
 
@@ -354,7 +376,9 @@ begin
   if UnsafeInstallDir(ExpandConstant('{app}')) then
     Result := FmtMessage(CustomMessage('DirNotEmpty'), [ExpandConstant('{app}')])
   else if not CloseAppProcesses(WizardSilent()) then
-    Result := SetupMessage(msgSetupAppRunningError);
+    Result := SetupMessage(msgSetupAppRunningError)
+  else if WizardSilent() and not WebView2Installed() then
+    InstallWebView2Silently();
 end;
 
 function InitializeUninstall(): Boolean;
