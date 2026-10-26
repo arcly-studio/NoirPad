@@ -115,6 +115,8 @@
 | `Ctrl+Tab` / `Ctrl+W` | Next tab / close tab |
 | `Ctrl+,` / `F1` | Settings / help |
 
+In the web version (`NoirPad-web.py`) the browser owns `Ctrl+Shift+N` / `T` / `I`, so New note, Font and Insert image use `Alt+Shift+N` / `T` / `I`.
+
 The full list, with remapping, is in Settings → Keyboard shortcuts → Manage, and in the help (`F1`).
 
 ## Install
@@ -137,7 +139,7 @@ installer offers to download it from Microsoft.
 
 **Your data** is in `%LOCALAPPDATA%\NoirPad` (paste it into the Explorer address bar):
 `notes_data.json` with notes and settings, `images\`, `backups\` with automatic snapshots (the last
-7, at most one per 10 minutes) and `logs\` (start-up and errors, never note content). If the data
+7, at most one per 10 minutes) and `logs\` (start-up and errors, never note content; your Windows user name is written as `~`). If the data
 file is ever damaged, NoirPad keeps it aside and restores the newest good snapshot.
 
 **Uninstall** from Windows Settings → Apps. The program folder is removed completely; your notes

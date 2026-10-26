@@ -53,7 +53,7 @@ Local notes app: FastAPI backend (`noirpad/`), vanilla-JS frontend (`static/`), 
   Markdown source). Use tokens, not hard-coded colours.
 - Markdown source colouring: `static/js/md-source.js` renders the underlay `#md-highlight` beneath
   the textarea `#editor-md` (drawn transparent while in sync); keep font metrics and scrolling identical.
-- `tests/test_contrast.py` checks all 17 themes: text >= 4.5:1, icons / muted >= 3:1. Run it after
+- `tests/test_contrast.py` checks all 17 themes: text incl. `--fg-muted` and `--danger` >= 4.5:1 (muted is text), icons / toggle outline >= 3:1. Run it after
   touching any theme colour.
 - The shared window style (dialogs, menus, popups) is the block "G7" at the end of `noirpad.css`.
   Reuse it for new windows.
@@ -72,6 +72,34 @@ Local notes app: FastAPI backend (`noirpad/`), vanilla-JS frontend (`static/`), 
   (`window.open`, noopener) and desktop pywebview hands it to the system browser
   (`OPEN_EXTERNAL_LINKS_IN_BROWSER`). Never custom navigation.
 - Winget manifest (`ArclyStudio.NoirPad`) is maintained outside this repo.
+
+## Tabs, saving, closing (frontend flow)
+- `NP.tabs.add/activate/close` are async (Promise): `true` done, `false` user chose to stay,
+  `null` superseded by a newer call. Always `await` them; never assume the tab switched.
+- `NP.editor.leave()` saves the note before a switch/close and asks (discard / stay) if saving
+  fails. `NP.editor.save()` returns true/false and runs one at a time (`_saving` queue: overlapping
+  saves would send the same old `rev`). Rename and tag writes must target the note id they were
+  started for, not the "current" one.
+- Desktop close: `flushForClose` -> "close"/"stay"; `NP.editor._closeBusy` makes `desktop.py` wait
+  (`CLOSE_BUSY_LIMIT`) while a save or question is pending.
+- Integration harness `tests/js/flow.js`: real state/tabs/editor/tree over a fake server. Rule:
+  every fix that goes through tabs gets an integration test (`flow-*.test.js`) that fails without
+  the fix.
+
+## Backend notes
+- Notes carry `rev`; saves send `base_rev`; mismatch -> 409 `note_changed_elsewhere` (two web windows).
+- Poll ETag: `storage.update_data_tracked` returns before/after; header `X-NoirPad-ETag-Before`
+  lets the client skip re-downloading after its own save.
+- Route handlers without `await` are plain `def` (thread pool). Only upload/import are `async`;
+  `test_r8_*` enforces it. Heavy work in async handlers: `run_in_threadpool`. Shared state checked
+  and then changed needs a lock: password tries go through `server_auth.guarded_attempt`.
+- Log is anonymized: `logs.PrivateFormatter` writes the profile path as `~`. Never log the user name.
+
+## Dialogs / shortcuts
+- Custom windows use `NP.modal` (`dialog.js`: role=dialog, focus trap, focus return). Help is in
+  the G7 style; its shortcuts come from `NP.shortcuts` (current mapping), not hard-coded text.
+- NoirPad-web (browser) uses Alt+Shift+N/T/I instead of Ctrl+Shift+N/T/I (browser owns them):
+  `WEB_DEFAULTS` in `shortcuts.js`; desktop keeps the Ctrl defaults.
 
 ## Conventions
 - i18n: every visible text via `NP.t(...)` or `data-i18n*` attributes; keys in

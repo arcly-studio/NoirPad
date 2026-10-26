@@ -2,6 +2,94 @@
 
 All notable changes to NoirPad. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] – unreleased
+
+Fixes from a second full review: nothing you type should be lost, and the app is faster, safer and
+easier to use with a keyboard or screen reader.
+
+### Safety of your notes
+- Deleting a folder or note that is open in a tab first saves what you were typing, then closes
+  the tabs of every deleted note; if the open note was among them, the start page is shown. No
+  zombie tabs and no lost text.
+- Clicking an already open tab or note no longer reloads it (that used to drop the last second of
+  typing).
+- A failed save is never discarded silently when you switch or close a tab, or close the window:
+  NoirPad asks whether to discard the changes or stay on the note. In the desktop app the window
+  waits for a save in progress.
+- Renaming in the title belongs to the right note even when you switch with Ctrl+Tab, Ctrl+W or a
+  click in the tree. A tag or an image goes into the note it was meant for, not into the one you
+  switched to meanwhile.
+- Ctrl+M while a note is still loading no longer overwrites anything.
+- Two windows of the web version no longer silently overwrite each other: if a note changed
+  elsewhere, you choose "Overwrite with mine" or "Keep, don't save". A hidden window no longer
+  brings back older text.
+- A full disk gives a clear message, the data file stays unchanged and no leftover temporary file
+  remains. A snapshot error never blocks saving.
+- A data file saved with a BOM (Notepad, PowerShell 5.1) is no longer treated as damaged; a
+  hand-broken structure is repaired in memory.
+- A tag longer than 100 characters or a 51st tag is reported instead of vanishing; if the server
+  fails, the text stays in the field.
+- Notes deleted in another window close their tabs here, and renames are picked up.
+- Locking from another window while you have unsaved text asks for the password instead of
+  reloading the page.
+- Untouched notes are no longer saved again after loading.
+
+### Security and privacy
+- Importing a foreign backup or Markdown file (or exporting HTML) can no longer make Windows
+  connect to a foreign network server through a crafted image name (leaked credentials hash,
+  ~20 s freeze).
+- Importing a backup with non-text tags is refused instead of breaking the tag list.
+- The log no longer contains your Windows user name: profile paths are written as `~`.
+- Old accounts and password hashes left from a long-ago data conversion are removed from disk,
+  including from the backup made by that conversion.
+- Unexpected server errors now also carry the security headers and the usual error format.
+- Exporting a locked note as TXT or HTML is refused (like Markdown) instead of returning the
+  encrypted envelope.
+- A second NoirPad instance is blocked before any data migration runs.
+
+### Accessibility
+- Settings, Help, Shortcuts and the font picker are real dialogs for keyboard and screen readers:
+  named, focus moves in and stays inside, and returns on close. The font list is a listbox
+  (arrow keys).
+- Help was rebuilt in the common window style: sections are tabs controlled by arrow keys, the
+  close button has a name, and the shortcuts shown are your actual (remapped) ones.
+- Focus is visible everywhere; the six switches in Settings have names.
+- Muted text and the red danger colour reach 4.5:1 contrast in all 17 themes; the outline of a
+  switched-off toggle reaches 3:1.
+- With "reduce motion" the Matrix rain is only a still image.
+- The confirmation of a dangerous action starts focused on Cancel.
+- Pressing Delete on a tab keeps focus in the tab bar.
+
+### Speed
+- Backup and exports: a backup with 200 images went from ~20 s to ~2 s, "export all" from ~19 s to
+  under 1 s, and TXT export of a large note from ~11 s to instant.
+- Export, backup and encryption no longer block other requests.
+- Notes with thousands of formats: opening 4.5 s → 0.3 s, saving 7.9 s → 0.6 s (6000 formats).
+- A Markdown paragraph with ~80 000 lines now opens; long Markdown sources are highlighted after
+  a pause in typing.
+- Search across all notes waits for a pause in typing.
+- Saving your own note no longer makes the next sync download all data again; start-up no longer
+  writes the settings needlessly.
+
+### Other fixes
+- Trash: a note opened from the trash shows its title, tags and star are disabled (they used to
+  fail silently), and after Restore (↩) it is editable at once. Clicking a note in the trash saves
+  the open note first.
+- Removing the filtered tag from the last note turns the filter off (it used to show "no matches").
+- Right arrow on an open empty folder stays on the folder.
+- Clear formatting: a code block no longer merges with the neighbouring text, and a link around an
+  image is kept.
+- Pasting HTML from the web always goes through NoirPad's cleaning.
+- Locking or switching a Markdown note also clears its coloured source copy; only one scrollbar in
+  Markdown mode.
+- The lock icon in the tree appears only for really locked notes; the "Autosave off" text now says
+  what is true; without Glow the "Glitch effect" switch is off, with an explanation.
+- Web version: New note, Font and Insert image use Alt+Shift+N / T / I, because the browser takes
+  Ctrl+Shift+N / T / I. The desktop app keeps its defaults and allows assigning both.
+- Installer: a silent install (`/VERYSILENT`, winget, Store) also installs WebView2; the text about
+  a non-empty folder no longer asks you to pick a folder that cannot be picked; copyright in the
+  exe and installer; the name in Apps has no version.
+
 ## [1.0.0] – 2026-10-20
 
 First public release.
