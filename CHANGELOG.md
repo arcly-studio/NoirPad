@@ -2,7 +2,7 @@
 
 All notable changes to NoirPad. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [1.0.1] – unreleased
+## [1.0.1] – 2026-10-27
 
 Fixes from a second full review: nothing you type should be lost, and the app is faster, safer and
 easier to use with a keyboard or screen reader.
@@ -252,3 +252,6 @@ First public release.
   [github.com/arcly-studio/NoirPad](https://github.com/arcly-studio/NoirPad), the installer and
   `NoirPad.exe` name Arcly Studio as publisher, and the start page and About link to the project
   page ("by Arcly Studio").
+
+[1.0.1]: https://github.com/arcly-studio/NoirPad/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/arcly-studio/NoirPad/releases/tag/v1.0.0
