@@ -7,7 +7,7 @@ config.get_data_dir), so ``uvicorn noirpad.app:app`` works on its own.
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -37,6 +37,26 @@ async def _lifespan(_app: FastAPI):
 app = FastAPI(title="NoirPad", version=__version__, lifespan=_lifespan,
               docs_url=None, redoc_url=None, openapi_url=None)
 
+# Browsers keep icons in a cache of their own (favicon, installed web app),
+# whatever the no-store header says. index.html and manifest.json write this
+# mark into the icon URLs and get the version here: a release with a new logo
+# shows it, and the version stays in __version__.py only.
+VERSION_MARK = "__NP_VERSION__"
+
+
+def _with_version(path) -> str:
+    return path.read_text(encoding="utf-8").replace(VERSION_MARK, __version__)
+
+
+# Before the /static mount, which would serve the file without the version.
+@app.api_route("/static/manifest.json", methods=["GET", "HEAD"])   # HEAD like StaticFiles
+def manifest():
+    path = config.STATIC_DIR / "manifest.json"
+    if not path.exists():
+        raise ApiError(404, "file_not_found")
+    return Response(_with_version(path), media_type="application/manifest+json")
+
+
 # No CORSMiddleware on purpose: the frontend is same-origin, and no other
 # origin may call the API.
 app.mount("/static", StaticFiles(directory=str(config.STATIC_DIR)), name="static")
@@ -65,7 +85,7 @@ def root():
     index = config.STATIC_DIR / "index.html"
     if not index.exists():
         raise ApiError(404, "index_missing")
-    return index.read_text(encoding="utf-8")
+    return _with_version(index)
 
 
 for _router in ROUTERS:

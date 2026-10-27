@@ -34,6 +34,15 @@ Local notes app: FastAPI backend (`noirpad/`), vanilla-JS frontend (`static/`), 
   `<svg class="np-icon"><use href="/static/vendor/lucide/sprite.svg#i-name"></use></svg>`.
 - `tests/test_icons.py` fails if a used icon is missing from the sprite.
 
+## Logo (M1 "Glass sheets")
+- Sources: `docs/brand/noirpad-icon.svg` (use at >= 40 px) and `noirpad-icon-small.svg`
+  (<= 32 px). Copies in `static/img/` must be identical (`tests/test_brand.py` checks it).
+- In the UI only as `<img class="... np-decorative">`, never inline (the SVG has `id`s).
+- Icon URLs carry `?v=__NP_VERSION__`; `noirpad/app.py` (`VERSION_MARK`) fills it in
+  `index.html` and `manifest.json` (cache busting).
+- Wizard BMPs (`installer/wizard-small-*.bmp`) come from `tools/make_wizard_images.ps1` (32-bit with alpha).
+- Windows may show the old icon from its icon cache for a while; not a bug.
+
 ## Noir effects (glow, Matrix rain, CRT)
 - Data keys `glow_enabled`, `matrix_rain_enabled`, `crt_enabled`; all `False` in
   `noirpad/storage.py` `DEFAULT_DATA` (also in `models.py`).

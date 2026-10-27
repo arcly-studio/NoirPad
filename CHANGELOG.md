@@ -90,6 +90,14 @@ easier to use with a keyboard or screen reader.
   a non-empty folder no longer asks you to pick a folder that cannot be picked; copyright in the
   exe and installer; the name in Apps has no version.
 
+### New app icon
+- New logo: a dark rounded tile with two glass sheets and a blue `>_`. It replaces the light sheet
+  with a tab everywhere: exe and installer icon, installer wizard image, browser favicon, web app
+  icon (Apple touch icon, manifest), start page, Settings → About, the login page of the
+  self-hosted version, README and the demo GIF.
+- Icon URLs carry the version, so the browser does not show the old icon from its cache. Windows
+  may keep showing the old icon for a while (system icon cache); this is not an error.
+
 ## [1.0.0] – 2026-10-20
 
 First public release.

@@ -63,10 +63,16 @@ test) on every push and pull request.
   `tools/take_screenshots.py [--gif]` starts `desktop.py` on them and regenerates the README's
   `docs/screenshots/` (and `docs/demo.gif`) over the WebView2 DevTools protocol (needs
   `pip install playwright`, plus `ffmpeg` and `oxipng` on PATH).
-- **Logo:** the sources are `docs/brand/noirpad-icon.svg` (and `noirpad-icon-small.svg` for
-  ≤ 24 px) with the raster export `docs/brand/noirpad-1024.png`. `noirpad.ico` (exe, window,
-  installer), `static/favicon.ico`, `static/img/` and `docs/logo.png` are exported from them;
-  `tools/make_wizard_images.ps1` regenerates the installer's `installer/wizard-small-*.bmp`.
+- **Logo (M1 "glass sheets", 1.0.1):** the sources are `docs/brand/noirpad-icon.svg` (40 px and
+  up) and `noirpad-icon-small.svg` (32 px and less) with the raster export
+  `docs/brand/noirpad-1024.png`. `noirpad.ico` (exe, window, installer), `static/favicon.ico`,
+  `static/img/` (copies of both SVGs, `tests/test_brand.py` keeps them equal) and `docs/logo.png`
+  are exported from them; `tools/make_wizard_images.ps1` regenerates the installer's
+  `installer/wizard-small-*.bmp` (32-bit with alpha). The UI shows the SVG through `<img>` only
+  (never inline: the file has `id`s). Icon URLs in `static/index.html` and `static/manifest.json`
+  end in `?v=__NP_VERSION__`; the server fills in the version, so browsers drop a cached old icon.
+  `docs/brand/social-preview.png` (1280×640) is a headless-Chrome screenshot of
+  `docs/brand/social-preview.html`.
 - **Console:** the exe is windowed (no console). Diagnostics go to
   `%LOCALAPPDATA%\NoirPad\logs\noirpad.log`; start-up failures also show a message box.
 - **Code signing:** builds are not signed, so SmartScreen warns on first run (see README).
