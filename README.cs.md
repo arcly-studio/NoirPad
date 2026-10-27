@@ -117,6 +117,8 @@
 | `Ctrl+Tab` / `Ctrl+W` | Další záložka / zavřít záložku |
 | `Ctrl+,` / `F1` | Nastavení / nápověda |
 
+Ve webové verzi (`NoirPad-web.py`) patří `Ctrl+Shift+N` / `T` / `I` prohlížeči, proto Nová poznámka, Písmo a Vložit obrázek používají `Alt+Shift+N` / `T` / `I`.
+
 Úplný seznam i s přenastavením najdete v Nastavení → Klávesové zkratky → Spravovat a v nápovědě
 (`F1`).
 
@@ -140,7 +142,8 @@ instalátor jeho stažení od Microsoftu.
 
 **Vaše data** jsou v `%LOCALAPPDATA%\NoirPad` (vložte do adresního řádku Průzkumníka):
 `notes_data.json` s poznámkami a nastavením, `images\`, `backups\` s automatickými zálohami
-(posledních 7, nejvýš jedna za 10 minut) a `logs\` (spuštění a chyby, nikdy obsah poznámek).
+(posledních 7, nejvýš jedna za 10 minut) a `logs\` (spuštění a chyby, nikdy obsah poznámek;
+vaše uživatelské jméno Windows se zapisuje jako `~`).
 Kdyby se datový soubor poškodil, NoirPad ho nechá stranou a obnoví nejnovější dobrou zálohu.
 
 **Odinstalace** v Nastavení Windows → Aplikace. Programová složka se odstraní celá; poznámky
